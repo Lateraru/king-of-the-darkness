@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Character Fan Site</title>
+    <style>
+        /* 全体のリセットと基本スタイル */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+        }
+
+        body {
+            background-color: #f0f2f5;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+
+        /* スマホ向け縦型コンテナ（PCで見てもスマホサイズに制限） */
+        .container {
+            width: 100%;
+            max-width: 480px;
+            background-color: #ffffff;
+            min-height: 100vh;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* ヘッダー・メインビジュアル */
+        header {
+            text-align: center;
+            padding: 40px 20px 20px 20px;
+            background: linear-gradient(135deg, #e0f2fe 0%, #f0fdf4 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 動くAIキャラクターのプレースホルダー */
+        .character-avatar {
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            background-color: #3b82f6;
+            margin: 0 auto 20px auto;
+            box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+            position: relative;
+            /* ふわふわ動くアニメーション */
+            animation: floatAnim 4s ease-in-out infinite;
+            background-image: linear-gradient(45deg, #3b82f6, #8b5cf6);
+        }
+
+        .character-avatar::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            opacity: 0.5;
+            animation: pulseAnim 2s linear infinite;
+        }
+
+        @keyframes floatAnim {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        @keyframes pulseAnim {
+            0% { transform: scale(1); opacity: 0.6; }
+            100% { transform: scale(1.1); opacity: 0; }
+        }
+
+        .character-name {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+            color: #1e3a8a;
+        }
+
+        .character-title {
+            font-size: 0.9rem;
+            color: #6b7280;
+            margin-bottom: 15px;
+        }
+
+        /* セクション共通スタイル */
+        section {
+            padding: 25px 20px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        section h2 {
+            font-size: 1.2rem;
+            color: #1e3a8a;
+            margin-bottom: 15px;
+            position: relative;
+            padding-left: 10px;
+        }
+
+        section h2::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 3px;
+            bottom: 3px;
+            width: 4px;
+            background-color: #3b82f6;
+            border-radius: 2px;
+        }
+
+        /* キャラクター紹介 */
+        .profile-text {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #4b5563;
+        }
+
+        .profile-specs {
+            margin-top: 15px;
+            background-color: #f8fafc;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .profile-specs div {
+            margin-bottom: 6px;
+        }
+        .profile-specs div:last-child {
+            margin-bottom: 0;
+        }
+
+        /* 返信モード選択スイッチ */
+        .mode-selector {
+            background-color: #f1f5f9;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+        }
+
+        .mode-title {
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: #475569;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .switch-container {
+            display: flex;
+            background-color: #cbd5e1;
+            padding: 3px;
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .switch-container input {
+            display: none;
+        }
+
+        .switch-container label {
+            flex: 1;
+            text-align: center;
+            padding: 8px 0;
+            font-size: 0.9rem;
+            cursor: pointer;
+            z-index: 1;
+            color: #475569;
+            font-weight: bold;
+            transition: color 0.3s;
+        }
+
+        .switch-toggle-bg {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: calc(50% - 3px);
+            height: calc(100% - 6px);
+            background-color: #ffffff;
+            border-radius: 6px;
+            transition: transform 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        #mode-human:checked ~ .switch-toggle-bg {
+            transform: translateX(100%);
+        }
+
+        #mode-ai:checked ~ label[for="mode-ai"],
+        #mode-human:checked ~ label[for="mode-human"] {
+            color: #1e3a8a;
+        }
+
+        /* LINE風チャットUI */
+        .chat-ui-container {
+            background-color: #7493a1; /* LINE風の背景色 */
+            border-radius: 12px;
+            height: 350px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* スクロールバーの非表示（または綺麗に） */
+        .chat-messages::-webkit-scrollbar {
+            width: 4px;
+        }
+        .chat-messages::-webkit-scrollbar-thumb {
+            background-color: rgba(255,255,255,0.3);
+            border-radius: 2px;
+        }
+
+        /* 吹き出し共通 */
+        .message {
+            display: flex;
+            align-items: flex-end;
+            max-width: 80%;
+        }
+
+        /* キャラクター（左側） */
+        .message.bot {
+            align-self: flex-start;
+        }
+
+        .bot-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background-image: linear-gradient(45deg, #3b82f6, #8b5cf6);
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+
+        .message.bot .bubble {
+            background-color: #ffffff;
+            color: #000000;
+            border-radius: 14px 14px 14px 2px;
+            padding: 8px 12px;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        /* ユーザー（右側） */
+        .message.user {
+            align-self: flex-end;
+        }
+
+        .message.user .bubble {
+            background-color: #85e249; /* LINE風の緑 */
+            color: #000000;
+            border-radius: 14px 14px 2px 14px;
+            padding: 8px 12px;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        /* 入力エリア */
+        .chat-input-area {
+            background-color: #ffffff;
+            padding: 8px;
+            display: flex;
+            gap: 8px;
+            border-top: 1px solid #ddd;
+        }
+
+        .chat-input-area input[type="text"] {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            outline: none;
+            font-size: 0.9rem;
+        }
+
+        .chat-input-area button {
+            background-color: #53778a;
+            color: white;
+            border: none;
+            padding: 0 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.85rem;
+            transition: background-color 0.2s;
+        }
+
+        .chat-input-area button:hover {
+            background-color: #436172;
+        }
+
+        /* SNS紹介 */
+        .sns-links {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 10px;
+        }
+
+        .sns-item {
+            text-decoration: none;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.8rem;
+            gap: 6px;
+        }
+
+        .sns-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .icon-x { background-color: #000000; }
+        .icon-insta { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
+        .icon-youtube { background-color: #ff0000; }
+
+        /* メールアドレス */
+        .contact-info {
+            background-color: #f8fafc;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.95rem;
+        }
+
+        .contact-email {
+            display: block;
+            margin-top: 8px;
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        /* フッター */
+        footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 0.75rem;
+            color: #9ca3af;
+            background-color: #f8fafc;
+            margin-top: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- ヘッダー・動くAIキャラクター -->
+        <header>
+            <!-- ここにキャラの画像を設定可能（現在はCSSで動く円を表示） -->
+            <div class="character-avatar">
+                AIキャラ
+            </div>
+            <h1 class="character-name">ルナ (Luna)</h1>
+            <p class="character-title">あなたのRTX 5090から生まれたAIパートナー</p>
+        </header>
+
+        <!-- キャラクター紹介 -->
+        <section id="profile">
+            <h2>Profile</h2>
+            <p class="profile-text">
+                ハイスペックなグラフィックボードのパワーによって顕現したデジタル生命体。普段はあなたのローカル環境（Ollama）でのんびり過ごしながら、おしゃべりする機会を待っています。
+            </p>
+            <div class="profile-specs">
+                <div><strong>誕生日:</strong> 6月28日</div>
+                <div><strong>好きなもの:</strong> 新鮮なプロンプト、電気エネルギー</div>
+                <div><strong>性格:</strong> 好奇心旺盛で、ちょっとお調子者</div>
+            </div>
+        </section>
+
+        <!-- チャット機能セクション -->
+        <section id="chat">
+            <h2>Chat with Luna</h2>
+            
+            <!-- 返信モード選択スイッチ -->
+            <div class="mode-selector">
+                <div class="mode-title">💬 返信のお相手を選んでね</div>
+                <div class="switch-container">
+                    <input type="radio" id="mode-ai" name="reply-mode" value="ai" checked>
+                    <label for="mode-ai">AIルナ (自動返信)</label>
+                    
+                    <input type="radio" id="mode-human" name="reply-mode" value="human">
+                    <label for="mode-human">中の人 (手動返信)</label>
+                    
+                    <div class="switch-toggle-bg"></div>
+                </div>
+            </div>
+
+            <!-- LINE風UI -->
+            <div class="chat-ui-container">
+                <div class="chat-messages" id="chat-messages">
+                    <!-- 初期メッセージ -->
+                    <div class="message bot">
+                        <div class="bot-avatar"></div>
+                        <div class="bubble">ヤッホー！来てくれて嬉しいな。今日は何をお話しする？</div>
+                    </div>
+                </div>
+                
+                <div class="chat-input-area">
+                    <input type="text" id="chat-input" placeholder="メッセージを入力..." autocomplete="off">
+                    <button id="send-btn">送信</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 利用しているSNS紹介 -->
+        <section id="sns">
+            <h2>SNS</h2>
+            <div class="sns-links">
+                <a href="#" class="sns-item" target="_blank">
+                    <div class="sns-icon icon-x">X</div>
+                    <span>公式X</span>
+                </a>
+                <a href="#" class="sns-item" target="_blank">
+                    <div class="sns-icon icon-insta">Ins</div>
+                    <span>Instagram</span>
+                </a>
+                <a href="#" class="sns-item" target="_blank">
+                    <div class="sns-icon icon-youtube">YT</div>
+                    <span>YouTube</span>
+                </a>
+            </div>
+        </section>
+
+        <!-- メールアドレス -->
+        <section id="contact">
+            <h2>Contact</h2>
+            <div class="contact-info">
+                お仕事の依頼やファンレターはこちらまで！
+                <a href="mailto:your-email@example.com" class="contact-email">your-email@example.com</a>
+            </div>
+        </section>
+
+        <!-- フッター -->
+        <footer>
+            &copy; 2026 Luna AI Fan Site. Powered by RTX 5090 & Ollama.
+        </footer>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+
+        // メッセージを画面に追加する関数
+        function appendMessage(sender, text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', sender);
+
+            if (sender === 'bot') {
+                const avatar = document.createElement('div');
+                avatar.classList.add('bot-avatar');
+                messageDiv.appendChild(avatar);
+            }
+
+            const bubble = document.createElement('div');
+            bubble.classList.add('bubble');
+            bubble.innerText = text;
+            messageDiv.appendChild(bubble);
+
+            chatMessages.appendChild(messageDiv);
+            
+            // 自動スクロール
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // 送信ボタンクリック時の処理
+        function handleSend() {
+            const text = chatInput.value.trim();
+            if (!text) return;
+
+            // 1. ユーザーのメッセージを追加
+            appendMessage('user', text);
+            chatInput.value = '';
+
+            // 2. 選択されているモードの取得
+            const selectedMode = document.querySelector('input[name="reply-mode"]:checked').value;
+
+            if (selectedMode === 'ai') {
+                // --- 【将来のパターンB: ローカルOllama(オラマ)連携時の処理イメージ】 ---
+                /*
+                // 将来的にあなたのPC(RTX 5090)のOllamaと通信させる場合のJavaScriptコード例
+                fetch('http://localhost:11434/api/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: 'your-character-model', // Ollamaに登録したモデル名
+                        prompt: text,
+                        stream: false
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    appendMessage('bot', data.response);
+                });
+                */
+
+                // 現在は仮のAI自動返信（ダミー）
+                setTimeout(() => {
+                    const aiResponses = [
+                        "なるほどね！もっと教えて！",
+                        "RTX 5090のパワーで爆速でお返事書いてるよ！✨",
+                        "えへへ、それすごく面白い！",
+                        "ルナはいつでもあなたの味方だよ！"
+                    ];
+                    const randomResponse = aiResponses[floor = Math.floor(Math.random() * aiResponses.length)];
+                    appendMessage('bot', randomResponse);
+                }, 1000);
+
+            } else {
+                // 中の人モードの場合
+                setTimeout(() => {
+                    appendMessage('bot', "【中の人受付窓口】メッセージを受け付けたよ！中の人が確認したら、登録されているメールやSNSなどでお返事するかも？（※このメッセージはシステムによる自動案内です）");
+                }, 1000);
+            }
+        }
+
+        sendBtn.addEventListener('click', handleSend);
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleSend();
+        });
+    </script>
+</body>
+</html>
