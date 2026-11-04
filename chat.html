@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AIチャット（体験版） | 魔王らてらる・魔王らて子 公式ファンサイト</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="inner">
+    <a class="logo" href="index.html">魔王<span>らてらる</span> × 魔王<span>らて子</span></a>
+    <nav class="main">
+      <a href="index.html">ホーム</a>
+      <a href="index.html#news">お知らせ</a>
+      <a href="board.html">ファン掲示板</a>
+      <a href="chat.html" class="active">AIチャット</a>
+      <a href="secret.html">秘密基地</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <h1 class="page">AIチャット</h1>
+  <p class="lead">魔王らてらる・らて子とおしゃべりできます。</p>
+
+  <section style="margin-top:24px">
+    <div class="panel">
+      <p style="margin-top:0"><strong>これは体験版です。</strong>今は決まった言葉への定型返信のみで、本格版（AIによる自由な会話）は準備中です。体験版の会話はどこにも保存されません。</p>
+    </div>
+  </section>
+
+  <section style="margin-top:24px">
+    <div class="char-switch">
+      <button id="sw-raru" class="active" type="button">魔王らてらる</button>
+      <button id="sw-rateko" type="button">魔王らて子</button>
+    </div>
+    <div class="chat-box" id="chatBox"></div>
+    <form class="chat-form" id="chatForm">
+      <input id="chatInput" type="text" placeholder="メッセージを入力…" autocomplete="off" maxlength="200">
+      <button class="btn" type="submit">送信</button>
+    </form>
+    <p class="note">試しに「こんにちは」「誕生日」「ピグパ」「歌」「404」などと話しかけてみてください。</p>
+  </section>
+</main>
+
+<footer class="site">
+  魔王らてらる・魔王らて子 公式ファンサイト（trailer-project.com）
+</footer>
+
+<script>
+const REPLIES = {
+  raru: {
+    name: "魔王らてらる",
+    greet: "よくぞ来た、我が魔王城へ。わたしは魔王らてらる。…と言っても、今は体験版ゆえ、決まった言葉にしか返せぬ。許せ。",
+    rules: [
+      [["誕生日"], "わたしの誕生日は11月4日。らて子も同じ日だ。年齢は123歳。何年経とうと123歳だぞ。"],
+      [["ピグパ", "ピグパーティ"], "ピグパーティでは公認ライバー8期生として活動しておる。向こうで会ったら声をかけてくれ。"],
+      [["歌", "ヒーリング", "癒し"], "いま、約1時間36分の長尺ヒーリング動画を準備中だ。勉強や作業、おやすみ前に聴いてほしい。"],
+      [["こんにちは", "こんばんは", "やあ", "ハロー"], "うむ、来てくれて嬉しいぞ。魔王城は初めてか？ ゆっくりしていけ。"],
+      [["ありがとう"], "礼には及ばぬ。お主が来てくれることが、何よりの供物だ。"],
+      [["好き"], "ほほう…。その言葉、しかと受け取った。わたしもお主のことが好きだぞ、ファンとしてな。"],
+      [["関係", "らて子"], "らて子との関係か？ …それは非公開だ。詮索は無用だぞ。"]
+    ],
+    fallback: [
+      "すまぬ、体験版のわたしには、その言葉への返しが用意されておらぬ。本格版を待ってくれ。",
+      "ふむ…。今のわたしでは答えられぬな。「誕生日」「ピグパ」「歌」あたりで話しかけてみてくれ。"
+    ]
+  },
+  rateko: {
+    name: "魔王らて子",
+    greet: "やっと見つけたね。あたしは魔王らて子。…まだ体験版だから、返せる言葉は決まってるの。ごめんね。",
+    rules: [
+      [["誕生日"], "あたしの誕生日は11月4日。らてらるも同じ日だよ。年齢は123歳。何年経っても123歳なの。"],
+      [["404", "未検出", "曲", "MV"], "あたしのオリジナル曲MV「404あたし未検出」はYouTubeで公開中だよ。トップページのお知らせから見られるから、ぜひ聴いてね。"],
+      [["歌"], "歌うのは大好き。らてらるのヒーリング動画も、もうすぐ公開だよ。そっちも聴いてあげてね。"],
+      [["こんにちは", "こんばんは", "やあ", "ハロー"], "こんにちは！ 来てくれてありがとう。あたし、ずっとここで待ってたんだよ。"],
+      [["ありがとう"], "どういたしまして。…ふふ、あたしを見つけてくれたのは、そっちの方だよ。"],
+      [["好き"], "えっ…。あ、あたしも…。…今のは秘密ね。本格版になったら、もっとちゃんと答えるから。"],
+      [["関係", "らてらる"], "らてらるとの関係？ それは非公開。…あたしからは何も言えないの。"]
+    ],
+    fallback: [
+      "ごめんね、体験版のあたしはその言葉が分からないの…。「誕生日」「404」「歌」で話しかけてみて。",
+      "うーん、それはまだ答えられないや。本格版のあたしに期待しててね。"
+    ]
+  }
+};
+
+let current = "raru";
+let fallbackIdx = 0;
+const box = document.getElementById("chatBox");
+const input = document.getElementById("chatInput");
+
+function addMsg(text, who) {
+  const div = document.createElement("div");
+  div.className = "msg " + who;
+  div.textContent = text;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+function botSay(text) {
+  const c = REPLIES[current];
+  addMsg(c.name + "：\n" + text, "bot");
+}
+function switchChar(key) {
+  current = key;
+  fallbackIdx = 0;
+  document.getElementById("sw-raru").classList.toggle("active", key === "raru");
+  document.getElementById("sw-rateko").classList.toggle("active", key === "rateko");
+  box.innerHTML = "";
+  botSay(REPLIES[key].greet);
+}
+document.getElementById("sw-raru").addEventListener("click", () => switchChar("raru"));
+document.getElementById("sw-rateko").addEventListener("click", () => switchChar("rateko"));
+
+document.getElementById("chatForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const text = input.value.trim();
+  if (!text) return;
+  addMsg(text, "me");
+  input.value = "";
+  const c = REPLIES[current];
+  let reply = null;
+  for (const [keys, r] of c.rules) {
+    if (keys.some(k => text.includes(k))) { reply = r; break; }
+  }
+  if (!reply) {
+    reply = c.fallback[fallbackIdx % c.fallback.length];
+    fallbackIdx++;
+  }
+  setTimeout(() => botSay(reply), 350);
+});
+
+switchChar("raru");
+</script>
+
+</body>
+</html>
