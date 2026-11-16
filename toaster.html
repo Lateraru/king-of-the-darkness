@@ -7,15 +7,18 @@
 <link rel="stylesheet" href="style.css">
 <style>
   .stage{max-width:640px;margin:0 auto}
-  .scene-img{display:block;width:min(400px,92%);margin:6px auto 0;border-radius:12px;border:2px solid var(--line)}
-  .temp-now{text-align:center;font-size:2rem;font-weight:bold;margin-top:12px}
+  .scene-img{display:block;width:min(300px,86%);margin:6px auto 0;border-radius:12px;border:2px solid var(--line)}
+  .temp-now{text-align:center;font-size:1.6rem;font-weight:bold;margin-top:8px}
   .temp-now small{font-size:1rem;color:var(--muted)}
-  .gauge{height:26px;border-radius:8px;position:relative;background:linear-gradient(90deg,#e8dcc3 0%,#e8dcc3 50%,#d99a3d 62%,#b96f1e 78%,#5a3a17 88%,#191919 100%);border:2px solid var(--line);margin-top:8px}
+  .gauge{height:20px;border-radius:8px;position:relative;background:linear-gradient(90deg,#e8dcc3 0%,#e8dcc3 50%,#d99a3d 62%,#b96f1e 78%,#5a3a17 88%,#191919 100%);border:2px solid var(--line);margin-top:8px}
   .marker{position:absolute;top:-6px;bottom:-6px;width:4px;background:#fff;border-radius:2px;box-shadow:0 0 4px #000}
   .zone-label{display:flex;justify-content:space-between;font-size:.8rem;color:var(--muted);margin-top:4px}
-  .hold-btn{display:block;width:100%;padding:18px;border:none;border-radius:12px;background:var(--red);color:#fff;font-size:1.2rem;cursor:pointer;margin-top:14px;touch-action:none;user-select:none;-webkit-user-select:none}
+  .order-line{text-align:center;font-weight:bold;color:#e8a2c0;margin-top:10px;min-height:1.4em}
+  .gauge .zone{position:absolute;top:0;bottom:0;background:rgba(87,171,90,.45);border-left:2px solid #57ab5a;border-right:2px solid #57ab5a}
+  .warn-line{display:none;text-align:center;color:#e5484d;font-weight:bold;margin-top:6px}
+  .hold-btn{display:block;width:100%;padding:14px;border:none;border-radius:12px;background:var(--red);color:#fff;font-size:1.1rem;cursor:pointer;margin-top:10px;touch-action:none;user-select:none;-webkit-user-select:none}
   .hold-btn:disabled{opacity:.45;cursor:default}
-  .hud{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:12px}
+  .hud{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:10px}
   .hud b{font-size:1.2rem}
   .hud button{padding:10px 22px;border:none;border-radius:10px;background:var(--purple);color:#fff;font-size:1rem;cursor:pointer}
   .back-list{margin-top:28px}
@@ -44,22 +47,25 @@
   <section style="margin-top:24px">
     <div class="panel">
       <p style="margin-top:0"><strong>◾︎遊び方◾︎</strong></p>
-      <p>「火を吹く」を押しっぱなしで温度が上がります。こんがりゾーン（620〜780°C）で離そう</p>
-      <p>足りないと生焼け、行き過ぎると真っ黒こげです。1000°Cまで上がります</p>
-      <p style="margin-bottom:0">ドラゴンはたまにくしゃみをします。温度が一気に跳ね上がるので注意</p>
+      <p>らて子の注文（あっさり焼き／こんがり／よく焼き）に合わせて、「火を吹く」を押しっぱなしで温度を上げ、緑のゾーンで離そう</p>
+      <p>注文通りだと高得点。連続成功でコンボ倍率が付きます。足りないと生焼け、行き過ぎると真っ黒こげです</p>
+      <p style="margin-bottom:0">ドラゴンのくしゃみには予兆（⚠ムズムズ…）があります。離すか、跳ね上がりを見越して耐えるかは駆け引きです</p>
     </div>
   </section>
 
   <div class="stage">
     <img class="scene-img" id="sceneImg" alt="ドラゴントースター">
     <div class="temp-now"><span id="tempNow">0</span><small> °C / MAX 1000°C</small></div>
-    <div class="gauge"><div class="marker" id="marker" style="left:0%"></div></div>
-    <div class="zone-label"><span>生焼け</span><span>こんがり 620〜780°C</span><span>真っ黒こげ</span></div>
+    <div class="order-line" id="orderLine">らて子の注文はスタート後に表示されます</div>
+    <div class="gauge"><div class="zone" id="zoneBand" style="left:62%;width:16%"></div><div class="marker" id="marker" style="left:0%"></div></div>
+    <div class="warn-line" id="warnLine">⚠ ドラゴンの鼻がムズムズ…</div>
+    <div class="zone-label"><span>生焼け</span><span id="zoneMid">注文のゾーン</span><span>真っ黒こげ</span></div>
     <button type="button" class="hold-btn" id="btnFire" disabled>火を吹く（押しっぱなし）</button>
     <div class="hud">
       <button type="button" id="btnStart">スタート</button>
       <span><b id="slice">―</b> 枚目 / 5</span>
       <span>スコア <b id="score">0</b></span>
+      <span>コンボ <b id="combo">0</b></span>
       <span>ベスト <b id="best">―</b></span>
       <span id="result" style="font-weight:bold"></span>
     </div>
@@ -85,6 +91,8 @@
   var btnFire = document.getElementById('btnFire'), btnStart = document.getElementById('btnStart');
   var elSlice = document.getElementById('slice'), elScore = document.getElementById('score');
   var elBest = document.getElementById('best'), elResult = document.getElementById('result');
+  var orderLine = document.getElementById('orderLine'), zoneBand = document.getElementById('zoneBand');
+  var warnLine = document.getElementById('warnLine'), zoneMid = document.getElementById('zoneMid'), elCombo = document.getElementById('combo');
   sceneImg.src = IMG_MAIN;
 
   var best = 0;
@@ -93,11 +101,30 @@
 
   var slice = 0, score = 0, temp = 0, holding = false, rate = 260;
   var sneezed = false, sneezeAt = -1, playing = false, lastFrame = 0, runId = 0, judgeAt = 0;
+  var combo = 0, order = null, warned = false;
+  var ORDERS = [
+    { name: 'あっさり焼き', lo: 480, hi: 600 },
+    { name: 'こんがり', lo: 620, hi: 780 },
+    { name: 'よく焼き', lo: 800, hi: 920 }
+  ];
+  var K_HIT = ['注文通りだぉ。さすがだぉ', 'ぴったりだぉ。らて子も嬉しいぉ', 'その焼き加減、完璧だぉ'];
+  var K_MISS = ['注文と違うぉ。でも美味しそうだぉ', '惜しいぉ。次はぴったり焼くぉ', 'らて子はねぇ、これはこれでありだぉ'];
+  function kPick(a){ return a[Math.floor(Math.random() * a.length)]; }
 
   function nextSlice(){
     slice++;
     temp = 0;
     sneezed = false;
+    warned = false;
+    warnLine.style.display = 'none';
+    var base = ORDERS[Math.floor(Math.random() * ORDERS.length)];
+    var shift = Math.round(Math.random() * 60 - 30);
+    var lo = Math.max(300, base.lo + shift), hi = Math.min(960, base.hi + shift);
+    order = { name: base.name, lo: lo, hi: hi, center: (lo + hi) / 2 };
+    orderLine.textContent = 'らて子の注文：' + order.name + '（' + lo + '〜' + hi + '°C）';
+    zoneBand.style.left = (lo / 10) + '%';
+    zoneBand.style.width = ((hi - lo) / 10) + '%';
+    zoneMid.textContent = order.name + ' ' + lo + '〜' + hi + '°C';
     rate = 240 + Math.random() * 90;
     sneezeAt = (Math.random() < 0.3) ? (350 + Math.random() * 400) : -1;
     marker.style.left = '0%';
@@ -112,20 +139,33 @@
   function judge(){
     judgeAt = performance.now();
     btnFire.disabled = true;
+    warnLine.style.display = 'none';
     var pts, label, color;
-    if (temp >= 620 && temp <= 780) {
-      pts = 100 - Math.round(Math.abs(temp - 700) * 0.12);
-      label = 'こんがり。' + pts + ' 点';
+    var T = Math.floor(temp);
+    if (T >= order.lo && T <= order.hi) {
+      combo++;
+      var basePts = 100 - Math.round(Math.abs(T - order.center) * 0.25);
+      if (basePts < 60) basePts = 60;
+      pts = basePts * combo;
+      label = '注文通り！ ' + basePts + ' 点' + (combo >= 2 ? ' ×' + combo + 'コンボ = ' + pts + ' 点' : '') + '　らて子：' + kPick(K_HIT);
       color = '#57ab5a'; sceneImg.src = IMG_GOOD;
-    } else if (temp >= 500 && temp < 620) {
-      pts = 40; label = 'もうちょっと。40 点'; color = '#d99a3d'; sceneImg.src = IMG_MAIN;
-    } else if (temp > 780 && temp <= 880) {
-      pts = 40; label = '焼き過ぎ。40 点'; color = '#d99a3d'; sceneImg.src = IMG_FIRE;
-    } else if (temp < 500) {
-      pts = 10; label = '生焼け。10 点'; color = '#b7aed6'; sceneImg.src = IMG_MAIN;
     } else {
-      pts = 0; label = '真っ黒こげ。0 点。火災保険のご案内をどうぞ'; color = '#e5484d'; sceneImg.src = IMG_BURNT;
+      combo = 0;
+      if (T >= 950) {
+        pts = 0; label = '真っ黒こげ。0 点。火災保険のご案内をどうぞ'; color = '#e5484d'; sceneImg.src = IMG_BURNT;
+      } else if (T < order.lo) {
+        var gapL = order.lo - T;
+        pts = gapL <= 70 ? 40 : 10;
+        label = (gapL <= 70 ? 'もうちょっと（あと少し）。' : '生焼け。') + pts + ' 点　らて子：' + kPick(K_MISS);
+        color = '#d99a3d'; sceneImg.src = IMG_MAIN;
+      } else {
+        var gapH = T - order.hi;
+        pts = gapH <= 70 ? 40 : 10;
+        label = (gapH <= 70 ? 'もうちょっと（焼き過ぎ）。' : '焼き過ぎ。') + pts + ' 点　らて子：' + kPick(K_MISS);
+        color = '#d99a3d'; sceneImg.src = IMG_FIRE;
+      }
     }
+    elCombo.textContent = combo;
     score += pts;
     elScore.textContent = score;
     elResult.textContent = label;
@@ -152,11 +192,18 @@
     lastFrame = now;
     if (holding && playing) {
       temp = Math.min(1000, temp + rate * dt);
-      if (!sneezed && sneezeAt > 0 && temp >= sneezeAt) {
-        sneezed = true;
-        temp = Math.min(1000, temp + 120);
-        elResult.textContent = 'くしゅん。温度が跳ね上がった';
-        elResult.style.color = '#e5484d';
+      if (!sneezed && sneezeAt > 0) {
+        if (!warned && temp >= sneezeAt - 110) {
+          warned = true;
+          warnLine.style.display = 'block';
+        }
+        if (temp >= sneezeAt) {
+          sneezed = true;
+          temp = Math.min(1000, temp + 120);
+          warnLine.style.display = 'none';
+          elResult.textContent = 'くしゅん。温度が跳ね上がった';
+          elResult.style.color = '#e5484d';
+        }
       }
       marker.style.left = (temp / 10) + '%';
       tempNow.textContent = Math.floor(temp);
@@ -166,8 +213,9 @@
   }
 
   btnStart.addEventListener('click', function(){
-    slice = 0; score = 0;
+    slice = 0; score = 0; combo = 0;
     elScore.textContent = '0';
+    elCombo.textContent = '0';
     playing = true;
     runId++; loop._id = runId; lastFrame = 0;
     nextSlice();
