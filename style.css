@@ -50,6 +50,8 @@ h2{font-size:1.35rem;margin:0 0 16px;padding-left:12px;border-left:4px solid var
   text-align:center;padding:28px 16px 4px;
 }
 .hero .catch .title{font-size:1.9rem;font-weight:700;letter-spacing:.06em;margin:0}
+.hero .catch .title .line{display:block}
+.hero .catch .title .cross{display:block;text-align:center;font-size:1.15rem;line-height:1.15;color:var(--muted);margin:2px 0}
 .hero .catch .title .r{color:var(--red)}
 .hero .catch .title .p{color:var(--purple)}
 .hero .catch p{color:var(--muted);margin:8px 0 0}
