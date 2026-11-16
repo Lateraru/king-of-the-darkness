@@ -44,8 +44,9 @@
     <div class="panel">
       <p style="margin-top:0"><strong>◾︎遊び方◾︎</strong></p>
       <p>キャラを選んで、タップ（またはスペースキー）でスタート</p>
-      <p>ジャンプはタップ／クリック／スペースキー／↑キー</p>
-      <p>岩と炎はジャンプで飛び越える。空の鳥は、走り抜ければ当たらない（ジャンプすると当たるので注意）</p>
+      <p>ジャンプはタップ／クリック／スペースキー／↑キー。空中でもう一度押すと2段ジャンプ（足元に魔法陣が出ます）</p>
+      <p>岩と炎はジャンプで飛び越える。大きな炎と岩の連続は2段ジャンプで。空の鳥は上下に揺れるので、走り抜けるか高さを見て避けよう</p>
+      <p>地面のゾーン：緑は加速、橙は減速します。⭐️を取ると+25点（高い所の星はジャンプで取ろう）</p>
       <p style="margin-bottom:0">スコアはあなたのブラウザの中にだけ保存されます</p>
     </div>
   </section>
@@ -107,13 +108,15 @@
 
   var state = 'ready'; // ready | run | over
   var frame = 0, score = 0, speed = 6, dist = 0, phase = 0;
-  var player = { x: 110, y: GL, vy: 0, grounded: true };
-  var obstacles = [], nextSpawn = 0, bgOff = 0, dust = [];
+  var player = { x: 110, y: GL, vy: 0, grounded: true, jumps: 0 };
+  var obstacles = [], nextSpawn = 0, bgOff = 0, dust = [], circles = [];
+  var zones = [], nextZone = 0, stars = [], nextStar = 0, bonus = 0, speedBase = 6, zoneF = 1;
 
   function reset(){
     frame = 0; score = 0; speed = 6; dist = 0; phase = 0;
-    player.y = GL; player.vy = 0; player.grounded = true;
-    obstacles = []; dust = []; nextSpawn = 260;
+    player.y = GL; player.vy = 0; player.grounded = true; player.jumps = 0;
+    obstacles = []; dust = []; circles = []; nextSpawn = 260;
+    zones = []; stars = []; bonus = 0; speedBase = 6; zoneF = 1; nextZone = 1500; nextStar = 700;
     elNow.textContent = '0';
   }
 
@@ -130,29 +133,59 @@
 
   function jump(){
     if (state === 'ready' || state === 'over') { start(); return; }
-    if (player.grounded) { player.vy = -13.8; player.grounded = false; }
+    if (player.grounded) { player.vy = -13.8; player.grounded = false; player.jumps = 1; }
+    else if (player.jumps === 1) {
+      player.vy = -12.4; player.jumps = 2;
+      circles.push({ x: player.x, y: player.y + 4, life: 1 });
+    }
   }
 
   function spawn(){
     var t = Math.random();
-    if (t < 0.42) obstacles.push({ kind: 'rock',  x: W + 40, w: 36, h: 30 });
-    else if (t < 0.78) obstacles.push({ kind: 'flame', x: W + 40, w: 30, h: 36 });
-    else obstacles.push({ kind: 'bird', x: W + 40, w: 44, h: 26, top: GL - 112 });
-    nextSpawn = dist + 340 + Math.random() * 380 + speed * 14;
+    if (t < 0.28) obstacles.push({ kind: 'rock',  x: W + 40, w: 36, h: 30 });
+    else if (t < 0.52) obstacles.push({ kind: 'flame', x: W + 40, w: 30, h: 36 });
+    else if (t < 0.66) obstacles.push({ kind: 'bigflame', x: W + 40, w: 34, h: 58 });
+    else if (t < 0.82) {
+      obstacles.push({ kind: 'rock', x: W + 40, w: 36, h: 30 });
+      obstacles.push({ kind: 'rock', x: W + 118, w: 36, h: 30 });
+    }
+    else obstacles.push({ kind: 'bird', x: W + 40, w: 44, h: 26, top: GL - 104, baseTop: GL - 104, ph: Math.random() * 6.28 });
+    nextSpawn = dist + 300 + Math.random() * 300 + speed * 12;
   }
 
   function step(){
     frame++;
     if (state === 'run') {
+      speedBase = Math.min(14, speedBase + 0.0042);
+      var zTarget = 1;
+      for (var zj = 0; zj < zones.length; zj++) {
+        var zo = zones[zj];
+        if (player.x > zo.x && player.x < zo.x + zo.w) zTarget = zo.kind === 'fast' ? 1.35 : 0.65;
+      }
+      zoneF += (zTarget - zoneF) * 0.06;
+      speed = speedBase * zoneF;
       dist += speed;
-      speed = Math.min(13, speed + 0.0035);
-      score = Math.floor(dist / 12);
+      score = Math.floor(dist / 12) + bonus;
       elNow.textContent = score;
       if (dist >= nextSpawn) spawn();
+      if (dist >= nextZone) {
+        zones.push({ x: W + 40, w: 210, kind: Math.random() < 0.5 ? 'fast' : 'slow' });
+        nextZone = dist + 1700 + Math.random() * 900;
+      }
+      if (dist >= nextStar) {
+        var sBaseY = Math.random() < 0.5 ? GL - 62 : GL - 128;
+        var sN = Math.random() < 0.45 ? 3 : 1;
+        for (var sn = 0; sn < sN; sn++) stars.push({ x: W + 40 + sn * 46, y: sBaseY, ph: Math.random() * 6.28 });
+        nextStar = dist + 650 + Math.random() * 550;
+      }
 
       player.vy += 0.72;
       player.y += player.vy;
-      if (player.y >= GL) { player.y = GL; player.vy = 0; player.grounded = true; }
+      if (player.y >= GL) { player.y = GL; player.vy = 0; player.grounded = true; player.jumps = 0; }
+      for (var ci = circles.length - 1; ci >= 0; ci--) {
+        var cc = circles[ci]; cc.x -= speed; cc.life -= 0.03;
+        if (cc.life <= 0) circles.splice(ci, 1);
+      }
       if (player.grounded) {
         phase += speed * 0.055;
         if (frame % 5 === 0) dust.push({ x: player.x - 16, y: GL - 2, vx: -1.5 - Math.random(), vy: -0.4 - Math.random() * 0.7, life: 1 });
@@ -166,12 +199,30 @@
       for (var i = obstacles.length - 1; i >= 0; i--) {
         var o = obstacles[i];
         o.x -= speed;
+        if (o.kind === 'bird') o.top = o.baseTop + Math.sin(frame * 0.07 + o.ph) * 13;
         if (o.x + o.w < -20) { obstacles.splice(i, 1); continue; }
         // player hit box: about 34 wide, from feet-72 to feet
         var px = player.x - 16, pw = 32, py = player.y - 72, ph = 72;
         var ox = o.x + o.w * 0.12, ow = o.w * 0.76, oy, oh = o.h * 0.8;
         oy = (o.kind === 'bird') ? (o.top + o.h * 0.1) : (GL - o.h + o.h * 0.1);
         if (px < ox + ow && px + pw > ox && py < oy + oh && py + ph > oy) { gameOver(); break; }
+      }
+      for (var zi = zones.length - 1; zi >= 0; zi--) {
+        zones[zi].x -= speed;
+        if (zones[zi].x + zones[zi].w < -20) zones.splice(zi, 1);
+      }
+      for (var si = stars.length - 1; si >= 0; si--) {
+        var st = stars[si];
+        st.x -= speed;
+        if (st.x < -20) { stars.splice(si, 1); continue; }
+        var sbob = Math.sin(frame * 0.1 + st.ph) * 4;
+        var spx = player.x - 16, spy = player.y - 72;
+        if (spx < st.x + 14 && spx + 32 > st.x - 14 && spy < st.y + sbob + 14 && spy + 72 > st.y + sbob - 14) {
+          stars.splice(si, 1);
+          bonus += 25;
+          score = Math.floor(dist / 12) + bonus;
+          elNow.textContent = score;
+        }
       }
       bgOff += speed * 0.4;
     }
@@ -288,6 +339,16 @@
     var goff = -(dist % 46);
     for (var gx = goff; gx < W + 46; gx += 46) ctx.fillRect(gx, GL + 14, 24, 4);
 
+    // speed zones
+    for (var zi2 = 0; zi2 < zones.length; zi2++) {
+      var zo2 = zones[zi2];
+      ctx.fillStyle = zo2.kind === 'fast' ? 'rgba(64,190,120,0.4)' : 'rgba(230,110,60,0.4)';
+      ctx.fillRect(zo2.x, GL + 2, zo2.w, 12);
+      ctx.fillStyle = zo2.kind === 'fast' ? '#7fe0a8' : '#ffb08a';
+      ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.fillText(zo2.kind === 'fast' ? '加速 »»' : '«« 減速', zo2.x + zo2.w / 2, GL - 2);
+    }
+
     // dust
     for (var d = 0; d < dust.length; d++) {
       var p = dust[d];
@@ -301,7 +362,39 @@
       var o = obstacles[i];
       if (o.kind === 'rock') { ctx.font = '34px serif'; ctx.fillText('🪨', o.x + o.w / 2, GL + 4); }
       else if (o.kind === 'flame') { ctx.font = '36px serif'; ctx.fillText('🔥', o.x + o.w / 2, GL + 4); }
+      else if (o.kind === 'bigflame') { ctx.font = '54px serif'; ctx.fillText('🔥', o.x + o.w / 2, GL + 4); }
       else { ctx.font = '30px serif'; ctx.fillText('🦇', o.x + o.w / 2, o.top + o.h + 4); }
+    }
+
+    // stars
+    ctx.font = '24px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (var si2 = 0; si2 < stars.length; si2++) {
+      var st2 = stars[si2];
+      ctx.fillText('⭐', st2.x, st2.y + Math.sin(frame * 0.1 + st2.ph) * 4);
+    }
+
+    // magic circles (double jump)
+    var cCol = charKey === 'rateraru' ? '#ff6b6b' : '#c77dff';
+    var cGlow = charKey === 'rateraru' ? '#e0483d' : '#a04fd0';
+    for (var ci2 = 0; ci2 < circles.length; ci2++) {
+      var c2 = circles[ci2];
+      var r = 26 + (1 - c2.life) * 10;
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, c2.life);
+      ctx.strokeStyle = cCol;
+      ctx.lineWidth = 2;
+      ctx.shadowColor = cGlow;
+      ctx.shadowBlur = 10;
+      ctx.beginPath(); ctx.ellipse(c2.x, c2.y, r, r * 0.32, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(c2.x, c2.y, r * 0.66, r * 0.21, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath();
+      for (var s5 = 0; s5 <= 5; s5++) {
+        var ang = frame * 0.04 + s5 * (Math.PI * 4 / 5);
+        var px2 = c2.x + Math.cos(ang) * r * 0.85, py2 = c2.y + Math.sin(ang) * r * 0.27;
+        if (s5 === 0) ctx.moveTo(px2, py2); else ctx.lineTo(px2, py2);
+      }
+      ctx.stroke();
+      ctx.restore();
     }
 
     drawPlayer();
