@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>魔法陣起動 | ミニゲーム | 魔王らてらる・魔王らて子 公式ファンサイト</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .stage{max-width:480px;margin:0 auto}
+  .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:16px 0}
+  .cell{aspect-ratio:1;border-radius:50%;border:2px solid var(--purple);background:#1b1430;color:#fff;font-size:1.15rem;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .cell.hit{background:#2e7d32;border-color:#57ab5a;color:#fff}
+  .cell.miss{animation:shk .25s;border-color:var(--red)}
+  @keyframes shk{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+  .hud{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+  .hud b{font-size:1.25rem}
+  .hud button{padding:10px 22px;border:none;border-radius:10px;background:var(--red);color:#fff;font-size:1rem;cursor:pointer}
+  .back-list{margin-top:28px}
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="inner">
+    <a class="logo" href="index.html">魔王<span>らてらる</span> × 魔王<span>らて子</span></a>
+    <nav class="main">
+      <a href="index.html">ホーム</a>
+      <a href="index.html#news">お知らせ</a>
+      <a href="board.html">ファン掲示板</a>
+      <a href="chat.html">AIチャット</a>
+      <a href="games.html" class="active">ミニゲーム</a>
+      <a href="secret.html">秘密基地</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <h1 class="page">魔法陣起動</h1>
+  <p class="lead">1から25まで、順番にタップして魔法陣を起動しよう。タイムアタックです。</p>
+
+  <div class="stage">
+    <div class="hud">
+      <span>次は <b id="next">1</b></span>
+      <span>時間 <b id="time">0.0</b> 秒</span>
+      <span>ミス <b id="miss">0</b></span>
+      <button type="button" id="btnStart">スタート</button>
+    </div>
+    <div class="grid" id="grid"></div>
+    <p id="msg" style="text-align:center;min-height:1.6em"></p>
+    <p style="text-align:center">ベストタイム：<b id="best">―</b></p>
+  </div>
+
+  <div class="back-list">
+    <div class="menu-grid">
+      <a href="games.html"><div class="t">ミニゲーム一覧</div><div class="d">他のゲームも遊べます</div></a>
+    </div>
+  </div>
+</main>
+
+<footer class="site">
+  魔王らてらる・魔王らて子 公式ファンサイト（trailer-project.com）
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  var grid = document.getElementById('grid');
+  var elNext = document.getElementById('next'), elTime = document.getElementById('time'), elMiss = document.getElementById('miss'), elMsg = document.getElementById('msg'), elBest = document.getElementById('best');
+  var btn = document.getElementById('btnStart');
+
+  var best = 0;
+  try { best = parseFloat(localStorage.getItem('maouNumbersBest') || '0') || 0; } catch(e) {}
+  if (best) elBest.textContent = best.toFixed(1) + ' 秒';
+
+  var playing = false, next = 1, miss = 0, startedAt = 0, timer = null;
+
+  function build(){
+    var nums = [];
+    for (var i = 1; i <= 25; i++) nums.push(i);
+    for (var j = nums.length - 1; j > 0; j--) {
+      var k = Math.floor(Math.random() * (j + 1));
+      var t = nums[j]; nums[j] = nums[k]; nums[k] = t;
+    }
+    grid.innerHTML = '';
+    nums.forEach(function(n){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'cell';
+      b.textContent = n;
+      b.addEventListener('click', function(){ tap(b, n); });
+      grid.appendChild(b);
+    });
+  }
+
+  function tap(b, n){
+    if (!playing || b.classList.contains('hit')) return;
+    if (n === next) {
+      b.classList.add('hit');
+      next++;
+      elNext.textContent = next <= 25 ? next : '―';
+      if (next > 25) {
+        playing = false;
+        clearInterval(timer);
+        var t = (Date.now() - startedAt) / 1000;
+        elMsg.textContent = '魔法陣、起動。' + t.toFixed(1) + ' 秒（ミス ' + miss + ' 回）';
+        if (!best || t < best) {
+          best = t; elBest.textContent = best.toFixed(1) + ' 秒';
+          try { localStorage.setItem('maouNumbersBest', String(best)); } catch(e) {}
+        }
+        btn.textContent = 'もう一度';
+      }
+    } else {
+      miss++;
+      elMiss.textContent = miss;
+      b.classList.remove('miss'); void b.offsetWidth; b.classList.add('miss');
+    }
+  }
+
+  btn.addEventListener('click', function(){
+    next = 1; miss = 0;
+    elNext.textContent = '1'; elMiss.textContent = '0'; elTime.textContent = '0.0'; elMsg.textContent = '';
+    build();
+    playing = true;
+    startedAt = Date.now();
+    clearInterval(timer);
+    timer = setInterval(function(){ elTime.textContent = ((Date.now() - startedAt) / 1000).toFixed(1); }, 100);
+    btn.textContent = 'リスタート';
+  });
+
+  build();
+})();
+</script>
+</body>
+</html>
