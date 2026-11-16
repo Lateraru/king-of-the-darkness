@@ -43,6 +43,7 @@
     <div class="panel">
       <p style="margin-top:0"><strong>◾︎遊び方◾︎</strong></p>
       <p>画面を押すと開始。緑になる前に押すとお手つきです</p>
+      <p>たまに「今だ…？」と違う絵が出るフェイントがあります。それもお手つきです</p>
       <p style="margin-bottom:0">3回測って、一番速いタイムで称号が決まります（200ms以下：魔王級／280ms以下：騎士級／350ms以下：兵士級）</p>
     </div>
   </section>
@@ -50,6 +51,7 @@
   <div class="stage">
     <div class="arena idle" id="arena">
       <img id="face" alt="">
+      <div id="decoy" style="display:none;font-size:96px;line-height:110px"></div>
       <div class="big" id="big">押して開始</div>
       <div class="sub" id="sub">緑になるまで待つべし</div>
     </div>
@@ -87,6 +89,34 @@
 
   var state = 'idle'; // idle | wait | go | foul | done
   var timer = null, goAt = 0, tries = 0, sessionBest = 0;
+  var decoy = document.getElementById('decoy');
+  var DECOYS = ['👑', '🦇', '🔮', '🍰', '🌹', '🎤'];
+  var feintTimers = [], feintVisible = false;
+
+  function clearFeints(){
+    feintTimers.forEach(function(id){ clearTimeout(id); });
+    feintTimers = [];
+    feintVisible = false;
+    decoy.style.display = 'none';
+  }
+  function scheduleFeint(delay){
+    if (Math.random() >= 0.45) return;
+    var latest = delay - 750;
+    if (latest < 500) return;
+    var at = 500 + Math.random() * (latest - 500);
+    feintTimers.push(setTimeout(function(){
+      if (state !== 'wait') return;
+      decoy.textContent = DECOYS[Math.floor(Math.random() * DECOYS.length)];
+      decoy.style.display = 'block';
+      feintVisible = true;
+      big.textContent = '今だ…？';
+      feintTimers.push(setTimeout(function(){
+        feintVisible = false;
+        decoy.style.display = 'none';
+        if (state === 'wait') big.textContent = '待て…';
+      }, 420));
+    }, at));
+  }
 
   function rank(ms){
     if (ms <= 200) return '魔王級';
@@ -97,11 +127,15 @@
 
   function toWait(){
     state = 'wait';
+    clearFeints();
     arena.className = 'arena wait';
     face.style.display = 'none';
     big.textContent = '待て…';
     sub.textContent = '緑になったら即タップ';
+    var delay = 1200 + Math.random() * 3000;
+    scheduleFeint(delay);
     timer = setTimeout(function(){
+      clearFeints();
       state = 'go';
       goAt = performance.now();
       arena.className = 'arena go';
@@ -109,7 +143,7 @@
       face.style.display = 'block';
       big.textContent = '今だ';
       sub.textContent = '';
-    }, 1200 + Math.random() * 3000);
+    }, delay);
   }
 
   arena.addEventListener('pointerdown', function(e){
@@ -121,9 +155,11 @@
       toWait();
     } else if (state === 'wait') {
       clearTimeout(timer);
+      var wasFeint = feintVisible;
+      clearFeints();
       state = 'foul';
       arena.className = 'arena idle';
-      big.textContent = 'お手つき';
+      big.textContent = wasFeint ? 'フェイントに引っかかった' : 'お手つき';
       sub.textContent = '押して、もう一度待とう';
       state = 'idle-foul';
     } else if (state === 'idle-foul') {
