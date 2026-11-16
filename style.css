@@ -126,3 +126,7 @@ footer.site{
   border-top:1px solid var(--line);padding:24px 16px 40px;text-align:center;
   color:var(--muted);font-size:.85rem;
 }
+
+/* game input: prevent double-tap zoom on rapid taps */
+button, canvas, .card, .cell, .pad, .pop { touch-action: manipulation; }
+.dpad button, .face-btn, .hold-btn { touch-action: none; }
