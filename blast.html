@@ -26,6 +26,7 @@
   #btnInferno{background:#a83232}
   #btnHeal{background:#2e7d4f}
   #btnSummon{background:#6d4fc2}
+  #btnExplosion{background:#b8860b}
   .hud{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:12px}
   .hud b{font-size:1.25rem}
   .hud button{padding:10px 22px;border:none;border-radius:10px;background:var(--red);color:#fff;font-size:1rem;cursor:pointer}
@@ -56,7 +57,8 @@
       <p style="margin-top:0"><strong>◾︎遊び方◾︎</strong></p>
       <p>キャラを選んでスタート。魔法は自動で連射されます。指で上下に動かす（または↑↓キー）で移動</p>
       <p>大魔法は下のボタンから：爆裂（範囲爆発）／雷撃（全体攻撃）／メテオ（隕石の雨）／波動（貫通する衝撃波）／フリーズ（敵全体を3秒止める）。それぞれクールタイムがあります</p>
-      <p>敵の撃つ弾は、自分の魔法弾で撃ち落とせます（+2点）。当たると結界が削られます</p>
+      <p>敵の撃つ弾は、自分の魔法弾で撃ち落とせます（+2点）。当たると結界が削られます。魔法弾は近くの敵を少し追尾します</p>
+      <p>敵が落とす⭐を魔法弾で取ると、全魔法のクールダウンが短くなります。連続撃破でコンボが伸び、15コンボごとにボーナス</p>
       <p style="margin-bottom:0">敵が左端の結界に届くと結界が削られます。結界が0になると終了。50体倒すごとにボスが出ます。召喚魔法で、もう1人の魔王が12秒間一緒に戦ってくれます</p>
     </div>
   </section>
@@ -75,6 +77,7 @@
     <div class="magic-row">
       <button type="button" class="magic-btn" id="btnWave" disabled>🌊 波動</button>
       <button type="button" class="magic-btn" id="btnFreeze" disabled>❄️ フリーズ</button>
+      <button type="button" class="magic-btn" id="btnExplosion" disabled>💥 エクスプロージョン</button>
     </div>
     <div class="magic-row">
       <button type="button" class="magic-btn" id="btnInferno" disabled>🔥 インフェルノ</button>
@@ -87,6 +90,7 @@
       <span>スコア <b id="score">0</b></span>
       <span>ベスト <b id="best">―</b></span>
       <span>結界 <b id="hp">100</b></span>
+      <span>コンボ <b id="combo">0</b></span>
     </div>
   </div>
 
@@ -119,6 +123,8 @@
   var btnBomb = document.getElementById('btnBomb'), btnBolt2 = document.getElementById('btnBolt2'), btnMeteor = document.getElementById('btnMeteor');
   var btnWave = document.getElementById('btnWave'), btnFreeze = document.getElementById('btnFreeze');
   var btnInferno = document.getElementById('btnInferno'), btnHeal = document.getElementById('btnHeal'), btnSummon = document.getElementById('btnSummon');
+  var btnExplosion = document.getElementById('btnExplosion');
+  var elCombo = document.getElementById('combo');
 
   var best = 0;
   try { best = parseInt(localStorage.getItem('maouBlastBest') || '0', 10) || 0; } catch(e) {}
@@ -131,8 +137,9 @@
   var bolts = [], enemies = [], parts = [], floats = [], meteors = [], strikes = [], waves = [];
   var freezeT = 0, waveSeq = 0;
   var ebullets = [], beamT = 0, helperT = 0, helperY = 0;
+  var starsArr = [], rings = [], combo = 0, comboT = 0, comboShown = -1, flashT = 0;
   var lastShot = 0, spawnAt = 0, shake = 0, flash = 0;
-  var cd = { bomb: 0, bolt2: 0, meteor: 0, wave: 0, freeze: 0, inferno: 0, heal: 0, summon: 0 };
+  var cd = { bomb: 0, bolt2: 0, meteor: 0, wave: 0, freeze: 0, inferno: 0, heal: 0, summon: 0, explosion: 0 };
   var bossCount = 0;
   var keys = {};
 
@@ -157,8 +164,9 @@
     py = H / 2; targetY = H / 2;
     bolts = []; enemies = []; parts = []; floats = []; meteors = []; strikes = [];
     lastShot = 0; spawnAt = 30; shake = 0; flash = 0;
-    cd = { bomb: 0, bolt2: 0, meteor: 0, wave: 0, freeze: 0, inferno: 0, heal: 0, summon: 0 };
-    waves = []; freezeT = 0; ebullets = []; beamT = 0; helperT = 0;
+    cd = { bomb: 0, bolt2: 0, meteor: 0, wave: 0, freeze: 0, inferno: 0, heal: 0, summon: 0, explosion: 0 };
+    waves = []; freezeT = 0; ebullets = []; beamT = 0; helperT = 0; starsArr = []; rings = []; combo = 0; comboT = 0; flashT = 0;
+    elCombo.textContent = '0';
     bossCount = 0;
     elKills.textContent = '0'; elScore.textContent = '0'; elHp.textContent = '100';
     updButtons();
@@ -169,7 +177,7 @@
       btn.disabled = state !== 'run' || cdv > 0;
       btn.textContent = cdv > 0 ? emoji + ' ' + name + ' ' + Math.ceil(cdv / 60) : emoji + ' ' + name;
     }
-    set(btnBomb, '爆裂', '💥', cd.bomb);
+    set(btnBomb, '爆裂', '🎆', cd.bomb);
     set(btnBolt2, '雷撃', '⚡', cd.bolt2);
     set(btnMeteor, 'メテオ', '☄️', cd.meteor);
     set(btnWave, '波動', '🌊', cd.wave);
@@ -177,6 +185,7 @@
     set(btnInferno, 'インフェルノ', '🔥', cd.inferno);
     set(btnHeal, '結界修復', '💚', cd.heal);
     set(btnSummon, charKey === 'rateraru' ? '召喚：らて子' : '召喚：らてらる', '🪄', cd.summon);
+    set(btnExplosion, 'エクスプロージョン', '💥', cd.explosion);
   }
 
   function boom(x, y, n, col, power){
@@ -199,6 +208,15 @@
       score += gain;
       elKills.textContent = kills;
       elScore.textContent = score;
+      combo++;
+      comboT = 180;
+      if (combo % 15 === 0) {
+        score += 100;
+        elScore.textContent = score;
+        addFloat(e.x, e.y - 34, 'コンボボーナス +100', '#ffd76b');
+      }
+      if (e.boss) addFloat(e.x, e.y - 44, 'ボス撃破！', '#ffb84d');
+      if (!e.boss && Math.random() < 0.15) starsArr.push({ x: e.x, y: e.y, ph: Math.random() * 6.28 });
       boom(e.x, e.y, e.boss ? 46 : 16, e.boss ? '#ffb84d' : '#e8dcc3', e.boss ? 7 : 4.5);
       addFloat(e.x, e.y - 20, '+' + gain, e.boss ? '#ffb84d' : '#fff');
       if (shake < (e.boss ? 14 : 4)) shake = e.boss ? 14 : 4;
@@ -216,13 +234,13 @@
       return;
     }
     var f = FOES[Math.floor(Math.random() * FOES.length)];
-    var baseY = 46 + Math.random() * (H - 92);
+    var baseY = 54 + Math.random() * (H - 108);
     enemies.push({ e: f.e, hp: f.hp, maxhp: f.hp, sp: f.sp * (0.85 + Math.random() * 0.4), size: f.size, dmg: f.dmg, x: W + 40, y: baseY, boss: false, shot: f.shot, shootT: 120 + Math.random() * 120, ph: Math.random() * 6.28 });
     if (Math.random() < 0.35) {
       var extra = 1 + Math.floor(Math.random() * 2);
       for (var xi = 0; xi < extra; xi++) {
         var f2 = FOES[Math.floor(Math.random() * FOES.length)];
-        enemies.push({ e: f2.e, hp: f2.hp, maxhp: f2.hp, sp: f2.sp * (0.85 + Math.random() * 0.4), size: f2.size, dmg: f2.dmg, x: W + 70 + xi * 36, y: Math.max(40, Math.min(H - 40, baseY + (Math.random() * 110 - 55))), boss: false, shot: f2.shot, shootT: 120 + Math.random() * 120, ph: Math.random() * 6.28 });
+        enemies.push({ e: f2.e, hp: f2.hp, maxhp: f2.hp, sp: f2.sp * (0.85 + Math.random() * 0.4), size: f2.size, dmg: f2.dmg, x: W + 70 + xi * 36, y: Math.max(54, Math.min(H - 54, baseY + (Math.random() * 110 - 55))), boss: false, shot: f2.shot, shootT: 120 + Math.random() * 120, ph: Math.random() * 6.28 });
       }
     }
   }
@@ -337,12 +355,29 @@
     updButtons();
   }
 
+  function castExplosion(){
+    if (state !== 'run' || cd.explosion > 0) return;
+    cd.explosion = 1800;
+    flashT = 14;
+    shake = 16;
+    rings.push({ x: 112, y: py, r: 10 });
+    for (var xe = enemies.length - 1; xe >= 0; xe--) hurt(enemies[xe], 25);
+    for (var xb = ebullets.length - 1; xb >= 0; xb--) {
+      boom(ebullets[xb].x, ebullets[xb].y, 4, '#ffd76b', 3);
+      score += 1;
+    }
+    ebullets = [];
+    elScore.textContent = score;
+    addFloat(W / 2, 90, 'エクスプロージョン！', '#ffb84d');
+    updButtons();
+  }
+
   function step(){
     frame++;
     if (state === 'run') {
       if (keys.up) targetY -= 7;
       if (keys.down) targetY += 7;
-      targetY = Math.max(104, Math.min(H - 92, targetY));
+      targetY = Math.max(80, Math.min(H - 80, targetY));
       py += (targetY - py) * 0.25;
 
       if (frame >= spawnAt) {
@@ -382,11 +417,25 @@
       if (cd.inferno > 0) cd.inferno--;
       if (cd.heal > 0) cd.heal--;
       if (cd.summon > 0) cd.summon--;
+      if (cd.explosion > 0) cd.explosion--;
+      if (comboT > 0) { comboT--; if (comboT === 0) combo = 0; }
+      if (combo !== comboShown) { comboShown = combo; elCombo.textContent = combo; }
       if (freezeT > 0) freezeT--;
       if (frame % 12 === 0) updButtons();
 
       for (var bi = bolts.length - 1; bi >= 0; bi--) {
         var b = bolts[bi];
+        var tgt = null, tBest = 140;
+        for (var ti = 0; ti < enemies.length; ti++) {
+          var te = enemies[ti];
+          if (te.dead || te.x < b.x + 8) continue;
+          var tdy = Math.abs(te.y - b.y);
+          if (tdy < tBest) { tBest = tdy; tgt = te; }
+        }
+        if (tgt) {
+          b.vy += Math.max(-0.14, Math.min(0.14, (tgt.y - b.y) * 0.006));
+          b.vy = Math.max(-2.8, Math.min(2.8, b.vy));
+        }
         b.x += b.vx; b.y += b.vy;
         if (b.x > W + 20) { bolts.splice(bi, 1); continue; }
         var shotDown = false;
@@ -405,6 +454,24 @@
           }
         }
         if (shotDown) continue;
+        var gotStar = false;
+        for (var gs = starsArr.length - 1; gs >= 0; gs--) {
+          var gst = starsArr[gs];
+          var sdx = gst.x - b.x, sdy = gst.y - b.y;
+          if (sdx * sdx + sdy * sdy < 17 * 17) {
+            starsArr.splice(gs, 1);
+            bolts.splice(bi, 1);
+            gotStar = true;
+            score += 15;
+            elScore.textContent = score;
+            for (var ck in cd) cd[ck] = Math.max(0, cd[ck] - 120);
+            boom(gst.x, gst.y, 8, '#ffe14d', 4);
+            addFloat(gst.x, gst.y - 14, '⭐ +15／CD短縮', '#ffe14d');
+            updButtons();
+            break;
+          }
+        }
+        if (gotStar) continue;
         for (var ei = 0; ei < enemies.length; ei++) {
           var en = enemies[ei];
           if (en.dead) continue;
@@ -502,6 +569,18 @@
         }
         if (ubb.x < -20 || ubb.y < -20 || ubb.y > H + 20) ebullets.splice(ub, 1);
       }
+
+      for (var su = starsArr.length - 1; su >= 0; su--) {
+        var sst = starsArr[su];
+        sst.x -= 1.3;
+        sst.y += Math.sin(frame * 0.06 + sst.ph) * 0.6;
+        if (sst.x < 58) starsArr.splice(su, 1);
+      }
+      for (var ru = rings.length - 1; ru >= 0; ru--) {
+        rings[ru].r += 26;
+        if (rings[ru].r > W) rings.splice(ru, 1);
+      }
+      if (flashT > 0) flashT--;
 
       for (var pi = parts.length - 1; pi >= 0; pi--) {
         var p = parts[pi];
@@ -623,6 +702,20 @@
       ctx.beginPath(); ctx.arc(pp.x, pp.y, pp.r, 0, Math.PI * 2); ctx.fill();
     }
     ctx.globalAlpha = 1;
+    // stars
+    ctx.font = '24px sans-serif';
+    ctx.textAlign = 'center';
+    for (var sd = 0; sd < starsArr.length; sd++) {
+      ctx.fillText('⭐', starsArr[sd].x, starsArr[sd].y + 8);
+    }
+    // explosion rings
+    for (var rd = 0; rd < rings.length; rd++) {
+      ctx.strokeStyle = 'rgba(255,180,80,' + Math.max(0, 1 - rings[rd].r / W) + ')';
+      ctx.lineWidth = 10;
+      ctx.beginPath();
+      ctx.arc(rings[rd].x, rings[rd].y, rings[rd].r, 0, Math.PI * 2);
+      ctx.stroke();
+    }
     // summoned helper
     if (helperT > 0) {
       var himg = charKey === 'rateraru' ? sprK : sprR;
@@ -637,10 +730,19 @@
     var bobY = Math.sin(frame * 0.08) * 3;
     var simg = sprImg();
     if (simg.complete && simg.naturalWidth > 0) {
-      var sh = 196, sw = sh * simg.naturalWidth / simg.naturalHeight;
-      ctx.drawImage(simg, 112 - sw / 2, py + 72 + bobY - sh, sw, sh);
+      var sh = 184, sw = sh * simg.naturalWidth / simg.naturalHeight;
+      ctx.drawImage(simg, 112 - sw / 2, py + 66 + bobY - sh, sw, sh);
     }
 
+    if (flashT > 0) {
+      ctx.fillStyle = 'rgba(255,240,210,' + (flashT / 14 * 0.55) + ')';
+      ctx.fillRect(0, 0, W, H);
+    }
+    if (state === 'run' && hp <= 25) {
+      ctx.strokeStyle = 'rgba(229,72,77,' + (0.35 + 0.3 * Math.sin(frame * 0.15)) + ')';
+      ctx.lineWidth = 8;
+      ctx.strokeRect(4, 4, W - 8, H - 8);
+    }
     // floaters
     ctx.font = 'bold 17px sans-serif';
     for (var fi2 = 0; fi2 < floats.length; fi2++) {
@@ -708,6 +810,7 @@
   btnInferno.addEventListener('click', castInferno);
   btnHeal.addEventListener('click', castHeal);
   btnSummon.addEventListener('click', castSummon);
+  btnExplosion.addEventListener('click', castExplosion);
   var stageEl = document.querySelector('.stage');
   stageEl.addEventListener('touchmove', function(e){ if (state === 'run') e.preventDefault(); }, { passive: false });
 
@@ -728,6 +831,7 @@
     if (e.key === 'i' || e.key === 'I') castInferno();
     if (e.key === 'o' || e.key === 'O') castHeal();
     if (e.key === 'p' || e.key === 'P') castSummon();
+    if (e.key === 'e' || e.key === 'E') castExplosion();
   });
   document.addEventListener('keyup', function(e){
     if (e.key === 'ArrowUp') keys.up = false;
