@@ -15,11 +15,14 @@
   .char-btn.sel-r{border-color:var(--red);background:#2a1220}
   .char-btn.sel-p{border-color:#a04fd0;background:#221233}
   .magic-row{display:flex;gap:8px;margin-top:10px}
+  body{overscroll-behavior:none}
   .magic-btn{flex:1;padding:14px 4px;border:none;border-radius:12px;color:#fff;font-size:1rem;font-weight:bold;cursor:pointer;touch-action:manipulation}
   .magic-btn:disabled{opacity:.4;cursor:default}
   #btnBomb{background:#b96f1e}
   #btnBolt2{background:#5d4396}
   #btnMeteor{background:#8a2f35}
+  #btnWave{background:#1f6f8b}
+  #btnFreeze{background:#3d6fb8}
   .hud{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:12px}
   .hud b{font-size:1.25rem}
   .hud button{padding:10px 22px;border:none;border-radius:10px;background:var(--red);color:#fff;font-size:1rem;cursor:pointer}
@@ -49,7 +52,7 @@
     <div class="panel">
       <p style="margin-top:0"><strong>◾︎遊び方◾︎</strong></p>
       <p>キャラを選んでスタート。魔法は自動で連射されます。指で上下に動かす（または↑↓キー）で移動</p>
-      <p>大魔法は下のボタンから：爆裂（範囲爆発）／雷撃（全体攻撃）／メテオ（隕石の雨）。それぞれクールタイムがあります</p>
+      <p>大魔法は下のボタンから：爆裂（範囲爆発）／雷撃（全体攻撃）／メテオ（隕石の雨）／波動（貫通する衝撃波）／フリーズ（敵全体を3秒止める）。それぞれクールタイムがあります</p>
       <p style="margin-bottom:0">敵が左端の結界に届くと結界が削られます。結界が0になると終了。50体倒すごとにドラゴンが出ます</p>
     </div>
   </section>
@@ -64,6 +67,10 @@
       <button type="button" class="magic-btn" id="btnBomb" disabled>💥 爆裂</button>
       <button type="button" class="magic-btn" id="btnBolt2" disabled>⚡ 雷撃</button>
       <button type="button" class="magic-btn" id="btnMeteor" disabled>☄️ メテオ</button>
+    </div>
+    <div class="magic-row">
+      <button type="button" class="magic-btn" id="btnWave" disabled>🌊 波動</button>
+      <button type="button" class="magic-btn" id="btnFreeze" disabled>❄️ フリーズ</button>
     </div>
     <div class="hud">
       <button type="button" id="btnStart">スタート</button>
@@ -100,6 +107,7 @@
   var elBest = document.getElementById('best'), elHp = document.getElementById('hp');
   var btnStart = document.getElementById('btnStart');
   var btnBomb = document.getElementById('btnBomb'), btnBolt2 = document.getElementById('btnBolt2'), btnMeteor = document.getElementById('btnMeteor');
+  var btnWave = document.getElementById('btnWave'), btnFreeze = document.getElementById('btnFreeze');
 
   var best = 0;
   try { best = parseInt(localStorage.getItem('maouBlastBest') || '0', 10) || 0; } catch(e) {}
@@ -109,9 +117,10 @@
   var state = 'ready';
   var frame = 0, kills = 0, score = 0, hp = 100;
   var py = H / 2, targetY = H / 2;
-  var bolts = [], enemies = [], parts = [], floats = [], meteors = [], strikes = [];
+  var bolts = [], enemies = [], parts = [], floats = [], meteors = [], strikes = [], waves = [];
+  var freezeT = 0, waveSeq = 0;
   var lastShot = 0, spawnAt = 0, shake = 0, flash = 0;
-  var cd = { bomb: 0, bolt2: 0, meteor: 0 };
+  var cd = { bomb: 0, bolt2: 0, meteor: 0, wave: 0, freeze: 0 };
   var bossCount = 0;
   var keys = {};
 
@@ -131,7 +140,8 @@
     py = H / 2; targetY = H / 2;
     bolts = []; enemies = []; parts = []; floats = []; meteors = []; strikes = [];
     lastShot = 0; spawnAt = 30; shake = 0; flash = 0;
-    cd = { bomb: 0, bolt2: 0, meteor: 0 };
+    cd = { bomb: 0, bolt2: 0, meteor: 0, wave: 0, freeze: 0 };
+    waves = []; freezeT = 0;
     bossCount = 0;
     elKills.textContent = '0'; elScore.textContent = '0'; elHp.textContent = '100';
     updButtons();
@@ -145,6 +155,8 @@
     set(btnBomb, '爆裂', '💥', cd.bomb);
     set(btnBolt2, '雷撃', '⚡', cd.bolt2);
     set(btnMeteor, 'メテオ', '☄️', cd.meteor);
+    set(btnWave, '波動', '🌊', cd.wave);
+    set(btnFreeze, 'フリーズ', '❄️', cd.freeze);
   }
 
   function boom(x, y, n, col, power){
@@ -182,7 +194,15 @@
       return;
     }
     var f = FOES[Math.floor(Math.random() * FOES.length)];
-    enemies.push({ e: f.e, hp: f.hp, maxhp: f.hp, sp: f.sp * (0.85 + Math.random() * 0.4), size: f.size, dmg: f.dmg, x: W + 40, y: 46 + Math.random() * (H - 92), boss: false, ph: Math.random() * 6.28 });
+    var baseY = 46 + Math.random() * (H - 92);
+    enemies.push({ e: f.e, hp: f.hp, maxhp: f.hp, sp: f.sp * (0.85 + Math.random() * 0.4), size: f.size, dmg: f.dmg, x: W + 40, y: baseY, boss: false, ph: Math.random() * 6.28 });
+    if (Math.random() < 0.35) {
+      var extra = 1 + Math.floor(Math.random() * 2);
+      for (var xi = 0; xi < extra; xi++) {
+        var f2 = FOES[Math.floor(Math.random() * FOES.length)];
+        enemies.push({ e: f2.e, hp: f2.hp, maxhp: f2.hp, sp: f2.sp * (0.85 + Math.random() * 0.4), size: f2.size, dmg: f2.dmg, x: W + 70 + xi * 36, y: Math.max(40, Math.min(H - 40, baseY + (Math.random() * 110 - 55))), boss: false, ph: Math.random() * 6.28 });
+      }
+    }
   }
 
   function castBomb(){
@@ -227,29 +247,49 @@
     updButtons();
   }
 
+  function castWave(){
+    if (state !== 'run' || cd.wave > 0) return;
+    cd.wave = 480;
+    waveSeq++;
+    waves.push({ x: 130, y: py, id: waveSeq, hit: [] });
+    updButtons();
+  }
+
+  function castFreeze(){
+    if (state !== 'run' || cd.freeze > 0) return;
+    cd.freeze = 840;
+    freezeT = 180;
+    flash = Math.max(flash, 0.2);
+    addFloat(W / 2, 60, 'フリーズ！', '#9fd8ff');
+    updButtons();
+  }
+
   function step(){
     frame++;
     if (state === 'run') {
       if (keys.up) targetY -= 7;
       if (keys.down) targetY += 7;
-      targetY = Math.max(44, Math.min(H - 44, targetY));
+      targetY = Math.max(64, Math.min(H - 66, targetY));
       py += (targetY - py) * 0.25;
 
       if (frame >= spawnAt) {
         spawn();
-        var gap = 46 - Math.min(26, kills * 0.12);
-        spawnAt = frame + Math.max(18, gap) * (0.7 + Math.random() * 0.6);
+        var gap = 30 - Math.min(16, kills * 0.08);
+        spawnAt = frame + Math.max(10, gap) * (0.7 + Math.random() * 0.6);
       }
 
       if (frame - lastShot >= 7) {
         lastShot = frame;
-        bolts.push({ x: 118, y: py - 6, vx: 15, vy: -0.5 });
-        bolts.push({ x: 118, y: py + 8, vx: 15, vy: 0.5 });
+        bolts.push({ x: 118, y: py - 16, vx: 15, vy: -0.5 });
+        bolts.push({ x: 118, y: py - 2, vx: 15, vy: 0.5 });
       }
 
       if (cd.bomb > 0) cd.bomb--;
       if (cd.bolt2 > 0) cd.bolt2--;
       if (cd.meteor > 0) cd.meteor--;
+      if (cd.wave > 0) cd.wave--;
+      if (cd.freeze > 0) cd.freeze--;
+      if (freezeT > 0) freezeT--;
       if (frame % 12 === 0) updButtons();
 
       for (var bi = bolts.length - 1; bi >= 0; bi--) {
@@ -265,6 +305,21 @@
             hurt(en, 1);
             boom(b.x, b.y, 3, boltColor(), 2.5);
             break;
+          }
+        }
+      }
+
+      for (var wi = waves.length - 1; wi >= 0; wi--) {
+        var wv = waves[wi];
+        wv.x += 11;
+        if (wv.x > W + 40) { waves.splice(wi, 1); continue; }
+        for (var we = 0; we < enemies.length; we++) {
+          var wen = enemies[we];
+          if (wen.dead || wv.hit.indexOf(wen) >= 0) continue;
+          if (Math.abs(wen.x - wv.x) < 42 && Math.abs(wen.y - wv.y) < 98) {
+            wv.hit.push(wen);
+            hurt(wen, 3);
+            boom(wen.x, wen.y, 4, boltColor(), 3);
           }
         }
       }
@@ -287,8 +342,10 @@
       for (var i2 = enemies.length - 1; i2 >= 0; i2--) {
         var e2 = enemies[i2];
         if (e2.dead) { enemies.splice(i2, 1); continue; }
-        e2.x -= e2.sp;
-        e2.y += Math.sin(frame * 0.05 + e2.ph) * 0.5;
+        if (freezeT <= 0) {
+          e2.x -= e2.sp;
+          e2.y += Math.sin(frame * 0.05 + e2.ph) * 0.5;
+        }
         if (e2.x < 78) {
           hp -= e2.dmg;
           elHp.textContent = Math.max(0, hp);
@@ -350,12 +407,24 @@
       var en2 = enemies[ei2];
       ctx.font = en2.size + 'px serif';
       ctx.fillText(en2.e, en2.x, en2.y);
+      if (freezeT > 0) {
+        ctx.fillStyle = 'rgba(120,200,255,0.35)';
+        ctx.beginPath(); ctx.arc(en2.x, en2.y, en2.size / 2 + 4, 0, Math.PI * 2); ctx.fill();
+      }
       if (en2.maxhp > 1 || en2.boss) {
         ctx.fillStyle = '#3d2a5e';
         ctx.fillRect(en2.x - 24, en2.y - en2.size / 2 - 12, 48, 6);
         ctx.fillStyle = en2.boss ? '#ffb84d' : '#e5484d';
         ctx.fillRect(en2.x - 24, en2.y - en2.size / 2 - 12, 48 * Math.max(0, en2.hp) / en2.maxhp, 6);
       }
+    }
+    // waves
+    for (var wi2 = 0; wi2 < waves.length; wi2++) {
+      var wv2 = waves[wi2];
+      ctx.fillStyle = charKey === 'rateraru' ? 'rgba(255,107,107,0.4)' : 'rgba(199,125,255,0.4)';
+      ctx.beginPath(); ctx.ellipse(wv2.x, wv2.y, 16, 98, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = boltColor(); ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.ellipse(wv2.x, wv2.y, 16, 98, 0, 0, Math.PI * 2); ctx.stroke();
     }
     // bolts
     ctx.fillStyle = boltColor();
@@ -384,18 +453,52 @@
       ctx.beginPath(); ctx.arc(pp.x, pp.y, pp.r, 0, Math.PI * 2); ctx.fill();
     }
     ctx.globalAlpha = 1;
-    // player: face on a magic circle
-    var bobY = Math.sin(frame * 0.08) * 4;
-    ctx.strokeStyle = boltColor();
-    ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(84, py + bobY, 40, frame * 0.02, frame * 0.02 + Math.PI * 1.6); ctx.stroke();
-    ctx.beginPath(); ctx.arc(84, py + bobY, 46, -frame * 0.013, -frame * 0.013 + Math.PI * 1.3); ctx.stroke();
+    // player: 2-head chibi with a magic circle at the feet
+    var bobY = Math.sin(frame * 0.08) * 3;
+    var pcx = 84, feetY = py + 46 + bobY;
+    var cColP = charKey === 'rateraru' ? '#ff6b6b' : '#c77dff';
+    var cGlowP = charKey === 'rateraru' ? '#e0483d' : '#a04fd0';
+    ctx.save();
+    ctx.strokeStyle = cColP; ctx.lineWidth = 2.5;
+    ctx.shadowColor = cGlowP; ctx.shadowBlur = 9;
+    ctx.beginPath(); ctx.ellipse(pcx, feetY + 7, 44, 13, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(pcx, feetY + 7, 29, 8.5, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath();
+    for (var s5 = 0; s5 <= 5; s5++) {
+      var ang = frame * 0.03 + s5 * (Math.PI * 4 / 5);
+      var apx = pcx + Math.cos(ang) * 37, apy = feetY + 7 + Math.sin(ang) * 11;
+      if (s5 === 0) ctx.moveTo(apx, apy); else ctx.lineTo(apx, apy);
+    }
+    ctx.stroke();
+    ctx.restore();
+    var robe = charKey === 'rateraru' ? '#23232e' : '#2a1430';
+    var trim = charKey === 'rateraru' ? '#e5484d' : '#e8a2c0';
+    var topY = py - 4 + bobY;
+    ctx.fillStyle = robe;
+    ctx.beginPath();
+    ctx.moveTo(pcx - 13, topY); ctx.lineTo(pcx + 13, topY);
+    ctx.lineTo(pcx + 22, feetY); ctx.lineTo(pcx - 22, feetY);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = trim; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(pcx, topY + 2); ctx.lineTo(pcx, feetY - 2); ctx.stroke();
+    ctx.strokeStyle = robe; ctx.lineWidth = 7; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(pcx + 10, topY + 8); ctx.lineTo(pcx + 30, topY + 16); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pcx - 10, topY + 8); ctx.lineTo(pcx - 24, topY + 20); ctx.stroke();
+    ctx.strokeStyle = '#6b4a2a'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(pcx + 30, topY - 10); ctx.lineTo(pcx + 30, topY + 30); ctx.stroke();
+    ctx.fillStyle = cColP;
+    ctx.beginPath(); ctx.arc(pcx + 30, topY - 14, 6, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#17171f'; ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.moveTo(pcx - 8, feetY); ctx.lineTo(pcx - 9, feetY + 7); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pcx + 8, feetY); ctx.lineTo(pcx + 9, feetY + 7); ctx.stroke();
     var img = faceImg();
     if (img.complete && img.naturalWidth > 0) {
       ctx.save();
-      ctx.beginPath(); ctx.arc(84, py + bobY, 34, 0, Math.PI * 2); ctx.clip();
-      ctx.drawImage(img, 50, py + bobY - 34, 68, 68);
+      ctx.beginPath(); ctx.arc(pcx, py - 18 + bobY, 30, 0, Math.PI * 2); ctx.clip();
+      ctx.drawImage(img, pcx - 30, py - 48 + bobY, 60, 60);
       ctx.restore();
+      ctx.strokeStyle = trim; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(pcx, py - 18 + bobY, 30, 0, Math.PI * 2); ctx.stroke();
     }
     // floaters
     ctx.font = 'bold 17px sans-serif';
@@ -459,6 +562,10 @@
   btnBomb.addEventListener('click', castBomb);
   btnBolt2.addEventListener('click', castBolt2);
   btnMeteor.addEventListener('click', castMeteor);
+  btnWave.addEventListener('click', castWave);
+  btnFreeze.addEventListener('click', castFreeze);
+  var stageEl = document.querySelector('.stage');
+  stageEl.addEventListener('touchmove', function(e){ if (state === 'run') e.preventDefault(); }, { passive: false });
 
   function setY(e){
     var r = cv.getBoundingClientRect();
@@ -472,6 +579,8 @@
     if (e.key === 'j' || e.key === 'J') castBomb();
     if (e.key === 'k' || e.key === 'K') castBolt2();
     if (e.key === 'l' || e.key === 'L') castMeteor();
+    if (e.key === 'h' || e.key === 'H') castWave();
+    if (e.key === 'u' || e.key === 'U') castFreeze();
   });
   document.addEventListener('keyup', function(e){
     if (e.key === 'ArrowUp') keys.up = false;
