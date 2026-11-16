@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>詠唱メモリー | ミニゲーム | 魔王らてらる・魔王らて子 公式ファンサイト</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .stage{max-width:420px;margin:0 auto;text-align:center}
+  .pads{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:18px 0}
+  .pad{aspect-ratio:1.4;border-radius:16px;border:3px solid var(--line);font-size:2.6rem;cursor:pointer;background:#1b1430;-webkit-tap-highlight-color:transparent;transition:filter .1s, transform .1s}
+  .pad.lit{filter:brightness(2.1);transform:scale(1.04)}
+  .pad[data-i="0"]{border-color:#e5484d}
+  .pad[data-i="1"]{border-color:#4d9de5}
+  .pad[data-i="2"]{border-color:#e5c44d}
+  .pad[data-i="3"]{border-color:#57ab5a}
+  .hud{display:flex;gap:18px;justify-content:center;flex-wrap:wrap}
+  .hud b{font-size:1.3rem}
+  .start-btn{padding:12px 30px;border:none;border-radius:10px;background:var(--red);color:#fff;font-size:1.1rem;cursor:pointer}
+  .back-list{margin-top:28px;text-align:left}
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="inner">
+    <a class="logo" href="index.html">魔王<span>らてらる</span> × 魔王<span>らて子</span></a>
+    <nav class="main">
+      <a href="index.html">ホーム</a>
+      <a href="index.html#news">お知らせ</a>
+      <a href="board.html">ファン掲示板</a>
+      <a href="chat.html">AIチャット</a>
+      <a href="games.html" class="active">ミニゲーム</a>
+      <a href="secret.html">秘密基地</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <h1 class="page">詠唱メモリー</h1>
+  <p class="lead">光ったルーンの順番を覚えて、同じ順に唱えよう（タップ）。レベルが上がるほど長く、速くなります。</p>
+
+  <div class="stage">
+    <div class="pads">
+      <button type="button" class="pad" data-i="0">🔥</button>
+      <button type="button" class="pad" data-i="1">❄️</button>
+      <button type="button" class="pad" data-i="2">⚡</button>
+      <button type="button" class="pad" data-i="3">🌿</button>
+    </div>
+    <div class="hud">
+      <span>レベル <b id="level">0</b></span>
+      <span>ベスト <b id="best">0</b></span>
+    </div>
+    <p id="msg" style="min-height:1.8em">スタートを押すと詠唱が始まります</p>
+    <button type="button" class="start-btn" id="btnStart">スタート</button>
+  </div>
+
+  <div class="back-list">
+    <div class="menu-grid">
+      <a href="games.html"><div class="t">ミニゲーム一覧</div><div class="d">他のゲームも遊べます</div></a>
+    </div>
+  </div>
+</main>
+
+<footer class="site">
+  魔王らてらる・魔王らて子 公式ファンサイト（trailer-project.com）
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  var pads = Array.prototype.slice.call(document.querySelectorAll('.pad'));
+  var elLevel = document.getElementById('level'), elBest = document.getElementById('best'), elMsg = document.getElementById('msg');
+  var btn = document.getElementById('btnStart');
+  var FREQS = [392, 523, 659, 784];
+  var audioCtx = null;
+
+  var best = 0;
+  try { best = parseInt(localStorage.getItem('maouSimonBest') || '0', 10) || 0; } catch(e) {}
+  elBest.textContent = best;
+
+  var seq = [], inputIdx = 0, accepting = false, playing = false;
+
+  function beep(i){
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.frequency.value = FREQS[i];
+      o.type = 'sine';
+      g.gain.setValueAtTime(0.12, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(); o.stop(audioCtx.currentTime + 0.26);
+    } catch(e) {}
+  }
+
+  function light(i, ms){
+    pads[i].classList.add('lit');
+    beep(i);
+    setTimeout(function(){ pads[i].classList.remove('lit'); }, ms);
+  }
+
+  function playSeq(){
+    accepting = false;
+    elMsg.textContent = 'よく見て…';
+    var stepMs = Math.max(240, 470 - seq.length * 14);
+    seq.forEach(function(v, idx){
+      setTimeout(function(){ light(v, stepMs * 0.72); }, 420 + idx * stepMs);
+    });
+    setTimeout(function(){
+      accepting = true;
+      inputIdx = 0;
+      elMsg.textContent = 'あなたの番。同じ順に唱えて';
+    }, 420 + seq.length * stepMs + 120);
+  }
+
+  function nextLevel(){
+    seq.push(Math.floor(Math.random() * 4));
+    elLevel.textContent = seq.length;
+    playSeq();
+  }
+
+  function gameOver(){
+    playing = false;
+    accepting = false;
+    var lv = seq.length - 1;
+    if (lv > best) {
+      best = lv; elBest.textContent = best;
+      try { localStorage.setItem('maouSimonBest', String(best)); } catch(e) {}
+    }
+    elMsg.textContent = '詠唱失敗。レベル ' + lv + ' まで到達';
+    btn.textContent = 'もう一度';
+    btn.disabled = false;
+  }
+
+  pads.forEach(function(p){
+    p.addEventListener('click', function(){
+      if (!accepting || !playing) return;
+      var i = parseInt(p.dataset.i, 10);
+      light(i, 200);
+      if (i === seq[inputIdx]) {
+        inputIdx++;
+        if (inputIdx >= seq.length) {
+          accepting = false;
+          elMsg.textContent = '正解。次の詠唱へ';
+          setTimeout(nextLevel, 750);
+        }
+      } else {
+        gameOver();
+      }
+    });
+  });
+
+  btn.addEventListener('click', function(){
+    if (playing) return;
+    playing = true;
+    seq = [];
+    elLevel.textContent = '0';
+    btn.disabled = true;
+    btn.textContent = '詠唱中…';
+    nextLevel();
+  });
+})();
+</script>
+</body>
+</html>

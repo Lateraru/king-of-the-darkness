@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>積み上げ魔王城 | ミニゲーム | 魔王らてらる・魔王らて子 公式ファンサイト</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  canvas#game{width:100%;height:auto;display:block;background:#0b0817;border:2px solid var(--line);border-radius:12px;touch-action:none}
+  .game-ui{display:flex;gap:14px;align-items:center;margin-top:12px;flex-wrap:wrap}
+  .game-ui button{padding:10px 22px;border:none;border-radius:10px;background:var(--red);color:#fff;font-size:1rem;cursor:pointer}
+  .score-line b{font-size:1.25rem}
+  .back-list{margin-top:28px}
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="inner">
+    <a class="logo" href="index.html">魔王<span>らてらる</span> × 魔王<span>らて子</span></a>
+    <nav class="main">
+      <a href="index.html">ホーム</a>
+      <a href="index.html#news">お知らせ</a>
+      <a href="board.html">ファン掲示板</a>
+      <a href="chat.html">AIチャット</a>
+      <a href="games.html" class="active">ミニゲーム</a>
+      <a href="secret.html">秘密基地</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <h1 class="page">積み上げ魔王城</h1>
+  <p class="lead">左右に動く石をタイミングよく落として、魔王城を高く積み上げよう。はみ出した分は切り落とされます。</p>
+
+  <canvas id="game" width="900" height="440"></canvas>
+  <div class="game-ui">
+    <button type="button" id="btnAction">スタート</button>
+    <span class="score-line">高さ <b id="scoreNow">0</b> ／ ベスト <b id="scoreHigh">0</b></span>
+    <span id="flash" style="color:#57ab5a;font-weight:bold"></span>
+  </div>
+
+  <div class="back-list">
+    <div class="menu-grid">
+      <a href="games.html"><div class="t">ミニゲーム一覧</div><div class="d">他のゲームも遊べます</div></a>
+    </div>
+  </div>
+</main>
+
+<footer class="site">
+  魔王らてらる・魔王らて子 公式ファンサイト（trailer-project.com）
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  var W = 900, H = 440, BH = 30;
+  var canvas = document.getElementById('game');
+  var ctx = canvas.getContext('2d');
+  var elNow = document.getElementById('scoreNow'), elHigh = document.getElementById('scoreHigh'), elFlash = document.getElementById('flash');
+  var btn = document.getElementById('btnAction');
+
+  var best = 0;
+  try { best = parseInt(localStorage.getItem('maouStackBest') || '0', 10) || 0; } catch(e) {}
+  elHigh.textContent = best;
+
+  var state = 'ready';
+  var blocks = [], cur = null, dir = 1, speed = 3.2;
+
+  function reset(){
+    blocks = [{ x: W / 2 - 130, w: 260 }];
+    spawn();
+    elNow.textContent = '0';
+    elFlash.textContent = '';
+  }
+  function spawn(){
+    var prev = blocks[blocks.length - 1];
+    cur = { x: 0, w: prev.w };
+    dir = 1;
+    speed = 3.2 + blocks.length * 0.22;
+  }
+  function start(){ reset(); state = 'run'; btn.textContent = '落とす'; }
+
+  function drop(){
+    if (state === 'ready' || state === 'over') { start(); return; }
+    var prev = blocks[blocks.length - 1];
+    var left = Math.max(cur.x, prev.x);
+    var right = Math.min(cur.x + cur.w, prev.x + prev.w);
+    var overlap = right - left;
+    if (overlap <= 0) { gameOver(); return; }
+    var perfect = Math.abs(cur.x - prev.x) < 5;
+    if (perfect) {
+      blocks.push({ x: prev.x, w: prev.w });
+      elFlash.textContent = 'ぴったり';
+    } else {
+      blocks.push({ x: left, w: overlap });
+      elFlash.textContent = '';
+    }
+    elNow.textContent = blocks.length - 1;
+    if (blocks[blocks.length - 1].w < 8) { gameOver(); return; }
+    spawn();
+  }
+
+  function gameOver(){
+    state = 'over';
+    btn.textContent = 'もう一度';
+    var score = blocks.length - 1;
+    if (score > best) {
+      best = score; elHigh.textContent = best;
+      try { localStorage.setItem('maouStackBest', String(best)); } catch(e) {}
+    }
+  }
+
+  function step(){
+    if (state === 'run' && cur) {
+      cur.x += dir * speed;
+      if (cur.x <= 0) { cur.x = 0; dir = 1; }
+      if (cur.x + cur.w >= W) { cur.x = W - cur.w; dir = -1; }
+    }
+    draw();
+    requestAnimationFrame(step);
+  }
+
+  function draw(){
+    var g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#1a1033'); g.addColorStop(1, '#0b0817');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#e8e2f5';
+    ctx.beginPath(); ctx.arc(W - 120, 54, 22, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#1a1033';
+    ctx.beginPath(); ctx.arc(W - 132, 46, 18, 0, Math.PI * 2); ctx.fill();
+
+    var total = blocks.length + (state === 'run' ? 1 : 0);
+    var cam = Math.max(0, total - 11);
+    function yOf(level){ return H - 26 - (level - cam + 1) * BH; }
+
+    // ground
+    ctx.fillStyle = '#241739';
+    ctx.fillRect(0, H - 24, W, 24);
+    ctx.fillStyle = '#3d2a5e';
+    ctx.fillRect(0, H - 24, W, 3);
+
+    for (var i = 0; i < blocks.length; i++) {
+      if (i < cam) continue;
+      var b = blocks[i];
+      ctx.fillStyle = i % 2 ? '#4a3577' : '#3d2a5e';
+      ctx.fillRect(b.x, yOf(i), b.w, BH - 3);
+      ctx.fillStyle = i % 2 ? '#e5484d' : '#a06cd5';
+      ctx.fillRect(b.x, yOf(i), b.w, 4);
+    }
+    if (state === 'run' && cur) {
+      var lvl = blocks.length;
+      ctx.fillStyle = '#5d4396';
+      ctx.fillRect(cur.x, yOf(lvl), cur.w, BH - 3);
+      ctx.fillStyle = '#cfc4ee';
+      ctx.fillRect(cur.x, yOf(lvl), cur.w, 4);
+    }
+
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    if (state === 'ready') {
+      ctx.fillStyle = 'rgba(11,8,23,0.55)'; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 30px sans-serif';
+      ctx.fillText('積み上げ魔王城', W / 2, H / 2 - 14);
+      ctx.font = '18px sans-serif'; ctx.fillStyle = '#cfc4ee';
+      ctx.fillText('タップ／スペースキーで石を落とす', W / 2, H / 2 + 24);
+    } else if (state === 'over') {
+      ctx.fillStyle = 'rgba(11,8,23,0.62)'; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 32px sans-serif';
+      ctx.fillText('城は崩れた', W / 2, H / 2 - 24);
+      ctx.font = '20px sans-serif'; ctx.fillStyle = '#cfc4ee';
+      ctx.fillText('高さ ' + (blocks.length - 1) + ' ／ ベスト ' + best, W / 2, H / 2 + 14);
+    }
+  }
+
+  btn.addEventListener('click', drop);
+  canvas.addEventListener('pointerdown', function(e){ e.preventDefault(); drop(); });
+  document.addEventListener('keydown', function(e){
+    if (e.code === 'Space' || e.code === 'ArrowDown') {
+      var t = (e.target && e.target.tagName) || '';
+      if (t !== 'INPUT' && t !== 'TEXTAREA') { e.preventDefault(); drop(); }
+    }
+  });
+
+  reset();
+  state = 'ready';
+  requestAnimationFrame(step);
+})();
+</script>
+</body>
+</html>
