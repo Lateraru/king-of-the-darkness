@@ -42,14 +42,14 @@
 
 <main>
   <h1 class="page">ドラゴントースター</h1>
-  <p class="lead">らてまりチャンネルのショート動画「異世界ショッピング」で販売中のドラゴントースター「DRAGON BREATH」がゲームになりました。売りは最高温度1000°C。その火力で、パンをこんがり焼こう。</p>
+  <p class="lead">らてまりチャンネルのショート動画「異世界ショッピング」で販売中のドラゴントースター「DRAGON BREATH」がゲームになりました<br>売りは最高温度1000°C<br>その火力で、パンをこんがり焼こう</p>
 
   <section style="margin-top:24px">
     <div class="panel">
       <p style="margin-top:0"><strong>◾︎遊び方◾︎</strong></p>
       <p>らて子の注文（あっさり焼き／こんがり／よく焼き）に合わせて、「火を吹く」を押しっぱなしで温度を上げ、緑のゾーンで離そう</p>
-      <p>注文通りだと高得点。連続成功でコンボ倍率が付きます。足りないと生焼け、行き過ぎると真っ黒こげです</p>
-      <p style="margin-bottom:0">ドラゴンのくしゃみには予兆（⚠ムズムズ…）があります。離すか、跳ね上がりを見越して耐えるかは駆け引きです</p>
+      <p>注文通りだと高得点<br>連続成功でコンボ倍率が付きます<br>足りないと生焼け、行き過ぎると真っ黒こげです</p>
+      <p style="margin-bottom:0">ドラゴンのくしゃみには予兆（⚠ムズムズ…）があります<br>離すか、跳ね上がりを見越して耐えるかは駆け引きです</p>
     </div>
   </section>
 
@@ -107,8 +107,8 @@
     { name: 'こんがり', lo: 620, hi: 780 },
     { name: 'よく焼き', lo: 800, hi: 920 }
   ];
-  var K_HIT = ['注文通りだぉ。さすがだぉ', 'ぴったりだぉ。らて子も嬉しいぉ', 'その焼き加減、完璧だぉ'];
-  var K_MISS = ['注文と違うぉ。でも美味しそうだぉ', '惜しいぉ。次はぴったり焼くぉ', 'らて子はねぇ、これはこれでありだぉ'];
+  var K_HIT = ['注文通りだぉさすがだぉ', 'ぴったりだぉらて子も嬉しいぉ', 'その焼き加減、完璧だぉ'];
+  var K_MISS = ['注文と違うぉでも美味しそうだぉ', '惜しいぉ次はぴったり焼くぉ', 'らて子はねぇ、これはこれでありだぉ'];
   function kPick(a){ return a[Math.floor(Math.random() * a.length)]; }
 
   function nextSlice(){
@@ -152,16 +152,16 @@
     } else {
       combo = 0;
       if (T >= 950) {
-        pts = 0; label = '真っ黒こげ。0 点。火災保険のご案内をどうぞ'; color = '#e5484d'; sceneImg.src = IMG_BURNT;
+        pts = 0; label = '真っ黒こげ0 点火災保険のご案内をどうぞ'; color = '#e5484d'; sceneImg.src = IMG_BURNT;
       } else if (T < order.lo) {
         var gapL = order.lo - T;
         pts = gapL <= 70 ? 40 : 10;
-        label = (gapL <= 70 ? 'もうちょっと（あと少し）。' : '生焼け。') + pts + ' 点　らて子：' + kPick(K_MISS);
+        label = (gapL <= 70 ? 'もうちょっと（あと少し）' : '生焼け') + pts + ' 点　らて子：' + kPick(K_MISS);
         color = '#d99a3d'; sceneImg.src = IMG_MAIN;
       } else {
         var gapH = T - order.hi;
         pts = gapH <= 70 ? 40 : 10;
-        label = (gapH <= 70 ? 'もうちょっと（焼き過ぎ）。' : '焼き過ぎ。') + pts + ' 点　らて子：' + kPick(K_MISS);
+        label = (gapH <= 70 ? 'もうちょっと（焼き過ぎ）' : '焼き過ぎ') + pts + ' 点　らて子：' + kPick(K_MISS);
         color = '#d99a3d'; sceneImg.src = IMG_FIRE;
       }
     }
@@ -178,6 +178,7 @@
         try { localStorage.setItem('maouToastBest', String(best)); } catch(e) {}
       }
       btnStart.textContent = 'もう一度';
+      showOverNav();
     } else {
       btnFire.textContent = '次のパンへ';
       btnFire.disabled = false;
@@ -201,7 +202,7 @@
           sneezed = true;
           temp = Math.min(1000, temp + 120);
           warnLine.style.display = 'none';
-          elResult.textContent = 'くしゅん。温度が跳ね上がった';
+          elResult.textContent = 'くしゅん温度が跳ね上がった';
           elResult.style.color = '#e5484d';
         }
       }
@@ -246,5 +247,20 @@
 <script>
 document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive: false });
 </script>
+
+<div id="overNav" style="display:none;text-align:center;margin:16px auto;padding:14px;border:1px solid #a06cd5;border-radius:12px;max-width:560px">
+<p style="margin:4px 0;font-weight:bold">おつかれさまでした</p>
+<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px">
+<button type="button" onclick="location.reload()">🔁 また遊ぶ</button>
+<a href="games.html"><button type="button">🎮 違うゲームをする</button></a>
+<a href="index.html"><button type="button">🏰 トップへ戻る</button></a>
+<a href="https://youtu.be/YL26sVq0rjE" target="_blank" rel="noopener"><button type="button">🎵 404あたし未検出</button></a>
+<a href="https://store.line.me/stickershop/author/6590694/ja" target="_blank" rel="noopener"><button type="button">🛒 魔王さん制作のLINEスタンプを買う</button></a>
+</div>
+</div>
+<script>
+function showOverNav(){ var n = document.getElementById('overNav'); if (n) n.style.display = 'block'; }
+</script>
+<div style="text-align:center;margin:22px 0 6px"><a href="index.html" style="color:#c9a227;font-weight:bold">トップページに戻る</a></div>
 </body>
 </html>

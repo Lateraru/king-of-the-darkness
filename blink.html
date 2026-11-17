@@ -39,7 +39,7 @@
 
 <main>
   <h1 class="page">高速まばたき対決</h1>
-  <p class="lead">らて子と高速まばたき対決。10秒間、顔をタップし続けて何回まばたきできるか。まばたきは右目・左目・両目がランダム。終わったら何回つむったかのクイズが出ます</p>
+  <p class="lead">らて子と高速まばたき対決<br>10秒間、顔をタップし続けて何回まばたきできるか<br>まばたきは右目・左目・両目がランダム<br>終わったら何回つむったかのクイズが出ます</p>
 
   <div class="stage">
     <button type="button" class="face-btn" id="faceBtn"><img id="face" alt="魔王らて子"></button>
@@ -48,7 +48,7 @@
       <span>まばたき <b id="count">0</b> 回</span>
       <span>ベスト <b id="best">0</b> 回</span>
     </div>
-    <p id="msg" style="min-height:1.8em">下のボタンでスタート。始まったら顔を連打</p>
+    <p id="msg" style="min-height:1.8em">下のボタンでスタート<br>始まったら顔を連打</p>
     <button type="button" class="start-btn" id="btnStart">スタート</button>
     <div class="quiz" id="quiz" style="display:none">
       <p style="margin:0 0 6px"><strong>クイズ：どっちの目を何回つむった？</strong>（見た目の左右で答えてね）</p>
@@ -98,6 +98,7 @@
 
   function finish(){
     playing = false;
+    showOverNav();
     clearInterval(tickTimer);
     elTime.style.width = '0%';
     face.src = IMG_OPEN; face.style.transform = '';
@@ -105,7 +106,7 @@
       best = count; elBest.textContent = best;
       try { localStorage.setItem('maouBlinkBest', String(best)); } catch(e) {}
     }
-    elMsg.textContent = count + ' 回。称号「' + rank(count) + '」。らて子「せーのぉ、よくがんばったぉ♡」';
+    elMsg.textContent = count + ' 回称号「' + rank(count) + '」らて子「せーのぉ、よくがんばったぉ♡」';
     var qz = document.getElementById('quiz');
     qz.style.display = 'block';
     document.getElementById('qR').value = '';
@@ -123,7 +124,7 @@
     cntR = 0; cntL = 0; cntB = 0;
     document.getElementById('quiz').style.display = 'none';
     elCount.textContent = '0';
-    elMsg.textContent = 'いくよ。せーのぉ';
+    elMsg.textContent = 'いくよせーのぉ';
     endAt = Date.now() + 10000;
     playing = true;
     btn.disabled = true;
@@ -167,5 +168,20 @@
 <script>
 document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive: false });
 </script>
+
+<div id="overNav" style="display:none;text-align:center;margin:16px auto;padding:14px;border:1px solid #a06cd5;border-radius:12px;max-width:560px">
+<p style="margin:4px 0;font-weight:bold">おつかれさまでした</p>
+<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px">
+<button type="button" onclick="location.reload()">🔁 また遊ぶ</button>
+<a href="games.html"><button type="button">🎮 違うゲームをする</button></a>
+<a href="index.html"><button type="button">🏰 トップへ戻る</button></a>
+<a href="https://youtu.be/YL26sVq0rjE" target="_blank" rel="noopener"><button type="button">🎵 404あたし未検出</button></a>
+<a href="https://store.line.me/stickershop/author/6590694/ja" target="_blank" rel="noopener"><button type="button">🛒 魔王さん制作のLINEスタンプを買う</button></a>
+</div>
+</div>
+<script>
+function showOverNav(){ var n = document.getElementById('overNav'); if (n) n.style.display = 'block'; }
+</script>
+<div style="text-align:center;margin:22px 0 6px"><a href="index.html" style="color:#c9a227;font-weight:bold">トップページに戻る</a></div>
 </body>
 </html>

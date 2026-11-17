@@ -43,7 +43,7 @@
 
 <main>
   <h1 class="page">魔王と勝負</h1>
-  <p class="lead">じゃんけん勝負。相手を選んで、手を出そう。連勝記録に挑戦です。</p>
+  <p class="lead">じゃんけん勝負<br>相手を選んで、手を出そう<br>連勝記録に挑戦です</p>
 
   <div class="char-select">
     <button type="button" class="char-btn sel-r" id="btnRateraru"><img id="imgRateraru" alt="魔王らてらる">魔王らてらる</button>
@@ -55,7 +55,7 @@
       <img id="oppImg" alt="対戦相手">
       <div class="hand" id="oppHand">❓</div>
     </div>
-    <p class="voice" id="voice">最初はグー。じゃんけん…</p>
+    <p class="voice" id="voice">最初はグー<br>じゃんけん…</p>
     <div class="hands">
       <button type="button" data-hand="0" title="グー">✊</button>
       <button type="button" data-hand="1" title="チョキ">✌️</button>
@@ -92,14 +92,14 @@
   var NAMES = ['グー', 'チョキ', 'パー'];
   var LINES = {
     rateraru: {
-      win: 'ふふ、魔王の勝ちだ。当然だな',
+      win: 'ふふ、魔王の勝ちだ当然だな',
       lose: '魔王に勝てるとは、なかなかやるな',
-      draw: '互角か。もう一勝負だ'
+      draw: '互角かもう一勝負だ'
     },
     rateko: {
-      win: 'らて子の勝ちだぉ。えっへん♡',
-      lose: 'つ、強いのだ。もう一回しよ',
-      draw: 'あいこだぉ。次で決めよ'
+      win: 'らて子の勝ちだぉえっへん♡',
+      lose: 'つ、強いのだもう一回しよ',
+      draw: 'あいこだぉ次で決めよ'
     }
   };
   var opp = 'rateraru';
@@ -120,7 +120,7 @@
     document.getElementById('btnRateraru').className = 'char-btn' + (key === 'rateraru' ? ' sel-r' : '');
     document.getElementById('btnRateko').className = 'char-btn' + (key === 'rateko' ? ' sel-p' : '');
     oppHand.textContent = '❓';
-    voice.textContent = '最初はグー。じゃんけん…';
+    voice.textContent = '最初はグーじゃんけん…';
   }
   document.getElementById('btnRateraru').addEventListener('click', function(){ selectOpp('rateraru'); });
   document.getElementById('btnRateko').addEventListener('click', function(){ selectOpp('rateko'); });
@@ -137,7 +137,7 @@
         draw++;
         oppImg.src = FACES[opp].draw;
         line = LINES[opp].draw;
-        voice.textContent = 'あいこ。' + line;
+        voice.textContent = 'あいこ' + line;
       } else if (diff === 2) { // you win: 0>1, 1>2, 2>0 -> (you-cpu+3)%3 == 2
         win++;
         oppImg.src = FACES[opp].lose;
@@ -148,13 +148,14 @@
           elBest.textContent = bestStreak;
         }
         line = LINES[opp].lose;
-        voice.textContent = 'あなたの勝ち。' + line;
+        voice.textContent = 'あなたの勝ち' + line;
       } else {
         lose++;
         oppImg.src = FACES[opp].win;
         streak = 0;
+        showOverNav();
         line = LINES[opp].win;
-        voice.textContent = '相手の勝ち。' + line;
+        voice.textContent = '相手の勝ち' + line;
       }
       oppImg.classList.remove('pop'); void oppImg.offsetWidth; oppImg.classList.add('pop');
       elStreak.textContent = streak;
@@ -163,5 +164,20 @@
   });
 })();
 </script>
+
+<div id="overNav" style="display:none;text-align:center;margin:16px auto;padding:14px;border:1px solid #a06cd5;border-radius:12px;max-width:560px">
+<p style="margin:4px 0;font-weight:bold">おつかれさまでした</p>
+<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px">
+<button type="button" onclick="location.reload()">🔁 また遊ぶ</button>
+<a href="games.html"><button type="button">🎮 違うゲームをする</button></a>
+<a href="index.html"><button type="button">🏰 トップへ戻る</button></a>
+<a href="https://youtu.be/YL26sVq0rjE" target="_blank" rel="noopener"><button type="button">🎵 404あたし未検出</button></a>
+<a href="https://store.line.me/stickershop/author/6590694/ja" target="_blank" rel="noopener"><button type="button">🛒 魔王さん制作のLINEスタンプを買う</button></a>
+</div>
+</div>
+<script>
+function showOverNav(){ var n = document.getElementById('overNav'); if (n) n.style.display = 'block'; }
+</script>
+<div style="text-align:center;margin:22px 0 6px"><a href="index.html" style="color:#c9a227;font-weight:bold">トップページに戻る</a></div>
 </body>
 </html>
