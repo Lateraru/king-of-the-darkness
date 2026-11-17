@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>お買い物 | 魔王らてらる・魔王らて子 公式ファンサイト</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .gateway{display:block;border-radius:14px;padding:26px 20px;margin-top:16px;text-align:center;color:#fff}
+  .gateway .big{font-size:1.5rem;font-weight:bold}
+  .gateway .sub{margin-top:6px;font-size:.95rem;opacity:.92}
+  .rakuten{background:#8f0000;border:2px solid #bf0000}
+  .yahoo{background:#7a0f2b;border:2px solid #ff0033}
+  .soon{display:inline-block;background:#e8b34b;color:#1a1033;font-weight:bold;border-radius:999px;padding:2px 14px;margin-top:10px;font-size:.9rem}
+  .share-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+  .share-row button{flex:1;min-width:140px;padding:12px;border:2px solid var(--purple);border-radius:12px;background:#3d2a5e;color:#fff;font-size:1rem;cursor:pointer}
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="inner">
+    <a class="logo" href="index.html">魔王<span>らてらる</span> × 魔王<span style="color:#a06cd5">らて子</span></a>
+    <nav class="main">
+      <a href="index.html">ホーム</a>
+      <a href="index.html#news">お知らせ</a>
+      <a href="board.html">ファン掲示板</a>
+      <a href="chat.html">AIチャット</a>
+      <a href="games.html">ミニゲーム</a>
+      <a href="secret.html">秘密基地</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<h1 class="page">お買い物</h1>
+<p class="lead">お買い物の前に、ここに寄ってください<br>
+楽天市場・Yahoo!ショッピング・Amazonへの入口を、このページにまとめます</p>
+
+<div class="card">
+<h2>このページの仕組み</h2>
+<p>買い物の前にここから楽天市場・Yahoo!ショッピング・Amazonへ行ってもらえると、そのお買い物の一部が魔王城の運営の助けになります<br>
+買う人の値段は変わりません　いつものお買い物の、入口だけここに変えてもらう作戦です<br>
+公開時には、広告（PR）であることをこのページに明記します</p>
+<p><span class="soon">現在は準備中です　入口は近日公開します</span></p>
+</div>
+
+<div class="gateway rakuten">
+<div class="big">楽天市場</div>
+<div class="sub">いつものお買い物はここから</div>
+<div><span class="soon">準備中</span></div>
+</div>
+
+<div class="gateway" style="background:#7a4a00;border:2px solid #ff9900">
+<div class="big">Amazon</div>
+<div class="sub">なんでも揃う定番はここから</div>
+<div><span class="soon">準備中</span></div>
+</div>
+
+<div class="gateway yahoo">
+<div class="big">Yahoo!ショッピング</div>
+<div class="sub">PayPay派の人はここから</div>
+<div><span class="soon">準備中</span></div>
+</div>
+
+<div class="card">
+<h2>魔王様の愛用品</h2>
+<p>実際に使っている物を、ひと言コメント付きで紹介します<br>
+<span class="soon">準備中です</span></p>
+</div>
+
+<div class="card">
+<h2>📣 このサイトを知り合いに教える</h2>
+<p>ミニゲームと画像便利ツールがある、魔王らてらる・魔王らて子の公式ファンサイトです</p>
+<div class="share-row">
+<button type="button" id="shareBtn">📤 シェアする</button>
+<button type="button" id="lineBtn">LINEで送る</button>
+<button type="button" id="xBtn">Xで教える</button>
+<button type="button" id="copyBtn">URLをコピー</button>
+</div>
+<p id="shareMsg"></p>
+</div>
+</main>
+
+<footer class="site">
+  魔王らてらる・魔王らて子 公式ファンサイト（trailer-project.com）
+</footer>
+
+<div style="text-align:center;margin:22px 0 6px"><a href="index.html" style="color:#c9a227;font-weight:bold">トップページに戻る</a></div>
+<script>
+var SITE_URL = 'https://king-of-the-darkness.trailer-project.com/';
+var SHARE_TEXT = '魔王らてらる・魔王らて子の公式ファンサイト　ミニゲームと画像便利ツールがあります';
+document.getElementById('shareBtn').addEventListener('click', function(){
+  if (navigator.share) { navigator.share({ title: document.title, text: SHARE_TEXT, url: SITE_URL }).catch(function(){}); }
+  else { document.getElementById('shareMsg').textContent = 'お使いの環境ではシェア機能が使えません　「URLをコピー」をお使いください'; }
+});
+document.getElementById('lineBtn').addEventListener('click', function(){
+  window.open('https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(SITE_URL) + '&text=' + encodeURIComponent(SHARE_TEXT), '_blank');
+});
+document.getElementById('xBtn').addEventListener('click', function(){
+  window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(SHARE_TEXT) + '&url=' + encodeURIComponent(SITE_URL), '_blank');
+});
+document.getElementById('copyBtn').addEventListener('click', function(){
+  var done = function(){ document.getElementById('shareMsg').textContent = 'URLをコピーしました'; };
+  if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(SITE_URL).then(done).catch(function(){ document.getElementById('shareMsg').textContent = SITE_URL; }); }
+  else { document.getElementById('shareMsg').textContent = SITE_URL; }
+});
+</script>
+</body>
+</html>

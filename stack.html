@@ -17,7 +17,7 @@
 
 <header class="site">
   <div class="inner">
-    <a class="logo" href="index.html">魔王<span>らてらる</span> × 魔王<span>らて子</span></a>
+    <a class="logo" href="index.html">魔王<span>らてらる</span> × 魔王<span style="color:#a06cd5">らて子</span></a>
     <nav class="main">
       <a href="index.html">ホーム</a>
       <a href="index.html#news">お知らせ</a>
@@ -195,11 +195,19 @@
 <a href="games.html"><button type="button">🎮 違うゲームをする</button></a>
 <a href="index.html"><button type="button">🏰 トップへ戻る</button></a>
 <a href="https://youtu.be/YL26sVq0rjE" target="_blank" rel="noopener"><button type="button">🎵 404あたし未検出</button></a>
+<a href="https://youtu.be/6c3PI1Vy3Nc" target="_blank" rel="noopener"><button type="button">🎧 らてらるのヒーリング動画</button></a>
 <a href="https://store.line.me/stickershop/author/6590694/ja" target="_blank" rel="noopener"><button type="button">🛒 魔王さん制作のLINEスタンプを買う</button></a>
+<button type="button" onclick="shareSite()">📣 このサイトを知り合いに教える</button>
 </div>
 </div>
 <script>
 function showOverNav(){ var n = document.getElementById('overNav'); if (n) n.style.display = 'block'; }
+function shareSite(){
+  var url = 'https://king-of-the-darkness.trailer-project.com/';
+  var text = '魔王らてらる・魔王らて子の公式ファンサイト　ミニゲームと画像便利ツールがあります';
+  if (navigator.share) { navigator.share({ title: document.title, text: text, url: url }).catch(function(){}); }
+  else { window.open('https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(url), '_blank'); }
+}
 </script>
 <div style="text-align:center;margin:22px 0 6px"><a href="index.html" style="color:#c9a227;font-weight:bold">トップページに戻る</a></div>
 </body>

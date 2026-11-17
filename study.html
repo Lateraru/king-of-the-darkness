@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>お勉強クイズ | ミニゲーム | 魔王らてらる・魔王らて子 公式ファンサイト</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .stage{max-width:560px;margin:0 auto;text-align:center}
+  .qbox{border:1px solid #3a3358;border-radius:12px;padding:18px;background:#17142a;margin-top:16px}
+  .qtext{font-size:1.25rem;font-weight:bold;line-height:1.6;min-height:2.4em}
+  .choices{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+  .choices button{padding:12px;font-size:1.05rem;border-radius:10px;border:2px solid var(--purple);background:#1b1430;color:inherit;cursor:pointer}
+  .choices button.right{border-color:#57cc6a;background:#14301a}
+  .choices button.wrong{border-color:#e5383b;background:#301414}
+  .choices button:disabled{cursor:default;opacity:.92}
+  .explain{margin-top:12px;line-height:1.7;text-align:left;background:#100d20;border-radius:10px;padding:10px 12px;display:none}
+  .hud{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+  select,button.act{background:#3d2a5e;color:#fff;border:none;border-radius:10px;padding:9px 18px;font-size:1rem;cursor:pointer}
+  select{background:#100d20;border:1px solid #3a3358}
+  .back-list{margin-top:28px;text-align:left}
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="inner">
+    <a class="logo" href="index.html">魔王<span>らてらる</span> × 魔王<span style="color:#a06cd5">らて子</span></a>
+    <nav class="main">
+      <a href="index.html">ホーム</a>
+      <a href="index.html#news">お知らせ</a>
+      <a href="board.html">ファン掲示板</a>
+      <a href="chat.html">AIチャット</a>
+      <a href="games.html" class="active">ミニゲーム</a>
+      <a href="secret.html">秘密基地</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="stage">
+<h1>お勉強クイズ</h1>
+<p>遊びながらお勉強できる、3択クイズです<br>
+答えのあとに解説も出ます</p>
+<div class="hud"><span>ベスト：<b id="best">―</b></span></div>
+<div>
+<select id="catSel">
+<option value="mix">ミックス</option>
+<option value="math">算数</option>
+<option value="pref">都道府県</option>
+<option value="science">理科</option>
+<option value="english">英語</option>
+<option value="social">社会・歴史</option>
+<option value="kanji">漢字の読み</option>
+</select>
+<button class="act" id="startBtn" type="button">クイズスタート（10問）</button>
+</div>
+<div class="qbox" id="qbox" style="display:none">
+<div class="hud"><span id="prog"></span><span id="score"></span></div>
+<div class="qtext" id="qtext"></div>
+<div class="choices" id="choices"></div>
+<div class="explain" id="explain"></div>
+<div style="margin-top:12px"><button class="act" id="nextBtn" type="button" style="display:none">次の問題へ</button></div>
+</div>
+<div id="overNav" style="display:none;text-align:center;margin:16px auto;padding:14px;border:1px solid #a06cd5;border-radius:12px;max-width:560px">
+<p style="margin:4px 0;font-weight:bold">おつかれさまでした</p>
+<p id="studyResult" style="margin:4px 0"></p>
+<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px">
+<button type="button" onclick="location.reload()">🔁 また遊ぶ</button>
+<a href="games.html"><button type="button">🎮 違うゲームをする</button></a>
+<a href="index.html"><button type="button">🏰 トップへ戻る</button></a>
+<a href="https://youtu.be/YL26sVq0rjE" target="_blank" rel="noopener"><button type="button">🎵 404あたし未検出</button></a>
+<a href="https://youtu.be/6c3PI1Vy3Nc" target="_blank" rel="noopener"><button type="button">🎧 らてらるのヒーリング動画</button></a>
+<a href="https://store.line.me/stickershop/author/6590694/ja" target="_blank" rel="noopener"><button type="button">🛒 魔王さん制作のLINEスタンプを買う</button></a>
+<button type="button" onclick="shareSite()">📣 このサイトを知り合いに教える</button>
+</div>
+</div>
+  <div class="back-list">
+    <p><a href="games.html">← ミニゲーム一覧に戻る</a></p>
+  </div>
+</div>
+</main>
+
+<div style="text-align:center;margin:22px 0 6px"><a href="index.html" style="color:#c9a227;font-weight:bold">トップページに戻る</a></div>
+<script>
+function showOverNav(){ var n = document.getElementById('overNav'); if (n) n.style.display = 'block'; }
+function shareSite(){
+  var url = 'https://king-of-the-darkness.trailer-project.com/';
+  var text = '魔王らてらる・魔王らて子の公式ファンサイト　ミニゲームと画像便利ツールがあります';
+  if (navigator.share) { navigator.share({ title: document.title, text: text, url: url }).catch(function(){}); }
+  else { window.open('https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(url), '_blank'); }
+}
+</script>
+<script>
+function $(id){ return document.getElementById(id); }
+function rnd(min, max){ return Math.floor(Math.random() * (max - min + 1)) + min; }
+function shuffle(arr){ var a = arr.slice(); for (var i = a.length - 1; i > 0; i--){ var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+
+var SCIENCE = [
+['水が沸騰する温度は？','100℃',['80℃','120℃'],'ふつうの気圧では、水は100℃でぐつぐつ沸騰します'],
+['植物が光合成で出す気体は？','酸素',['二酸化炭素','窒素'],'植物は日光で栄養を作り（光合成）、酸素を出します'],
+['磁石のN極とS極を近づけると？','引き合う',['反発する','何も起きない'],'違う極どうしは引き合い、同じ極どうしは反発します'],
+['月が地球のまわりを1周する期間は？','約1か月',['約1週間','約1年'],'月は約27日で地球を1周します　だから毎月、満ち欠けがくり返されます'],
+['人の体で一番大きな内臓は？','肝臓',['心臓','肺'],'肝臓は体の中で一番大きな内臓で、栄養をためたり毒を分解したりします'],
+['音が一番速く伝わるのはどこ？','水中',['空気中','真空中'],'音は真空中では伝わりません　水の中では空気中より速く伝わります'],
+['氷が水に浮くのはなぜ？','水より密度が小さいから',['水より重いから','空気がたくさん入っているから'],'氷は水より密度が小さい（軽い）ので浮きます'],
+['地球が太陽のまわりを1周する期間は？','約1年',['約1か月','約10年'],'地球は約365日で太陽を1周します　これが1年です'],
+['はさみが使っている仕組みは？','てこの仕組み',['磁石の仕組み','電気の仕組み'],'はさみは、てこの仕組みで小さな力を大きくしています'],
+['昆虫の足の数は？','6本',['8本','4本'],'昆虫は足が6本です　クモは8本なので昆虫ではありません'],
+['水を電気分解すると出る気体は？','水素と酸素',['窒素と酸素','二酸化炭素だけ'],'水は水素と酸素からできています'],
+['種が芽を出すのに必要なものは？','水・空気・適当な温度',['日光・肥料・砂糖','土・砂糖水・光'],'発芽には水と空気と適当な温度の3つが必要です'],
+['季節が変わる一番の理由は？','地球の軸が傾いているから',['太陽が近づいたり遠のいたりするから','月の引力のせい'],'地軸の傾きで、日光の当たり方が変わるため季節が生まれます'],
+['鉄とアルミニウム、磁石につくのは？','鉄',['アルミニウム','両方つく'],'磁石につく金属は限られていて、アルミニウムはつきません']
+];
+var ENGLISH = [
+['「りんご」を英語で言うと？','apple',['orange','banana'],'apple は りんご、orange は みかん・オレンジ、banana は バナナです'],
+['「犬」を英語で言うと？','dog',['cat','bird'],'dog は 犬、cat は 猫、bird は 鳥です'],
+['「ありがとう」を英語で言うと？','Thank you',['Good morning','Goodbye'],'Thank you は「ありがとう」　Good morning は「おはよう」です'],
+['「月曜日」を英語で言うと？','Monday',['Friday','Sunday'],'Monday は月曜日、Friday は金曜日、Sunday は日曜日です'],
+['「赤」を英語で言うと？','red',['blue','green'],'red は赤、blue は青、green は緑です'],
+['「本」を英語で言うと？','book',['pen','desk'],'book は本、pen はペン、desk は机です'],
+['「泳ぐ」を英語で言うと？','swim',['run','jump'],'swim は泳ぐ、run は走る、jump は跳ぶです'],
+['「うれしい」を英語で言うと？','happy',['sad','angry'],'happy は うれしい、sad は かなしい、angry は おこっている、です'],
+['「学校」を英語で言うと？','school',['hospital','station'],'school は学校、hospital は病院、station は駅です'],
+['「雨」を英語で言うと？','rain',['snow','wind'],'rain は雨、snow は雪、wind は風です'],
+['「10」を英語で言うと？','ten',['five','eight'],'ten は10、five は5、eight は8です'],
+['「友達」を英語で言うと？','friend',['teacher','family'],'friend は友達、teacher は先生、family は家族です']
+];
+var SOCIAL = [
+['日本で一番長い川は？','信濃川',['利根川','石狩川'],'信濃川は全長367kmで日本一長い川です'],
+['日本で一番高い山は？','富士山',['北岳','槍ヶ岳'],'富士山の高さは3,776mです'],
+['江戸幕府を開いた人は？','徳川家康',['織田信長','豊臣秀吉'],'徳川家康が1603年に江戸幕府を開きました'],
+['日本の都道府県の数は？','47',['45','50'],'都道府県は全部で47あります'],
+['日本で一番面積が大きい都道府県は？','北海道',['岩手県','長野県'],'北海道は日本の面積の約22%を占めます'],
+['日本国憲法が施行された年は？','1947年',['1945年','1960年'],'日本国憲法は1947年5月3日に施行されました'],
+['初代の内閣総理大臣は？','伊藤博文',['大隈重信','桂太郎'],'伊藤博文が1885年に初代の総理大臣になりました'],
+['日本で一番人口が多い都道府県は？','東京都',['大阪府','神奈川県'],'東京都の人口は約1,400万人です'],
+['聖徳太子と関わりが深いお寺は？','法隆寺',['東大寺','清水寺'],'法隆寺は世界最古の木造建築として知られます'],
+['世界で一番大きな大陸は？','ユーラシア大陸',['アフリカ大陸','北アメリカ大陸'],'アジアとヨーロッパを合わせたユーラシア大陸が最大です']
+];
+var KANJI = [
+['「相撲」の読みは？','すもう',['そうぼく','あいす'],'相撲（すもう）は日本の国技とされます'],
+['「胡瓜」の読みは？','きゅうり',['なす','かぼちゃ'],'胡瓜（きゅうり）は夏野菜の代表です'],
+['「土産」の読みは？','みやげ',['どさん','つちうま'],'土産（みやげ）は旅先で買う贈り物です'],
+['「欠伸」の読みは？','あくび',['けっしん','せきしん'],'欠伸（あくび）は眠い時に出ます'],
+['「眼鏡」の読みは？','めがね',['がんきょう','まなこ'],'眼鏡（めがね）は目を助ける道具です'],
+['「海月」の読みは？','くらげ',['うみつき','かいげつ'],'海月（くらげ）は海を漂う生き物です'],
+['「河馬」の読みは？','かば',['かうま','こうま'],'河馬（かば）はアフリカの川に住みます'],
+['「熊猫」の読みは？','パンダ',['くまねこ','ゆうびょう'],'熊猫（パンダ）は中国の山に住む動物です'],
+['「心太」の読みは？','ところてん',['しんた','こころふと'],'心太（ところてん）は天草から作る食べ物です'],
+['「紫陽花」の読みは？','あじさい',['しようか','むらさきはな'],'紫陽花（あじさい）は梅雨の花です'],
+['「草履」の読みは？','ぞうり',['そうり','くさり'],'草履（ぞうり）は和服の履き物です'],
+['「蒲公英」の読みは？','たんぽぽ',['かまこうえい','ほこうえい'],'蒲公英（たんぽぽ）は春の野花です']
+];
+var PREFS47 = [['北海道','札幌市'],['青森県','青森市'],['岩手県','盛岡市'],['宮城県','仙台市'],['秋田県','秋田市'],['山形県','山形市'],['福島県','福島市'],['茨城県','水戸市'],['栃木県','宇都宮市'],['群馬県','前橋市'],['埼玉県','さいたま市'],['千葉県','千葉市'],['東京都','新宿区'],['神奈川県','横浜市'],['新潟県','新潟市'],['富山県','富山市'],['石川県','金沢市'],['福井県','福井市'],['山梨県','甲府市'],['長野県','長野市'],['岐阜県','岐阜市'],['静岡県','静岡市'],['愛知県','名古屋市'],['三重県','津市'],['滋賀県','大津市'],['京都府','京都市'],['大阪府','大阪市'],['兵庫県','神戸市'],['奈良県','奈良市'],['和歌山県','和歌山市'],['鳥取県','鳥取市'],['島根県','松江市'],['岡山県','岡山市'],['広島県','広島市'],['山口県','山口市'],['徳島県','徳島市'],['香川県','高松市'],['愛媛県','松山市'],['高知県','高知市'],['福岡県','福岡市'],['佐賀県','佐賀市'],['長崎県','長崎市'],['熊本県','熊本市'],['大分県','大分市'],['宮崎県','宮崎市'],['鹿児島県','鹿児島市'],['沖縄県','那覇市']];
+
+function mathQuestion(){
+  var kind = ['add', 'sub', 'mul', 'div'][rnd(0, 3)];
+  var q, ans;
+  if (kind === 'add'){ var a = rnd(12, 98), b = rnd(12, 98); q = a + ' + ' + b; ans = a + b; }
+  else if (kind === 'sub'){ var a2 = rnd(21, 99), b2 = rnd(11, a2 - 1); q = a2 + ' - ' + b2; ans = a2 - b2; }
+  else if (kind === 'mul'){ var a3 = rnd(2, 9), b3 = rnd(2, 9); q = a3 + ' × ' + b3; ans = a3 * b3; }
+  else { var d = rnd(2, 9), quo = rnd(2, 9); q = (d * quo) + ' ÷ ' + d; ans = quo; }
+  var opts = [ans];
+  var cand = [ans + 1, ans - 1, ans + 2, ans - 2, ans + 10, ans - 10, ans + 3, ans * 2];
+  for (var i = 0; i < cand.length && opts.length < 3; i++){
+    if (cand[i] >= 0 && opts.indexOf(cand[i]) < 0) opts.push(cand[i]);
+  }
+  return { q: '計算しましょう： ' + q + ' = ?', choices: shuffle(opts).map(String), answer: String(ans), ex: q + ' = ' + ans + ' です' };
+}
+function prefQuestion(){
+  var p = PREFS47[rnd(0, PREFS47.length - 1)];
+  var opts = [p[1]];
+  while (opts.length < 3){
+    var c = PREFS47[rnd(0, PREFS47.length - 1)][1];
+    if (opts.indexOf(c) < 0) opts.push(c);
+  }
+  return { q: p[0] + 'の県庁所在地は？', choices: shuffle(opts), answer: p[1], ex: p[0] + 'の県庁所在地は' + p[1] + 'です' };
+}
+function bankQuestion(bank){
+  var item = bank[rnd(0, bank.length - 1)];
+  return { q: item[0], choices: shuffle([item[1]].concat(item[2])), answer: item[1], ex: item[3] };
+}
+function makeSet(cat){
+  var set = [];
+  var used = {};
+  var guard = 0;
+  while (set.length < 10 && guard++ < 300){
+    var c = cat;
+    if (cat === 'mix') c = ['math', 'pref', 'science', 'english', 'social', 'kanji'][rnd(0, 5)];
+    var item;
+    if (c === 'math') item = mathQuestion();
+    else if (c === 'pref') item = prefQuestion();
+    else if (c === 'science') item = bankQuestion(SCIENCE);
+    else if (c === 'english') item = bankQuestion(ENGLISH);
+    else if (c === 'social') item = bankQuestion(SOCIAL);
+    else item = bankQuestion(KANJI);
+    if (used[item.q]) continue;
+    used[item.q] = true;
+    set.push(item);
+  }
+  return set;
+}
+
+var quiz = null;
+function showBest(){
+  var b = localStorage.getItem('maouStudyBest');
+  $('best').textContent = b ? b + '問正解' : '―';
+}
+function showQuestion(){
+  var item = quiz.list[quiz.idx];
+  $('prog').textContent = (quiz.idx + 1) + ' / 10 問目';
+  $('score').textContent = '正解 ' + quiz.correct + ' 問';
+  $('qtext').textContent = item.q;
+  $('explain').style.display = 'none';
+  $('nextBtn').style.display = 'none';
+  var box = $('choices');
+  box.innerHTML = '';
+  item.choices.forEach(function(c){
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = c;
+    btn.addEventListener('click', function(){ answer(btn, c, item); });
+    box.appendChild(btn);
+  });
+}
+function answer(btn, choice, item){
+  var buttons = $('choices').querySelectorAll('button');
+  buttons.forEach(function(b){
+    b.disabled = true;
+    if (b.textContent === item.answer) b.classList.add('right');
+  });
+  if (choice === item.answer){ quiz.correct++; }
+  else { btn.classList.add('wrong'); }
+  var ex = $('explain');
+  ex.innerHTML = (choice === item.answer ? '⭕ 正解です<br>' : '❌ 答えは「' + item.answer + '」でした<br>') + item.ex;
+  ex.style.display = 'block';
+  $('score').textContent = '正解 ' + quiz.correct + ' 問';
+  var nb = $('nextBtn');
+  nb.textContent = quiz.idx >= quiz.list.length - 1 ? '結果を見る' : '次の問題へ';
+  nb.style.display = 'inline-block';
+}
+function finish(){
+  $('qbox').style.display = 'none';
+  var prev = Number(localStorage.getItem('maouStudyBest') || 0);
+  if (quiz.correct > prev) localStorage.setItem('maouStudyBest', quiz.correct);
+  showBest();
+  showOverNav();
+  var sec = Math.round((Date.now() - quiz.t0) / 1000);
+  var comment = quiz.correct === 10 ? '全問正解です　お勉強マスター！' : quiz.correct >= 7 ? 'よくできました　あと少しで全問正解です' : quiz.correct >= 4 ? 'その調子です　解説を読んで覚えましょう' : '解説を読めば次はできます　もう一度挑戦しましょう';
+  $('studyResult').innerHTML = '結果： 10問中 <b>' + quiz.correct + ' 問</b> 正解でした（' + sec + '秒）<br>' + comment;
+}
+$('nextBtn').addEventListener('click', function(){
+  quiz.idx++;
+  if (quiz.idx >= quiz.list.length) finish();
+  else showQuestion();
+});
+$('startBtn').addEventListener('click', function(){
+  quiz = { list: makeSet($('catSel').value), idx: 0, correct: 0, t0: Date.now() };
+  $('overNav').style.display = 'none';
+  $('qbox').style.display = 'block';
+  showQuestion();
+});
+showBest();
+</script>
+</body>
+</html>

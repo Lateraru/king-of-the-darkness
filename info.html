@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>便利情報（天気・地震・お勉強ツール） | 魔王らてらる・魔王らて子 公式ファンサイト</title>
+<meta name="description" content="全国の天気、地震情報、郵便番号検索、文字数カウント、自由研究テーマ、因数分解などの便利ツール集です">
+<link rel="stylesheet" href="style.css">
+<style>
+.info-card{border:1px solid #3a3358;border-radius:12px;padding:16px;margin-top:16px;background:#17142a}
+.info-card h3{margin:0 0 10px;font-size:1.05rem}
+.day-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.day-box{flex:1 1 150px;border:1px solid #3a3358;border-radius:10px;padding:10px;background:#100d20}
+.day-box .d{font-weight:bold;color:#e8b34b}
+.day-box .w{margin:6px 0;line-height:1.5}
+table.q{width:100%;border-collapse:collapse;font-size:.92rem}
+table.q td,table.q th{border-bottom:1px solid #3a3358;padding:6px 4px;text-align:left}
+input[type=text],input[type=number],select,textarea{background:#100d20;color:#eee;border:1px solid #3a3358;border-radius:8px;padding:8px;font-size:1rem}
+textarea{width:100%;min-height:110px}
+button{background:#3d2a5e;color:#fff;border:none;border-radius:10px;padding:9px 18px;font-size:1rem;cursor:pointer}
+button:hover{background:#4d3678}
+.result-line{margin-top:10px;line-height:1.7}
+.small{font-size:.85rem;color:#bdb8d6}
+.theme-box{border:1px dashed #a06cd5;border-radius:10px;padding:12px;margin-top:10px;background:#100d20}
+.warn{color:#ff9d9d;font-weight:bold}
+</style>
+</head>
+<body>
+
+<header class="site">
+<div class="inner">
+<a class="logo" href="index.html">魔王<span>らてらる</span> × 魔王<span style="color:#a06cd5">らて子</span></a>
+<nav class="main">
+<a href="index.html">ホーム</a>
+<a href="index.html#news">お知らせ</a>
+<a href="board.html">ファン掲示板</a>
+<a href="chat.html">AIチャット</a>
+<a href="games.html">ミニゲーム</a>
+<a href="tools.html">画像便利ツール</a>
+<a href="secret.html">秘密基地</a>
+</nav>
+</div>
+</header>
+
+<main>
+<section>
+<h2>便利情報</h2>
+<p>毎日に役立つ情報とツールを集めました<br>
+天気と地震は、開いた時に最新の情報を取りに行きます</p>
+
+<div class="info-card">
+<h3>🔗 よく使うサイト</h3>
+<p class="small">いちいち検索しなくても、ここからサッと行けます</p>
+<p style="font-weight:bold;margin:10px 0 6px">🛒 お買い物</p>
+<div style="display:flex;flex-wrap:wrap;gap:8px">
+<a href="shop.html" style="flex:1;min-width:130px;text-align:center;padding:12px 8px;border:2px solid #a06cd5;border-radius:10px;color:#eee;text-decoration:none;background:#241739">楽天市場・Yahoo!ショッピング<br>（お買い物ページへ）</a>
+<a href="shop.html" style="flex:1;min-width:130px;text-align:center;padding:12px 8px;border:2px solid #a06cd5;border-radius:10px;color:#eee;text-decoration:none;background:#241739">Amazon<br>（お買い物ページへ）</a>
+</div>
+<p style="font-weight:bold;margin:12px 0 6px">📺 動画・SNS</p>
+<div style="display:flex;flex-wrap:wrap;gap:8px">
+<a href="https://www.youtube.com/" target="_blank" rel="noopener" style="flex:1;min-width:130px;text-align:center;padding:12px 8px;border:2px solid #a06cd5;border-radius:10px;color:#eee;text-decoration:none;background:#241739">YouTube</a>
+<a href="https://x.com/" target="_blank" rel="noopener" style="flex:1;min-width:130px;text-align:center;padding:12px 8px;border:2px solid #a06cd5;border-radius:10px;color:#eee;text-decoration:none;background:#241739">X</a>
+<a href="https://www.instagram.com/" target="_blank" rel="noopener" style="flex:1;min-width:130px;text-align:center;padding:12px 8px;border:2px solid #a06cd5;border-radius:10px;color:#eee;text-decoration:none;background:#241739">Instagram</a>
+<a href="https://www.nicovideo.jp/" target="_blank" rel="noopener" style="flex:1;min-width:130px;text-align:center;padding:12px 8px;border:2px solid #a06cd5;border-radius:10px;color:#eee;text-decoration:none;background:#241739">ニコニコ動画</a>
+</div>
+<p style="font-weight:bold;margin:12px 0 6px">🔍 検索・生活</p>
+<div style="display:flex;flex-wrap:wrap;gap:8px">
+<a href="https://www.google.com/" target="_blank" rel="noopener" style="flex:1;min-width:130px;text-align:center;padding:12px 8px;border:2px solid #a06cd5;border-radius:10px;color:#eee;text-decoration:none;background:#241739">Google</a>
+<a href="https://maps.google.com/" target="_blank" rel="noopener" style="flex:1;min-width:130px;text-align:center;padding:12px 8px;border:2px solid #a06cd5;border-radius:10px;color:#eee;text-decoration:none;background:#241739">Googleマップ</a>
+<a href="https://www.yahoo.co.jp/" target="_blank" rel="noopener" style="flex:1;min-width:130px;text-align:center;padding:12px 8px;border:2px solid #a06cd5;border-radius:10px;color:#eee;text-decoration:none;background:#241739">Yahoo! JAPAN</a>
+<a href="https://www.jma.go.jp/" target="_blank" rel="noopener" style="flex:1;min-width:130px;text-align:center;padding:12px 8px;border:2px solid #a06cd5;border-radius:10px;color:#eee;text-decoration:none;background:#241739">気象庁</a>
+</div>
+<p class="small" style="margin-top:12px">📱 このページをスマホのホーム画面に追加すると、アプリのように開けます<br>
+iPhone：Safariの共有ボタンから「ホーム画面に追加」<br>
+Android：Chromeのメニューから「ホーム画面に追加」</p>
+</div>
+
+<div class="info-card">
+<h3>🌦 全国の天気</h3>
+<div>
+<select id="wxPref"></select>
+<button id="wxBtn" type="button">天気を見る</button>
+</div>
+<div id="wxResult" class="result-line">都道府県を選んでください</div>
+<p class="small">データ：気象庁の予報</p>
+</div>
+
+<div class="info-card">
+<h3>🌋 全国の地震情報</h3>
+<button id="quakeBtn" type="button">最新の地震情報を見る</button>
+<div id="quakeResult" class="result-line"></div>
+<p class="small">データ：P2P地震情報（気象庁の発表をもとにした配信）<br>
+正確な情報は気象庁や自治体の発表を確認してください</p>
+</div>
+
+<div class="info-card">
+<h3>🚃 乗換案内・時刻表</h3>
+<div>
+<input type="text" id="ttFrom" placeholder="出発駅（例：新宿）" size="12">
+<input type="text" id="ttTo" placeholder="到着駅（例：池袋）" size="12">
+</div>
+<div style="margin-top:10px">
+<button id="ttYahoo" type="button">Yahoo!路線情報で調べる</button>
+<button id="ttGoogle" type="button">Googleマップで調べる</button>
+<button id="ttTime" type="button">時刻表を調べる</button>
+</div>
+<div id="ttMsg" class="result-line"></div>
+<p class="small">検索結果は各サービスのページで開きます<br>
+時刻表ボタンは到着駅の時刻表を検索します（到着駅が空の時は出発駅）</p>
+</div>
+
+<div class="info-card">
+<h3>📮 郵便番号から住所</h3>
+<div>
+<input type="text" id="zipInput" inputmode="numeric" placeholder="例：1000001" size="10">
+<button id="zipBtn" type="button">住所を調べる</button>
+</div>
+<div id="zipResult" class="result-line"></div>
+<p class="small">ハイフンなしの7桁で入力してください</p>
+</div>
+
+<div class="info-card">
+<h3>✏ 文字数カウント</h3>
+<textarea id="ccText" placeholder="ここに文章を入れてください"></textarea>
+<div id="ccResult" class="result-line">文字数：0</div>
+</div>
+</section>
+
+<section>
+<h2>お勉強ツール</h2>
+
+<div class="info-card">
+<h3>🔬 自由研究テーマガチャ</h3>
+<div>
+<select id="themeGenre">
+<option value="">すべてのジャンル</option>
+<option value="実験">実験</option>
+<option value="観察">観察</option>
+<option value="生き物">生き物</option>
+<option value="工作">工作</option>
+<option value="調べもの">調べもの</option>
+</select>
+<button id="themeBtn" type="button">テーマを引く</button>
+</div>
+<div id="themeResult"></div>
+</div>
+
+<div class="info-card">
+<h3>🧮 因数分解の答え</h3>
+<p class="small">2次式 ax² + bx + c の因数分解です（整数の範囲）</p>
+<div>
+<input type="number" id="fxA" value="1" style="width:70px"> x² +
+<input type="number" id="fxB" value="5" style="width:70px"> x +
+<input type="number" id="fxC" value="6" style="width:70px">
+<button id="fxBtn" type="button">因数分解する</button>
+</div>
+<div id="fxResult" class="result-line"></div>
+</div>
+
+<div class="info-card">
+<h3>🔢 素因数分解</h3>
+<div>
+<input type="number" id="pfN" value="360" style="width:120px">
+<button id="pfBtn" type="button">素因数分解する</button>
+</div>
+<div id="pfResult" class="result-line"></div>
+</div>
+
+<div class="info-card">
+<h3>✖ 計算ドリル</h3>
+<div>
+<select id="drMode">
+<option value="addsub">たし算・ひき算</option>
+<option value="mul">かけ算（九九）</option>
+<option value="div">わり算</option>
+<option value="mix">ミックス</option>
+</select>
+<button id="drStart" type="button">スタート（10問）</button>
+</div>
+<div id="drArea" class="result-line"></div>
+</div>
+
+<div class="info-card">
+<h3>🍰 分数の計算</h3>
+<div>
+<input type="number" id="frA1" value="1" style="width:60px"> / <input type="number" id="frB1" value="2" style="width:60px">
+<select id="frOp"><option value="+">＋</option><option value="-">－</option></select>
+<input type="number" id="frA2" value="1" style="width:60px"> / <input type="number" id="frB2" value="3" style="width:60px">
+<button id="frBtn" type="button">計算する</button>
+</div>
+<div id="frResult" class="result-line"></div>
+</div>
+
+<div class="info-card">
+<h3>📏 単位換算</h3>
+<div>
+<select id="ucCat">
+<option value="len">長さ</option>
+<option value="wt">重さ</option>
+<option value="vol">かさ</option>
+<option value="time">時間</option>
+</select>
+<input type="number" id="ucVal" value="1" style="width:90px">
+<select id="ucFrom"></select> →
+<select id="ucTo"></select>
+<button id="ucBtn" type="button">換算する</button>
+</div>
+<div id="ucResult" class="result-line"></div>
+</div>
+
+<div class="info-card">
+<h3>🗾 都道府県クイズ</h3>
+<p class="small">県庁所在地クイズは、ゲーム版の「お勉強クイズ」に統一しました<br>
+都道府県以外にも、算数・理科・英語・社会・漢字の読みもあります</p>
+<p><a href="study.html"><button type="button">お勉強クイズで遊ぶ</button></a></p>
+</div>
+
+<div class="info-card">
+<h3>％ パーセント計算</h3>
+<p class="small">割引の計算</p>
+<div>
+<input type="number" id="pcPrice" value="1000" style="width:100px"> 円の
+<input type="number" id="pcOff" value="20" style="width:60px"> ％引き
+<button id="pcBtn" type="button">計算する</button>
+</div>
+<div id="pcResult" class="result-line"></div>
+<p class="small">割合の計算</p>
+<div>
+<input type="number" id="pcPart" value="30" style="width:80px"> は
+<input type="number" id="pcWhole" value="120" style="width:80px"> の何％？
+<button id="pcBtn2" type="button">計算する</button>
+</div>
+<div id="pcResult2" class="result-line"></div>
+</div>
+</section>
+
+<section>
+<h2>このサイトを知り合いに教える</h2>
+<p>気に入ったら、友達にも教えてあげてください</p>
+<p>
+<button class="btn" id="shareNative" type="button">📤 シェアする</button>
+<a class="btn" href="https://social-plugins.line.me/lineit/share?url=https%3A%2F%2Fking-of-the-darkness.trailer-project.com%2F" target="_blank" rel="noopener">LINEで送る</a>
+<a class="btn" href="https://twitter.com/intent/tweet?text=%E9%AD%94%E7%8E%8B%E3%82%89%E3%81%A6%E3%82%89%E3%82%8B%E3%83%BB%E9%AD%94%E7%8E%8B%E3%82%89%E3%81%A6%E5%AD%90%E3%81%AE%E5%85%AC%E5%BC%8F%E3%83%95%E3%82%A1%E3%83%B3%E3%82%B5%E3%82%A4%E3%83%88%E3%80%80%E3%83%9F%E3%83%8B%E3%82%B2%E3%83%BC%E3%83%A0%E3%81%A8%E7%94%BB%E5%83%8F%E4%BE%BF%E5%88%A9%E3%83%84%E3%83%BC%E3%83%AB%E3%81%8C%E3%81%82%E3%82%8A%E3%81%BE%E3%81%99&url=https%3A%2F%2Fking-of-the-darkness.trailer-project.com%2F" target="_blank" rel="noopener">Xで教える</a>
+<button class="btn" id="shareCopy" type="button">URLをコピー</button>
+</p>
+<p id="shareMsg"></p>
+</section>
+</main>
+
+<footer class="site">
+魔王らてらる・魔王らて子 公式ファンサイト（trailer-project.com）<br>
+YouTube：<a href="https://www.youtube.com/@latemarined" target="_blank" rel="noopener">らてまりチャンネル</a>
+</footer>
+
+<div style="text-align:center;margin:22px 0 6px"><a href="index.html" style="color:#c9a227;font-weight:bold">トップページに戻る</a></div>
+<script>
+function $(id){ return document.getElementById(id); }
+
+/* ---------- 天気（気象庁） ---------- */
+var PREFS = [['北海道','010000'],['青森県','020000'],['岩手県','030000'],['宮城県','040000'],['秋田県','050000'],['山形県','060000'],['福島県','070000'],['茨城県','080000'],['栃木県','090000'],['群馬県','100000'],['埼玉県','110000'],['千葉県','120000'],['東京都','130000'],['神奈川県','140000'],['新潟県','150000'],['富山県','160000'],['石川県','170000'],['福井県','180000'],['山梨県','190000'],['長野県','200000'],['岐阜県','210000'],['静岡県','220000'],['愛知県','230000'],['三重県','240000'],['滋賀県','250000'],['京都府','260000'],['大阪府','270000'],['兵庫県','280000'],['奈良県','290000'],['和歌山県','300000'],['鳥取県','310000'],['島根県','320000'],['岡山県','330000'],['広島県','340000'],['山口県','350000'],['徳島県','360000'],['香川県','370000'],['愛媛県','380000'],['高知県','390000'],['福岡県','400000'],['佐賀県','410000'],['長崎県','420000'],['熊本県','430000'],['大分県','440000'],['宮崎県','450000'],['鹿児島県','460100'],['沖縄県','471000']];
+var wxSel = $('wxPref');
+PREFS.forEach(function(p){
+  var o = document.createElement('option');
+  o.value = p[1]; o.textContent = p[0];
+  if (p[0] === '東京都') o.selected = true;
+  wxSel.appendChild(o);
+});
+function parseForecast(data){
+  var root = data[0];
+  var days = {};
+  function dkey(iso){ return iso.slice(0, 10); }
+  var ts0 = root.timeSeries[0];
+  var a0 = ts0.areas[0];
+  ts0.timeDefines.forEach(function(td, i){
+    var k = dkey(td);
+    days[k] = days[k] || {};
+    days[k].weather = a0.weathers[i];
+  });
+  root.timeSeries.forEach(function(ts){
+    var a = ts.areas[0];
+    if (a.temps){
+      ts.timeDefines.forEach(function(td, i){
+        var k = dkey(td);
+        var v = parseFloat(a.temps[i]);
+        if (isNaN(v)) return;
+        days[k] = days[k] || {};
+        days[k].tmin = days[k].tmin === undefined ? v : Math.min(days[k].tmin, v);
+        days[k].tmax = days[k].tmax === undefined ? v : Math.max(days[k].tmax, v);
+      });
+    }
+    if (a.pops){
+      ts.timeDefines.forEach(function(td, i){
+        var k = dkey(td);
+        var v = parseInt(a.pops[i], 10);
+        if (isNaN(v)) return;
+        days[k] = days[k] || {};
+        days[k].pop = days[k].pop === undefined ? v : Math.max(days[k].pop, v);
+      });
+    }
+  });
+  return { area: a0.area.name, at: root.reportDatetime, days: days };
+}
+function loadWeather(){
+  var code = wxSel.value;
+  $('wxResult').textContent = '読み込み中';
+  fetch('https://www.jma.go.jp/bosai/forecast/data/forecast/' + code + '.json')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      var f = parseForecast(data);
+      var keys = Object.keys(f.days).filter(function(k){ return f.days[k].weather; }).sort().slice(0, 3);
+      var html = '<div>' + f.area + 'の予報（' + f.at.slice(5, 10) + ' ' + f.at.slice(11, 16) + ' 発表）</div><div class="day-grid">';
+      keys.forEach(function(k){
+        var d = f.days[k];
+        var dt = new Date(k + 'T00:00:00+09:00');
+        var wday = '日月火水木金土'[dt.getDay()];
+        html += '<div class="day-box"><div class="d">' + (Number(k.slice(5, 7))) + '月' + (Number(k.slice(8, 10))) + '日（' + wday + '）</div>'
+          + '<div class="w">' + d.weather.replace(/　/g, ' ') + '</div>'
+          + '<div>最高 ' + (d.tmax === undefined ? '―' : d.tmax + '℃') + ' / 最低 ' + (d.tmin === undefined ? '―' : d.tmin + '℃') + '</div>'
+          + '<div>降水確率 ' + (d.pop === undefined ? '―' : d.pop + '%') + '</div></div>';
+      });
+      html += '</div>';
+      $('wxResult').innerHTML = html;
+    })
+    .catch(function(){ $('wxResult').textContent = '天気を取得できませんでした　時間をおいてお試しください'; });
+}
+$('wxBtn').addEventListener('click', loadWeather);
+loadWeather();
+
+/* ---------- 地震情報（P2P地震情報） ---------- */
+var SCALE_LABEL = { 10: '1', 20: '2', 30: '3', 40: '4', 45: '5弱', 50: '5強', 55: '6弱', 60: '6強', 70: '7' };
+function loadQuake(){
+  $('quakeResult').textContent = '読み込み中';
+  fetch('https://api.p2pquake.net/v2/history?codes=551&limit=12')
+    .then(function(r){ return r.json(); })
+    .then(function(list){
+      var html = '';
+      var tsunami = false;
+      list.forEach(function(item){
+        var eq = item.earthquake || {};
+        var h = eq.hypocenter || {};
+        if (eq.domesticTsunami && eq.domesticTsunami !== 'None' && eq.domesticTsunami !== 'Unknown') tsunami = true;
+        var t = (eq.time || '').replace(/\//g, '/');
+        var depth = h.depth === 0 ? 'ごく浅い' : (h.depth > 0 ? '約' + h.depth + 'km' : '不明');
+        var mag = h.magnitude > 0 ? 'M' + h.magnitude : '不明';
+        var scale = SCALE_LABEL[eq.maxScale] || '不明';
+        html += '<tr><td>' + t + '</td><td>' + (h.name || '不明') + '</td><td>' + depth + '</td><td>' + mag + '</td><td>震度' + scale + '</td></tr>';
+      });
+      if (tsunami) html = '<p class="warn">津波に関する情報が出ている地震があります　気象庁や自治体の最新情報を確認してください</p>' + html;
+      $('quakeResult').innerHTML = '<table class="q"><tr><th>発生時刻</th><th>震源地</th><th>深さ</th><th>規模</th><th>最大震度</th></tr>' + html + '</table>';
+    })
+    .catch(function(){ $('quakeResult').textContent = '地震情報を取得できませんでした　時間をおいてお試しください'; });
+}
+$('quakeBtn').addEventListener('click', loadQuake);
+loadQuake();
+
+/* ---------- 郵便番号（zipcloud） ---------- */
+$('zipBtn').addEventListener('click', function(){
+  var zip = $('zipInput').value.replace(/[^0-9]/g, '');
+  if (zip.length !== 7){ $('zipResult').textContent = '7桁の郵便番号を入力してください'; return; }
+  $('zipResult').textContent = '検索中';
+  fetch('https://zipcloud.ibsnet.co.jp/api/search?zipcode=' + zip)
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (!d.results){ $('zipResult').textContent = '見つかりませんでした　番号を確認してください'; return; }
+      $('zipResult').innerHTML = d.results.map(function(x){
+        return '〒' + zip.slice(0, 3) + '-' + zip.slice(3) + '　' + x.address1 + x.address2 + x.address3;
+      }).join('<br>');
+    })
+    .catch(function(){ $('zipResult').textContent = '検索できませんでした　時間をおいてお試しください'; });
+});
+
+/* ---------- 乗換案内（リンク方式） ---------- */
+function ttOpen(url){ window.open(url, '_blank', 'noopener'); }
+$('ttYahoo').addEventListener('click', function(){
+  var from = $('ttFrom').value.trim(), to = $('ttTo').value.trim();
+  if (!from || !to){ $('ttMsg').textContent = '出発駅と到着駅を入れてください'; return; }
+  $('ttMsg').textContent = '';
+  ttOpen('https://transit.yahoo.co.jp/search/result?from=' + encodeURIComponent(from) + '&to=' + encodeURIComponent(to));
+});
+$('ttGoogle').addEventListener('click', function(){
+  var from = $('ttFrom').value.trim(), to = $('ttTo').value.trim();
+  if (!from || !to){ $('ttMsg').textContent = '出発駅と到着駅を入れてください'; return; }
+  $('ttMsg').textContent = '';
+  ttOpen('https://www.google.com/maps/dir/?api=1&origin=' + encodeURIComponent(from) + '&destination=' + encodeURIComponent(to) + '&travelmode=transit');
+});
+$('ttTime').addEventListener('click', function(){
+  var st = $('ttTo').value.trim() || $('ttFrom').value.trim();
+  if (!st){ $('ttMsg').textContent = '駅名を入れてください'; return; }
+  $('ttMsg').textContent = '';
+  ttOpen('https://www.google.com/search?q=' + encodeURIComponent(st + '駅 時刻表'));
+});
+
+/* ---------- 文字数カウント ---------- */
+function countUpdate(){
+  var v = $('ccText').value;
+  var chars = Array.from(v);
+  var total = chars.length;
+  var noSpace = chars.filter(function(ch){ return !/\s/.test(ch); }).length;
+  var lines = v === '' ? 0 : v.split('\n').length;
+  var weight = 0;
+  chars.forEach(function(ch){ weight += ch.codePointAt(0) < 128 ? 1 : 2; });
+  var pages = Math.ceil(total / 400);
+  $('ccResult').innerHTML = '文字数：' + total + '（空白・改行を除くと ' + noSpace + '）<br>'
+    + '行数：' + lines + '<br>'
+    + 'Xの投稿換算：あと ' + Math.max(0, 280 - weight) + ' 文字ぶん（目安）<br>'
+    + '原稿用紙換算：約 ' + pages + ' 枚（400字詰め）';
+}
+$('ccText').addEventListener('input', countUpdate);
+countUpdate();
+
+/* ---------- シェア ---------- */
+var SITE_URL = 'https://king-of-the-darkness.trailer-project.com/';
+var SHARE_TEXT = '魔王らてらる・魔王らて子の公式ファンサイト　ミニゲームと画像便利ツールがあります';
+$('shareNative').addEventListener('click', function(){
+  if (navigator.share) { navigator.share({ title: document.title, text: SHARE_TEXT, url: SITE_URL }).catch(function(){}); }
+  else { $('shareMsg').textContent = 'LINEかXのボタン、またはURLコピーをお使いください'; }
+});
+$('shareCopy').addEventListener('click', function(){
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(SITE_URL).then(function(){ $('shareMsg').textContent = 'URLをコピーしました'; }).catch(function(){ $('shareMsg').textContent = SITE_URL; });
+  } else { $('shareMsg').textContent = SITE_URL; }
+});
+</script>
+<script>
+/* ---------- 自由研究テーマ ---------- */
+var THEMES = [
+['氷の溶け方比べ（水・塩水・砂糖水）','実験','1日','小3〜','氷・塩・砂糖・コップ','溶け終わるまでの時間を表にして比べます'],
+['野菜の色水で酸性・アルカリ性調べ','実験','1日','小4〜','紫キャベツ・酢・重曹・レモン','色の変化を写真で残すと伝わります'],
+['ペットボトルで雲を作る','実験','1日','小3〜','ペットボトル・お湯','雲ができる理由を絵で説明します'],
+['10円玉をピカピカにする液体調べ','実験','1日','小2〜','10円玉・酢・ソース・レモン汁','前と後の写真を並べます'],
+['紙飛行機の形と飛距離','実験','2〜3日','小2〜','折り紙・メジャー','形ごとの平均の飛距離を出します'],
+['糸電話の素材と聞こえ方','実験','2〜3日','小3〜','紙コップ・糸・針金','聞こえ方を5段階で記録します'],
+['朝顔の開花時刻の記録','観察','1〜2週間','小1〜','朝顔・時計','時刻と天気を一緒に書くのがコツです'],
+['ダンゴムシの好み調べ','観察','2〜3日','小2〜','ダンゴムシ・箱','明るさと湿り気、どちらが好きかを試します'],
+['月の形と位置の記録','観察','2週間','小4〜','ノート・方位磁石','毎日同じ時刻に観察します'],
+['公園の実と種の図鑑作り','観察','1週間','小1〜','袋・カメラ','拾った場所の地図も作ります'],
+['影の長さの1日の記録','観察','1日','小3〜','棒・チョーク','時刻ごとのグラフにします'],
+['セミの抜け殻の種類調べ','観察','2〜3日','小2〜','抜け殻・図鑑','見つけた木の種類も記録します'],
+['メダカのえさと集まり方','生き物','1週間','小3〜','メダカ・えさ','観察日記の形でまとめます'],
+['アリの行列と食べ物マップ','生き物','2〜3日','小2〜','砂糖・パンくず','行列の地図を描きます'],
+['カタツムリの食べ物の好み','生き物','1週間','小1〜','カタツムリ・野菜','食べた量を写真で比べます'],
+['池の水のプランクトン観察','生き物','1日','小5〜','顕微鏡・スポイト','スケッチを大きく描きます'],
+['鳥の声の朝と夕方の違い','生き物','1週間','小3〜','スマホの録音','鳴き声を文字で書き分けます'],
+['金魚のえさ場所の記憶テスト','生き物','1〜2週間','小4〜','金魚・目印','成功した回数を表にします'],
+['ペットボトルロケットの飛距離','工作','2〜3日','小4〜','ペットボトル・空気入れ','羽の形を変えて比べます'],
+['牛乳パック船の進み方','工作','2〜3日','小2〜','牛乳パック・輪ゴム','スクリューの形がポイントです'],
+['割りばし鉄砲の命中率','工作','1日','小3〜','割りばし・輪ゴム','的までの距離ごとに記録します'],
+['ストロー楽器の音階作り','工作','2〜3日','小3〜','ストロー・はさみ','長さと音の高さを表にします'],
+['風車の形と回り方','工作','2〜3日','小2〜','折り紙・ストロー','羽の枚数ごとに比べます'],
+['ゴム動力車の走行距離','工作','2〜3日','小4〜','ダンボール・輪ゴム','巻く回数と距離をグラフにします'],
+['家の近くの自動販売機マップ','調べもの','1週間','小3〜','地図・カメラ','売っている飲み物の種類を分類します'],
+['自分の名字の由来調べ','調べもの','2〜3日','小5〜','図書館・インターネット','家族へのインタビューを入れます'],
+['商店街のお店の歴史インタビュー','調べもの','1週間','小5〜','メモ・カメラ','年表にまとめると伝わります'],
+['駅のバリアフリー設備調べ','調べもの','2〜3日','小4〜','カメラ・メモ','駅ごとの違いを表にします'],
+['方言と標準語の対応表','調べもの','1週間','小4〜','家族・親戚','地域ごとの違いを聞き取ります'],
+['昔の遊び調べと体験レポート','調べもの','1週間','小3〜','お年寄りへの取材','やってみた感想を主役にします'],
+['塩と砂糖、どっちが早く溶けるか','実験','1日','小3〜','塩・砂糖・水・ストップウォッチ','水の量と温度をそろえるのが公平のコツです'],
+['磁石の力は紙や水を通るか','実験','1日','小2〜','磁石・クリップ・紙・コップ','間に入れる物の種類を変えて記録します'],
+['野菜と果物の浮き沈み調べ','実験','1日','小2〜','野菜・果物・水槽','まず予想してから確かめると面白くなります'],
+['シャボン玉が長持ちする液の配合','実験','2〜3日','小3〜','食器用洗剤・水・砂糖','割れるまでの時間を比べます'],
+['色水の進み方（毛細管現象）','実験','1日','小4〜','食紅・キッチンペーパー・コップ','時間ごとの進み方を写真で残します'],
+['卵を守る容器作り','実験','2〜3日','小4〜','生卵・新聞紙・テープ','落とす高さを少しずつ上げて試します'],
+['炭酸の泡の出方比べ','実験','1日','小4〜','炭酸水・塩・砂糖・氷','入れる物で泡の出方を比べます'],
+['紙コップスピーカー作り','実験','2〜3日','小4〜','紙コップ・磁石・エナメル線','線の巻き数を変えて音を比べます'],
+['バナナの黒くなる速さ比べ','実験','2〜3日','小2〜','バナナ・冷蔵庫','置き場所ごとに写真で記録します'],
+['水の蒸発量と場所の関係','実験','1週間','小3〜','コップ・定規','毎日同じ時刻に量を測ります'],
+['氷に塩をかけると温度はどうなるか','実験','1日','小5〜','氷・塩・温度計','0度より下がる理由を考えます'],
+['葉っぱの色素を分ける','実験','1日','小5〜','葉・消毒用エタノール・ろ紙','色の分かれ方をスケッチします'],
+['風船ロケットの進み方','実験','1日','小2〜','風船・糸・ストロー','風船の大きさと進む距離を比べます'],
+['スライムの硬さ比べ','実験','1日','小2〜','洗濯のり・ホウ砂水','作った後は手をよく洗います'],
+['影絵の大きさと光の距離','実験','1日','小3〜','懐中電灯・人形','距離と大きさの関係を表にします'],
+['ベランダに来る鳥の記録','観察','1週間','小2〜','ノート・双眼鏡','時刻と種類を記録します'],
+['雲の種類と天気の関係','観察','1週間','小4〜','カメラ・雲の図鑑','翌日の天気と照らし合わせます'],
+['じゃがいもの芽の伸び方','観察','2週間','小2〜','じゃがいも・定規','毎日長さを測ってグラフにします'],
+['近所の花の開花カレンダー','観察','2週間','小3〜','カメラ・カレンダー','咲いた日をカレンダーに書きます'],
+['雨上がりの水たまりの消え方','観察','2〜3日','小2〜','チョーク・カメラ','大きさの変化を写真で比べます'],
+['星の見える場所比べ','観察','2〜3日','小4〜','ノート','街灯の近く・遠くで比べます　大人と一緒に観察します'],
+['パンのカビの生え方','観察','1週間','小4〜','食パン・保存袋','袋に入れたまま触らず観察し、終わったらそのまま捨てます'],
+['庭の土の中の生き物','観察','1日','小3〜','スコップ・白いトレイ','見つけた生き物を絵に描きます'],
+['アサガオのつるの巻き方','観察','1週間','小1〜','アサガオ・支柱','巻く向きを毎日確かめます'],
+['夕日の沈む位置の変化','観察','2週間','小5〜','カメラ・方位磁石','同じ場所から写真を撮り続けます'],
+['冷蔵庫の中の温度マップ','観察','2〜3日','小4〜','温度計','場所ごとの温度の違いを比べます'],
+['洗濯物の乾く速さ比べ','観察','2〜3日','小3〜','タオル・洗濯ばさみ','風と日当たりの条件をそろえます'],
+['公園のベンチの利用調べ','観察','2〜3日','小4〜','ノート・時計','時間帯ごとに使う人の数を数えます'],
+['川や池の水の透明度比べ','観察','1日','小4〜','ペットボトル','場所ごとに水を採って比べます'],
+['自分の脈拍の変化','観察','1日','小4〜','ストップウォッチ','運動の前と後で比べます'],
+['ザリガニの脱皮の記録','生き物','2週間','小3〜','ザリガニ・カメラ','抜け殻の大きさを測ります'],
+['オタマジャクシの成長記録','生き物','2〜3週間','小2〜','オタマジャクシ・水槽','足が出てくる順番を絵で記録します'],
+['ミミズの土づくり観察','生き物','1週間','小3〜','ミミズ・土・瓶','土の層の変化を写真で残します'],
+['チョウの幼虫の食べる葉','生き物','1〜2週間','小3〜','幼虫・いろいろな葉','葉の種類ごとの食べ方を比べます'],
+['ハムスターの好きな食べ物','生き物','1週間','小2〜','ハムスター・野菜','少量ずつ与えて様子を記録します'],
+['野鳥の鳴き声図鑑作り','生き物','1週間','小3〜','スマホの録音・図鑑','聞いた場所と時刻も記録します'],
+['カブトムシの一日の動き','生き物','2〜3日','小2〜','カブトムシ・飼育ケース','昼と夜の様子を比べます'],
+['ヤドカリの貝がえ観察','生き物','1週間','小3〜','ヤドカリ・空の貝','どの貝を選ぶか記録します'],
+['メダカの卵の成長','生き物','2週間','小4〜','メダカの卵・ルーペ','毎日の変化をスケッチします'],
+['セミの羽化の観察','生き物','1日（夜）','小3〜','懐中電灯・カメラ','夜の観察は大人と一緒にします'],
+['バッタの跳ぶ距離','生き物','1日','小2〜','バッタ・メジャー','体の大きさと距離を比べます'],
+['クワガタの好きな隠れ場所','生き物','2〜3日','小2〜','クワガタ・飼育ケース','ゼリーと木の置き方を変えて比べます'],
+['犬や猫の寝る姿勢と気温','生き物','1週間','小2〜','ペット・温度計','丸くなる日と伸びる日を比べます'],
+['アゲハチョウのさなぎの変化','生き物','2週間','小3〜','さなぎ・カメラ','色の変化を毎日写真で残します'],
+['ミジンコの動きの観察','生き物','1日','小5〜','顕微鏡・池の水','光への反応を確かめます'],
+['ゴム動力ボートの速さ比べ','工作','2〜3日','小3〜','発泡スチロール・輪ゴム','パドルの形を変えて比べます'],
+['紙の橋の強さ比べ','工作','1日','小3〜','コピー用紙・おもり','折り方で強さが変わります'],
+['ペットボトル風力車','工作','2〜3日','小3〜','ペットボトル・うちわ','帆の大きさを変えて比べます'],
+['ストロートンボの飛び方','工作','1日','小1〜','ストロー・画用紙','羽の大きさを変えて比べます'],
+['ビー玉コースター作り','工作','2〜3日','小4〜','ダンボール・ビー玉','落ちるまでの時間を測ります'],
+['割りばしクレーン作り','工作','2〜3日','小4〜','割りばし・糸','つり上げられる重さを比べます'],
+['空気砲の威力比べ','工作','1日','小3〜','ダンボール・ビニール','穴の大きさで威力を比べます'],
+['紙皿フリスビーの飛距離','工作','1日','小2〜','紙皿・テープ','重りの位置を変えて比べます'],
+['輪ゴムギターの音比べ','工作','2〜3日','小3〜','空き箱・輪ゴム','輪ゴムの太さと音の高さを比べます'],
+['ダンボール迷路と磁石','工作','2〜3日','小2〜','ダンボール・磁石・クリップ','コースの絵を描いてから作ります'],
+['紙飛行機の発射台作り','工作','2〜3日','小3〜','輪ゴム・ダンボール','発射の角度と距離を比べます'],
+['折り紙のコマの回り方','工作','1日','小2〜','折り紙','折り方ごとに回る時間を比べます'],
+['ビニール凧の揚がり方','工作','2〜3日','小3〜','ビニール袋・竹ひご','尾の長さを変えて比べます'],
+['磁石で動く車作り','工作','2〜3日','小3〜','磁石・クリップ・ダンボール','磁石との距離と動きを比べます'],
+['手作り万華鏡','工作','1日','小3〜','筒・ミラーシート・ビーズ','中身を変えて模様を比べます'],
+['近所の坂道マップ作り','調べもの','2〜3日','小4〜','地図・カメラ','坂の急さを測って記録します'],
+['スーパーの値段比べ','調べもの','2〜3日','小4〜','メモ','同じ商品の店ごとの違いを表にします'],
+['自分の町の市の花・木・鳥調べ','調べもの','2〜3日','小3〜','図書館・インターネット','選ばれた理由まで調べると面白くなります'],
+['郵便ポストの回収時刻調べ','調べもの','1日','小2〜','カメラ・メモ','近所のポストを地図にまとめます'],
+['バスの本数と行き先調べ','調べもの','2〜3日','小4〜','時刻表・メモ','時間帯ごとの本数をグラフにします'],
+['学校の歴史調べ','調べもの','1週間','小5〜','図書館・先生への取材','年表にまとめます'],
+['看板の文字調べ','調べもの','2〜3日','小3〜','カメラ・メモ','ひらがな・カタカナ・漢字・英語の割合を数えます'],
+['橋の名前と形調べ','調べもの','2〜3日','小4〜','カメラ・地図','形の種類をスケッチします'],
+['自分の名前の漢字の意味','調べもの','1日','小3〜','漢字辞典','家族の名前も一緒に調べます'],
+['電車の駅名の由来調べ','調べもの','2〜3日','小4〜','図書館・インターネット','近くの駅から調べます'],
+['町のゴミ収集ルール調べ','調べもの','2〜3日','小3〜','市の資料','分別のルールを表にします'],
+['昔と今の地図比べ','調べもの','2〜3日','小5〜','古い地図・今の地図','変わった場所に印をつけます'],
+['天気予報の当たり率調べ','調べもの','1週間','小4〜','予報アプリ・ノート','予報と実際の天気を記録して割合を出します'],
+['家の電気の使い方調べ','調べもの','1週間','小5〜','検針票','時間帯ごとの使い方を考えます'],
+['図書館の人気本ランキング','調べもの','1日','小3〜','図書館','ジャンルごとに分けて発表します']
+];
+$('themeBtn').addEventListener('click', function(){
+  var g = $('themeGenre').value;
+  var pool = THEMES.filter(function(t){ return !g || t[1] === g; });
+  var t = pool[Math.floor(Math.random() * pool.length)];
+  $('themeResult').innerHTML = '<div class="theme-box"><div style="font-weight:bold;font-size:1.05rem">' + t[0] + '</div>'
+    + '<div class="result-line">ジャンル：' + t[1] + '　期間の目安：' + t[2] + '　学年の目安：' + t[3] + '<br>'
+    + '材料：' + t[4] + '<br>まとめ方のコツ：' + t[5] + '</div></div>';
+});
+
+/* ---------- 因数分解 ---------- */
+function gcd2(a, b){ a = Math.abs(a); b = Math.abs(b); while (b){ var t = a % b; a = b; b = t; } return a || 1; }
+function factorStr(p, q){
+  var xs = p === 1 ? 'x' : p + 'x';
+  if (q === 0) return xs;
+  return xs + (q > 0 ? ' + ' : ' - ') + Math.abs(q);
+}
+function polyStr(a, b, c){
+  var s = '';
+  s += (a === 1 ? '' : a === -1 ? '-' : a) + 'x²';
+  if (b !== 0) s += (b > 0 ? ' + ' : ' - ') + (Math.abs(b) === 1 ? '' : Math.abs(b)) + 'x';
+  if (c !== 0) s += (c > 0 ? ' + ' : ' - ') + Math.abs(c);
+  return s;
+}
+function factorize(a, b, c){
+  if (a === 0) return { ok: false, msg: 'a が 0 だと2次式になりません' };
+  var steps = [];
+  var sign = 1, aa = a, bb = b, cc = c;
+  if (aa < 0){ sign = -1; aa = -aa; bb = -bb; cc = -cc; }
+  var gg = gcd2(gcd2(aa, bb), cc);
+  var prefix = '';
+  var total = sign * gg;
+  if (total !== 1){
+    prefix = total === -1 ? '-' : String(total);
+    steps.push('共通因数 ' + total + ' でくくります');
+  }
+  aa /= gg; bb /= gg; cc /= gg;
+  if (cc === 0){
+    if (bb === 0) return { ok: true, steps: steps, result: prefix + 'x²' };
+    return { ok: true, steps: steps, result: prefix + 'x(' + factorStr(aa, bb) + ')' };
+  }
+  function divisors(n){ var ds = []; for (var d = 1; d <= Math.abs(n); d++) if (n % d === 0) ds.push(d); return ds; }
+  var ps = divisors(aa), qs = divisors(cc);
+  for (var i = 0; i < ps.length; i++){
+    var p = ps[i], r = aa / p;
+    for (var j = 0; j < qs.length; j++){
+      for (var sgn = 0; sgn < 2; sgn++){
+        var q = sgn === 0 ? qs[j] : -qs[j];
+        if (cc % q !== 0) continue;
+        var s = cc / q;
+        if (p * s + q * r === bb){
+          steps.push('たすきがけ： ' + p + 'x と ' + r + 'x、' + q + ' と ' + s + ' の組み合わせです（たして ' + bb + '、かけて ' + cc + '）');
+          var f1 = '(' + factorStr(p, q) + ')';
+          var f2 = '(' + factorStr(r, s) + ')';
+          return { ok: true, steps: steps, result: prefix + (f1 === f2 ? f1 + '²' : f1 + f2) };
+        }
+      }
+    }
+  }
+  return { ok: false, steps: steps, msg: '整数の範囲では因数分解できません（解の公式を使う問題です）' };
+}
+$('fxBtn').addEventListener('click', function(){
+  var a = parseInt($('fxA').value, 10), b = parseInt($('fxB').value, 10), c = parseInt($('fxC').value, 10);
+  if (isNaN(a) || isNaN(b) || isNaN(c)){ $('fxResult').textContent = '数字を入力してください'; return; }
+  var r = factorize(a, b, c);
+  var html = '<div>' + polyStr(a, b, c) + '</div>';
+  if (r.ok){
+    html += '<div style="font-size:1.15rem;font-weight:bold">= ' + r.result + '</div>';
+    if (r.steps.length) html += '<div class="small">' + r.steps.join('<br>') + '</div>';
+  } else {
+    html += '<div>' + r.msg + '</div>';
+    if (r.steps && r.steps.length) html += '<div class="small">' + r.steps.join('<br>') + '</div>';
+  }
+  $('fxResult').innerHTML = html;
+});
+
+/* ---------- 素因数分解 ---------- */
+$('pfBtn').addEventListener('click', function(){
+  var n = parseInt($('pfN').value, 10);
+  if (isNaN(n) || n < 2 || n > 999999999){ $('pfResult').textContent = '2から999999999までの整数を入力してください'; return; }
+  var res = [], d = 2, m = n;
+  while (d * d <= m){ while (m % d === 0){ res.push(d); m /= d; } d++; }
+  if (m > 1) res.push(m);
+  var grouped = [];
+  for (var i = 0; i < res.length;){
+    var j = i;
+    while (j < res.length && res[j] === res[i]) j++;
+    var cnt = j - i;
+    grouped.push(cnt > 1 ? res[i] + '^' + cnt : String(res[i]));
+    i = j;
+  }
+  var sup = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹' };
+  var groupedStr = grouped.map(function(g){
+    return g.replace(/\^(\d+)/, function(_, ds){ return ds.split('').map(function(ch){ return sup[ch]; }).join(''); });
+  }).join(' × ');
+  $('pfResult').innerHTML = n + ' = ' + res.join(' × ') + '<br><span class="small">まとめると　' + n + ' = ' + groupedStr + (res.length === 1 ? '（素数です）' : '') + '</span>';
+});
+</script>
+<script>
+/* ---------- 計算ドリル ---------- */
+var dr = null;
+function rnd(min, max){ return Math.floor(Math.random() * (max - min + 1)) + min; }
+function makeQuestion(mode){
+  var kind = mode;
+  if (mode === 'mix') kind = ['addsub', 'mul', 'div'][rnd(0, 2)];
+  if (kind === 'addsub'){
+    if (Math.random() < 0.5){ var a = rnd(12, 98), b = rnd(12, 98); return { q: a + ' + ' + b, ans: a + b }; }
+    var a2 = rnd(21, 99), b2 = rnd(11, a2 - 1); return { q: a2 + ' - ' + b2, ans: a2 - b2 };
+  }
+  if (kind === 'mul'){ var a3 = rnd(2, 9), b3 = rnd(2, 9); return { q: a3 + ' × ' + b3, ans: a3 * b3 }; }
+  var d = rnd(2, 9), quo = rnd(2, 9); return { q: (d * quo) + ' ÷ ' + d, ans: quo };
+}
+function drShow(){
+  var area = $('drArea');
+  if (dr.idx >= dr.list.length){
+    var sec = Math.round((Date.now() - dr.t0) / 1000);
+    area.innerHTML = 'おつかれさまでした　' + dr.list.length + '問中 ' + dr.correct + ' 問正解でした（' + sec + '秒）'
+      + (dr.correct === dr.list.length ? '<br>全問正解です　すごい！' : '');
+    dr = null;
+    return;
+  }
+  var item = dr.list[dr.idx];
+  area.innerHTML = '<div>' + (dr.idx + 1) + '問目： <strong style="font-size:1.2rem">' + item.q + ' = </strong>'
+    + '<input type="number" id="drInput" style="width:90px"> <button id="drAnswer" type="button">答える</button></div>'
+    + '<div id="drFeedback"></div>';
+  $('drAnswer').addEventListener('click', drAnswer);
+  $('drInput').focus();
+}
+function drAnswer(){
+  var v = parseInt($('drInput').value, 10);
+  var item = dr.list[dr.idx];
+  var fb = $('drFeedback');
+  if (!isNaN(v) && v === item.ans){ dr.correct++; fb.textContent = '正解です！'; }
+  else { fb.textContent = '答えは ' + item.ans + ' でした'; }
+  dr.idx++;
+  setTimeout(drShow, 900);
+}
+$('drStart').addEventListener('click', function(){
+  var mode = $('drMode').value;
+  dr = { list: [], idx: 0, correct: 0, t0: Date.now() };
+  for (var i = 0; i < 10; i++) dr.list.push(makeQuestion(mode));
+  drShow();
+});
+
+/* ---------- 分数の計算 ---------- */
+function gcd3(a, b){ a = Math.abs(a); b = Math.abs(b); while (b){ var t = a % b; a = b; b = t; } return a || 1; }
+function lcm(a, b){ return a / gcd3(a, b) * b; }
+function fracStr(num, den){
+  if (num === 0) return '0';
+  var sign = (num < 0) !== (den < 0) ? '-' : '';
+  num = Math.abs(num); den = Math.abs(den);
+  var g = gcd3(num, den);
+  num /= g; den /= g;
+  if (den === 1) return sign + num;
+  if (num > den){
+    var whole = Math.floor(num / den), rest = num % den;
+    if (rest === 0) return sign + whole;
+    return sign + whole + 'と' + rest + '/' + den;
+  }
+  return sign + num + '/' + den;
+}
+function calcFraction(a1, b1, op, a2, b2){
+  var steps = [];
+  var L = lcm(b1, b2);
+  if (L !== b1 || L !== b2) steps.push('通分します： 分母を ' + L + ' にそろえます');
+  var n1 = a1 * (L / b1), n2 = a2 * (L / b2);
+  var num = op === '+' ? n1 + n2 : n1 - n2;
+  steps.push(L + ' 分の ' + n1 + (op === '+' ? ' ＋ ' : ' － ') + L + ' 分の ' + n2 + ' ＝ ' + L + ' 分の ' + num);
+  var g = gcd3(num, L);
+  if (num !== 0 && g > 1) steps.push('約分します： ' + L + ' 分の ' + num + ' ＝ ' + (L / g) + ' 分の ' + (num / g));
+  return { steps: steps, result: fracStr(num, L) };
+}
+$('frBtn').addEventListener('click', function(){
+  var a1 = parseInt($('frA1').value, 10), b1 = parseInt($('frB1').value, 10);
+  var a2 = parseInt($('frA2').value, 10), b2 = parseInt($('frB2').value, 10);
+  if ([a1, b1, a2, b2].some(isNaN) || b1 === 0 || b2 === 0){ $('frResult').textContent = '数字を入れてください（分母は0にできません）'; return; }
+  var r = calcFraction(a1, b1, $('frOp').value, a2, b2);
+  $('frResult').innerHTML = '<div style="font-size:1.15rem;font-weight:bold">答え： ' + r.result + '</div>'
+    + '<div class="small">' + r.steps.join('<br>') + '</div>';
+});
+
+/* ---------- 単位換算 ---------- */
+var UNITS = {
+  len: [['ミリメートル（mm）', 0.001], ['センチメートル（cm）', 0.01], ['メートル（m）', 1], ['キロメートル（km）', 1000]],
+  wt: [['グラム（g）', 1], ['キログラム（kg）', 1000], ['トン（t）', 1000000]],
+  vol: [['ミリリットル（mL）', 1], ['デシリットル（dL）', 100], ['リットル（L）', 1000]],
+  time: [['秒', 1], ['分', 60], ['時間', 3600], ['日', 86400]]
+};
+function ucFill(){
+  var units = UNITS[$('ucCat').value];
+  [$('ucFrom'), $('ucTo')].forEach(function(sel, si){
+    sel.innerHTML = '';
+    units.forEach(function(u, i){
+      var o = document.createElement('option');
+      o.value = i; o.textContent = u[0];
+      if (si === 1 && i === 1) o.selected = true;
+      sel.appendChild(o);
+    });
+  });
+}
+function convertUnit(cat, val, fromIdx, toIdx){
+  var units = UNITS[cat];
+  var base = val * units[fromIdx][1];
+  return base / units[toIdx][1];
+}
+$('ucCat').addEventListener('change', ucFill);
+ucFill();
+$('ucBtn').addEventListener('click', function(){
+  var v = parseFloat($('ucVal').value);
+  if (isNaN(v)){ $('ucResult').textContent = '数字を入れてください'; return; }
+  var cat = $('ucCat').value;
+  var fi = Number($('ucFrom').value), ti = Number($('ucTo').value);
+  var r = convertUnit(cat, v, fi, ti);
+  var rs = String(parseFloat(r.toPrecision(8)));
+  $('ucResult').textContent = v + ' ' + UNITS[cat][fi][0] + ' ＝ ' + rs + ' ' + UNITS[cat][ti][0];
+});
+
+/* ---------- パーセント計算 ---------- */
+$('pcBtn').addEventListener('click', function(){
+  var price = parseFloat($('pcPrice').value), off = parseFloat($('pcOff').value);
+  if (isNaN(price) || isNaN(off)){ $('pcResult').textContent = '数字を入れてください'; return; }
+  var pay = Math.round(price * (100 - off) / 100);
+  $('pcResult').textContent = '支払う金額は ' + pay.toLocaleString() + ' 円です（' + Math.round(price - pay).toLocaleString() + ' 円お得）';
+});
+$('pcBtn2').addEventListener('click', function(){
+  var part = parseFloat($('pcPart').value), whole = parseFloat($('pcWhole').value);
+  if (isNaN(part) || isNaN(whole) || whole === 0){ $('pcResult2').textContent = '数字を入れてください'; return; }
+  var pct = Math.round(part / whole * 1000) / 10;
+  $('pcResult2').textContent = part + ' は ' + whole + ' の ' + pct + ' ％です';
+});
+</script>
+</body>
+</html>

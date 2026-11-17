@@ -11,7 +11,7 @@
 
 <header class="site">
 <div class="inner">
-<a class="logo" href="index.html">魔王<span>らてらる</span> × 魔王<span>らて子</span></a>
+<a class="logo" href="index.html">魔王<span>らてらる</span> × 魔王<span style="color:#a06cd5">らて子</span></a>
 <nav class="main">
 <a href="index.html" class="active">ホーム</a>
 <a href="index.html#news">お知らせ</a>
@@ -101,9 +101,21 @@
 <div class="t">画像便利ツール</div>
 <div class="d">背景透過・形式変換・リサイズなど<br>ブラウザで使える無料ツール集です</div>
 </a>
+<a href="info.html">
+<div class="t">便利情報</div>
+<div class="d">全国の天気・地震情報<br>郵便番号・文字数・お勉強ツール</div>
+</a>
+<a href="iphone.html">
+<div class="t">iPhone情報</div>
+<div class="d">性能・個性・中古相場の一覧<br>全40機種を掲載</div>
+</a>
 <a href="secret.html">
 <div class="t">秘密基地</div>
 <div class="d">限定ファン向け<br>LINEオープンチャットへの入口です</div>
+</a>
+<a href="shop.html">
+<div class="t">お買い物</div>
+<div class="d">楽天市場・Yahoo!ショッピングへの入口<br>お買い物の前にここへどうぞ（準備中）</div>
 </a>
 <a href="https://www.youtube.com/@latemarined" target="_blank" rel="noopener">
 <div class="t">YouTube</div>
@@ -115,6 +127,18 @@
 </a>
 </div>
 </section>
+
+<section>
+<h2>このサイトを知り合いに教える</h2>
+<p>気に入ったら、友達にも教えてあげてください</p>
+<p>
+<button class="btn" id="shareNative" type="button">📤 シェアする</button>
+<a class="btn" href="https://social-plugins.line.me/lineit/share?url=https%3A%2F%2Fking-of-the-darkness.trailer-project.com%2F" target="_blank" rel="noopener">LINEで送る</a>
+<a class="btn" href="https://twitter.com/intent/tweet?text=%E9%AD%94%E7%8E%8B%E3%82%89%E3%81%A6%E3%82%89%E3%82%8B%E3%83%BB%E9%AD%94%E7%8E%8B%E3%82%89%E3%81%A6%E5%AD%90%E3%81%AE%E5%85%AC%E5%BC%8F%E3%83%95%E3%82%A1%E3%83%B3%E3%82%B5%E3%82%A4%E3%83%88%E3%80%80%E3%83%9F%E3%83%8B%E3%82%B2%E3%83%BC%E3%83%A0%E3%81%A8%E7%94%BB%E5%83%8F%E4%BE%BF%E5%88%A9%E3%83%84%E3%83%BC%E3%83%AB%E3%81%8C%E3%81%82%E3%82%8A%E3%81%BE%E3%81%99&url=https%3A%2F%2Fking-of-the-darkness.trailer-project.com%2F" target="_blank" rel="noopener">Xで教える</a>
+<button class="btn" id="shareCopy" type="button">URLをコピー</button>
+</p>
+<p id="shareMsg"></p>
+</section>
 </main>
 
 <footer class="site">
@@ -122,5 +146,19 @@
 YouTube：<a href="https://www.youtube.com/@latemarined" target="_blank" rel="noopener">らてまりチャンネル</a>
 </footer>
 
+<script>
+var SITE_URL = 'https://king-of-the-darkness.trailer-project.com/';
+var SHARE_TEXT = '魔王らてらる・魔王らて子の公式ファンサイト　ミニゲームと画像便利ツールがあります';
+document.getElementById('shareNative').addEventListener('click', function(){
+  if (navigator.share) { navigator.share({ title: document.title, text: SHARE_TEXT, url: SITE_URL }).catch(function(){}); }
+  else { document.getElementById('shareMsg').textContent = 'LINEかXのボタン、またはURLコピーをお使いください'; }
+});
+document.getElementById('shareCopy').addEventListener('click', function(){
+  var msg = document.getElementById('shareMsg');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(SITE_URL).then(function(){ msg.textContent = 'URLをコピーしました'; }).catch(function(){ msg.textContent = SITE_URL; });
+  } else { msg.textContent = SITE_URL; }
+});
+</script>
 </body>
 </html>

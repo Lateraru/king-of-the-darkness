@@ -27,6 +27,7 @@
   .hud b{font-size:1.2rem}
   .hud button{padding:10px 22px;border:none;border-radius:10px;background:var(--purple);color:#fff;font-size:1rem;cursor:pointer}
   .cart{margin-top:10px;color:var(--muted);font-size:.95rem;min-height:1.4em}
+  .voice{margin-top:10px;min-height:1.6em;color:#cfc4ee}
   .back-list{margin-top:28px}
 </style>
 </head>
@@ -34,7 +35,7 @@
 
 <header class="site">
   <div class="inner">
-    <a class="logo" href="index.html">魔王<span>らてらる</span> × 魔王<span>らて子</span></a>
+    <a class="logo" href="index.html">魔王<span>らてらる</span> × 魔王<span style="color:#a06cd5">らて子</span></a>
     <nav class="main">
       <a href="index.html">ホーム</a>
       <a href="index.html#news">お知らせ</a>
@@ -55,22 +56,25 @@
   <section style="margin-top:24px">
     <div class="panel">
       <p style="margin-top:0"><strong>◾︎遊び方◾︎</strong></p>
-      <p>商品は1つずつ現れて、数秒で流れていきます<br>「カゴに入れる」か「見送る」か選んでください</p>
+      <p>商品は1つずつ現れて、数秒で流れていきます<br>「カゴに入れる」か「見送る」か選んでください<br>目標金額を作るための商品は、必ずどこかで流れてきます　見逃さないでください</p>
       <p>合計が目標金額とぴったり合えば大成功<br>オーバーすると失敗です</p>
-      <p style="margin-bottom:0">途中で「お会計する」を押して終えることもできます<br>ぴったりに近いほど高得点です<br>制限時間60秒</p>
+      <p style="margin-bottom:0">全3ラウンド制で、各ラウンド制限時間45秒です<br>時々「タイムセール」で商品が半額になります　ただし合計金額の計算には気をつけてください<br>カゴは最大5つまでです　いっぱいになったら「1つ戻す」で空きを作ってください<br>間違えたら「1つ戻す」でカゴから戻せます<br>途中で「お会計する」を押してラウンドを終えることもできます　ぴったりに近いほど高得点です</p>
     </div>
   </section>
 
   <div class="stage">
     <div class="totals">
+      <span>ラウンド <b id="round">―</b>/3</span>
       <span>目標 <b id="target">―</b> G</span>
       <span>カゴ <b id="total">0</b> G</span>
       <span id="diff" style="font-weight:bold">―</span>
       <span>残り <b id="time">60</b> 秒</span>
     </div>
     <div class="timebar"><div id="timeBar"></div></div>
+    <div class="voice" id="voice"></div>
 
     <div class="slot">
+      <div id="saleBadge" style="display:none;color:#e5383b;font-weight:bold;font-size:1.1rem">🔥 タイムセール</div>
       <div class="emoji" id="itemEmoji">🛒</div>
       <div class="name" id="itemName">スタートを押してください</div>
       <div class="price" id="itemPrice"></div>
@@ -81,6 +85,7 @@
       <button type="button" class="btn-skip" id="btnSkip" disabled>見送る</button>
     </div>
     <button type="button" class="btn-check" id="btnCheck" disabled>お会計する</button>
+    <button type="button" class="btn-check" id="btnUndo" style="background:#3d2a5e" disabled>1つ戻す</button>
     <div class="cart" id="cart"></div>
 
     <div class="hud">
@@ -120,29 +125,65 @@
     { e: '🐉', n: 'ドラゴントースター', p: 980 },
     { e: '🧯', n: '火災保険', p: 300 }
   ];
-  var SLOT_MS = 2600, GAME_MS = 60000;
+  var SLOT_MS = 2400, ROUND_MS = 45000, ROUNDS = 3;
+  var CART_MAX = 5;
 
   var el = {};
-  ['target','total','diff','time','timeBar','itemEmoji','itemName','itemPrice','slotBar','btnBuy','btnSkip','btnCheck','cart','btnStart','best','result'].forEach(function(id){ el[id] = document.getElementById(id); });
+  ['target','total','diff','time','timeBar','itemEmoji','itemName','itemPrice','slotBar','btnBuy','btnSkip','btnCheck','btnUndo','cart','btnStart','best','result','round','voice','saleBadge'].forEach(function(id){ el[id] = document.getElementById(id); });
 
   var best = 0;
   try { best = parseInt(localStorage.getItem('maouShopBest') || '0', 10) || 0; } catch(e) {}
   if (best) el.best.textContent = best;
 
-  var playing = false, target = 0, total = 0, cartItems = [];
-  var current = null, slotEndsAt = 0, endsAt = 0, rafId = 0;
+  var playing = false, state = 'idle'; // idle | playing | between | final
+  var round = 0, scoreTotal = 0, target = 0, total = 0, cart = [];
+  var roundCombo = [], stream = [], streamIdx = 0;
+  var current = null, currentPrice = 0, currentSale = false, slotEndsAt = 0, endsAt = 0, rafId = 0;
 
-  function pickTarget(){
-    var sum = 0, k = 3 + Math.floor(Math.random() * 3);
-    for (var i = 0; i < k; i++) sum += ITEMS[Math.floor(Math.random() * ITEMS.length)].p;
-    return sum;
+  function shuffle(a){
+    var arr = a.slice();
+    for (var i = arr.length - 1; i > 0; i--){
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+    }
+    return arr;
+  }
+  function salePrice(p){ return Math.max(10, Math.round(p / 2 / 10) * 10); }
+  function say(who, text){ el.voice.innerHTML = '<b>' + who + '</b>：' + text; }
+  function pick(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
+
+  function buildRound(){
+    var pool = shuffle(ITEMS);
+    var k = 3 + Math.floor(Math.random() * 3);
+    roundCombo = pool.slice(0, k);
+    target = 0;
+    roundCombo.forEach(function(it){ target += it.p; });
+    total = 0; cart = [];
+    buildStream();
+  }
+  function buildStream(){
+    var entries = roundCombo.map(function(it){ return { it: it, combo: true }; });
+    for (var i = 0; i < 10; i++) entries.push({ it: ITEMS[Math.floor(Math.random() * ITEMS.length)], combo: false });
+    stream = shuffle(entries);
+    streamIdx = 0;
   }
   function nextItem(){
-    current = ITEMS[Math.floor(Math.random() * ITEMS.length)];
+    if (streamIdx >= stream.length) buildStream();
+    var entry = stream[streamIdx++];
+    current = entry.it;
+    currentSale = false;
+    currentPrice = current.p;
+    if (!entry.combo && Math.random() < 0.25){
+      currentSale = true;
+      currentPrice = salePrice(current.p);
+    }
     slotEndsAt = performance.now() + SLOT_MS;
     el.itemEmoji.textContent = current.e;
     el.itemName.textContent = current.n;
-    el.itemPrice.textContent = current.p + ' G';
+    el.saleBadge.style.display = currentSale ? 'block' : 'none';
+    el.itemPrice.textContent = currentSale ? 'セール価格 ' + currentPrice + ' G（通常 ' + current.p + ' G）' : current.p + ' G';
+    if (currentSale) say('らて子', 'タイムセール！　でも合計金額は大丈夫？');
+    else if (total < target && currentPrice > target - total) say('らてらる', '待て、それを買うとオーバーするぞ');
   }
   function updateTotals(){
     el.total.textContent = total;
@@ -150,79 +191,116 @@
     if (d > 0) { el.diff.textContent = 'あと ' + d + ' G'; el.diff.style.color = '#cfc4ee'; }
     else if (d === 0) { el.diff.textContent = 'ぴったり'; el.diff.style.color = '#57ab5a'; }
     else { el.diff.textContent = (-d) + ' G オーバー'; el.diff.style.color = '#e5484d'; }
-    el.cart.textContent = cartItems.length ? 'カゴの中身：' + cartItems.join('、') : '';
+    el.cart.textContent = cart.length ? 'カゴの中身（' + cart.length + '/' + CART_MAX + '）：' + cart.map(function(c){ return c.n + '（' + c.p + ' G）'; }).join('、') : 'カゴは空です（最大 ' + CART_MAX + ' つまで）';
+    el.btnUndo.disabled = !playing || cart.length === 0;
   }
-  function finish(kind){
+  function titleFor(score){
+    if (score >= 4000) return '伝説の買い物マスター';
+    if (score >= 3200) return '買い物上手';
+    if (score >= 2000) return '一人前の買い手';
+    return '買い物見習い';
+  }
+  function endRound(kind){
     playing = false;
+    state = 'between';
     cancelAnimationFrame(rafId);
-    el.btnBuy.disabled = true; el.btnSkip.disabled = true; el.btnCheck.disabled = true;
+    el.btnBuy.disabled = true; el.btnSkip.disabled = true; el.btnCheck.disabled = true; el.btnUndo.disabled = true;
     var remainSec = Math.max(0, (endsAt - performance.now()) / 1000);
+    var diff = Math.abs(target - total);
     var score, label, color;
-    if (kind === 'exact') {
+    if (kind === 'exact' || (kind === 'check' && diff === 0)) {
       score = 1000 + Math.round(remainSec) * 10;
-      label = 'ぴったり大成功' + score + ' 点';
+      label = 'ぴったり大成功　' + score + ' 点';
       color = '#57ab5a';
+      say('らて子', 'ぴったり！　すごいすごい！');
     } else if (kind === 'over') {
       score = 0;
-      label = 'オーバーで失敗0 点';
+      label = 'オーバーで失敗　0 点';
       color = '#e5484d';
+      say('らてらる', 'オーバーだ…予算超過だ');
     } else if (kind === 'timeup') {
-      var d = Math.abs(target - total);
-      score = Math.max(0, 600 - d * 5);
-      label = '時間切れ差 ' + d + ' G で ' + score + ' 点';
+      score = Math.max(0, 600 - diff * 5);
+      label = '時間切れ　差 ' + diff + ' G で ' + score + ' 点';
       color = '#d99a3d';
+      say('らてらる', '時間切れだ　あと ' + diff + ' G だったな');
     } else {
-      var d2 = Math.abs(target - total);
-      score = Math.max(0, 600 - d2 * 5);
-      label = 'お会計差 ' + d2 + ' G で ' + score + ' 点';
-      color = d2 === 0 ? '#57ab5a' : '#d99a3d';
-      if (d2 === 0) score = 1000 + Math.round(remainSec) * 10;
+      score = Math.max(0, 600 - diff * 5);
+      label = 'お会計　差 ' + diff + ' G で ' + score + ' 点';
+      color = '#d99a3d';
+      say('らて子', 'お会計だね　差は ' + diff + ' G でした');
     }
-    el.result.textContent = label;
-    el.result.style.color = color;
-    if (score > best) {
-      best = score; el.best.textContent = best;
-      try { localStorage.setItem('maouShopBest', String(best)); } catch(e) {}
-    }
-    el.btnStart.textContent = 'もう一度';
+    scoreTotal += score;
     el.itemEmoji.textContent = '🧾';
-    el.itemName.textContent = 'お買い物終了';
-    showOverNav();
+    el.itemName.textContent = 'ラウンド' + round + ' 終了';
     el.itemPrice.textContent = '';
+    el.saleBadge.style.display = 'none';
+    if (round < ROUNDS) {
+      el.result.textContent = label + '（合計 ' + scoreTotal + ' 点）';
+      el.result.style.color = color;
+      el.btnStart.textContent = '次のラウンドへ';
+    } else {
+      state = 'final';
+      el.result.textContent = '全ラウンド終了　合計 ' + scoreTotal + ' 点　称号：' + titleFor(scoreTotal);
+      el.result.style.color = '#e8b34b';
+      if (scoreTotal > best) {
+        best = scoreTotal; el.best.textContent = best;
+        try { localStorage.setItem('maouShopBest', String(best)); } catch(e) {}
+      }
+      el.btnStart.textContent = 'もう一度';
+      showOverNav();
+    }
+  }
+  function startRound(){
+    round++;
+    buildRound();
+    el.round.textContent = round;
+    el.target.textContent = target;
+    el.result.textContent = '';
+    playing = true; state = 'playing';
+    endsAt = performance.now() + ROUND_MS;
+    el.btnBuy.disabled = false; el.btnSkip.disabled = false; el.btnCheck.disabled = false;
+    el.btnStart.textContent = 'やり直し';
+    say(round % 2 === 1 ? 'らてらる' : 'らて子', round % 2 === 1 ? 'さあ、異世界ショッピングの時間だ　目標は ' + target + ' G だぞ' : '次のお買い物だよ　目標は ' + target + ' G です');
+    nextItem();
+    updateTotals();
+    cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(loop);
   }
   function loop(){
     if (!playing) return;
     var now = performance.now();
     var remain = endsAt - now;
     el.time.textContent = Math.max(0, Math.ceil(remain / 1000));
-    el.timeBar.style.width = Math.max(0, remain / GAME_MS * 100) + '%';
+    el.timeBar.style.width = Math.max(0, remain / ROUND_MS * 100) + '%';
     el.slotBar.style.width = Math.max(0, (slotEndsAt - now) / SLOT_MS * 100) + '%';
-    if (remain <= 0) { finish('timeup'); return; }
+    if (remain <= 0) { endRound('timeup'); return; }
     if (now >= slotEndsAt) nextItem();
     rafId = requestAnimationFrame(loop);
   }
 
   el.btnStart.addEventListener('click', function(){
-    target = pickTarget();
-    total = 0; cartItems = [];
-    el.target.textContent = target;
-    el.result.textContent = '';
-    playing = true;
-    endsAt = performance.now() + GAME_MS;
-    el.btnBuy.disabled = false; el.btnSkip.disabled = false; el.btnCheck.disabled = false;
-    nextItem();
-    updateTotals();
-    cancelAnimationFrame(rafId);
-    rafId = requestAnimationFrame(loop);
-    el.btnStart.textContent = 'やり直し';
+    if (state === 'playing') { // やり直し：最初から
+      cancelAnimationFrame(rafId);
+      playing = false;
+      round = 0; scoreTotal = 0;
+      startRound();
+      return;
+    }
+    if (state === 'between') { startRound(); return; }
+    round = 0; scoreTotal = 0;
+    startRound();
   });
   el.btnBuy.addEventListener('click', function(){
     if (!playing || !current) return;
-    total += current.p;
-    cartItems.push(current.n);
+    if (cart.length >= CART_MAX) { say('らてらる', 'カゴがいっぱいだ　何か戻してから買うんだ'); return; }
+    total += currentPrice;
+    cart.push({ n: current.n, p: currentPrice });
+    if (total === target) { updateTotals(); endRound('exact'); return; }
+    if (total > target) { updateTotals(); endRound('over'); return; }
+    var remain = target - total;
+    if (remain <= 100) say('らて子', 'あと ' + remain + ' G！　ピッタリが見えてきたよ');
+    else if (Math.random() < 0.4) say('らてらる', pick(['いい買い物だ', 'その調子だ', '計算は合っているな']));
     updateTotals();
-    if (total === target) { finish('exact'); return; }
-    if (total > target) { finish('over'); return; }
     nextItem();
   });
   el.btnSkip.addEventListener('click', function(){
@@ -231,7 +309,14 @@
   });
   el.btnCheck.addEventListener('click', function(){
     if (!playing) return;
-    finish('check');
+    endRound('check');
+  });
+  el.btnUndo.addEventListener('click', function(){
+    if (!playing || !cart.length) return;
+    var it = cart.pop();
+    total -= it.p;
+    say('らてらる', it.n + ' を戻したぞ　慎重だな');
+    updateTotals();
   });
 })();
 </script>
@@ -246,11 +331,19 @@ document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { pass
 <a href="games.html"><button type="button">🎮 違うゲームをする</button></a>
 <a href="index.html"><button type="button">🏰 トップへ戻る</button></a>
 <a href="https://youtu.be/YL26sVq0rjE" target="_blank" rel="noopener"><button type="button">🎵 404あたし未検出</button></a>
+<a href="https://youtu.be/6c3PI1Vy3Nc" target="_blank" rel="noopener"><button type="button">🎧 らてらるのヒーリング動画</button></a>
 <a href="https://store.line.me/stickershop/author/6590694/ja" target="_blank" rel="noopener"><button type="button">🛒 魔王さん制作のLINEスタンプを買う</button></a>
+<button type="button" onclick="shareSite()">📣 このサイトを知り合いに教える</button>
 </div>
 </div>
 <script>
 function showOverNav(){ var n = document.getElementById('overNav'); if (n) n.style.display = 'block'; }
+function shareSite(){
+  var url = 'https://king-of-the-darkness.trailer-project.com/';
+  var text = '魔王らてらる・魔王らて子の公式ファンサイト　ミニゲームと画像便利ツールがあります';
+  if (navigator.share) { navigator.share({ title: document.title, text: text, url: url }).catch(function(){}); }
+  else { window.open('https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(url), '_blank'); }
+}
 </script>
 <div style="text-align:center;margin:22px 0 6px"><a href="index.html" style="color:#c9a227;font-weight:bold">トップページに戻る</a></div>
 </body>

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>動体視力テスト | ミニゲーム | 魔王らてらる・魔王らて子 公式ファンサイト</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .stage{max-width:560px;margin:0 auto;text-align:center}
+  .spinarea{height:220px;display:flex;align-items:center;justify-content:center;background:#1a1033;border:2px solid var(--line);border-radius:12px;margin-top:14px;overflow:hidden}
+  #word{font-size:2.6rem;font-weight:bold;color:#e8b34b;display:inline-block;white-space:nowrap}
+  .choices{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+  .choices button{padding:14px;border:2px solid var(--purple);border-radius:12px;background:#241739;color:#fff;font-size:1.15rem;cursor:pointer}
+  .choices button:disabled{opacity:.55;cursor:default}
+  .choices button.right{border-color:#57ab5a;background:#1d3320}
+  .choices button.wrong{border-color:#e5484d;background:#3a1d20}
+  .bigbtn{font-size:1.15rem;padding:13px 34px;border-radius:999px;border:2px solid var(--purple);background:#3d2a5e;color:#fff;cursor:pointer;margin-top:14px}
+  .feedback{margin-top:14px;min-height:1.8em;font-size:1.1rem;font-weight:bold}
+  .hud{display:flex;gap:18px;justify-content:center;margin-top:10px;flex-wrap:wrap}
+  .back-list{margin-top:28px;text-align:left}
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="inner">
+    <a class="logo" href="index.html">魔王<span>らてらる</span> × 魔王<span style="color:#a06cd5">らて子</span></a>
+    <nav class="main">
+      <a href="index.html">ホーム</a>
+      <a href="index.html#news">お知らせ</a>
+      <a href="board.html">ファン掲示板</a>
+      <a href="chat.html">AIチャット</a>
+      <a href="games.html" class="active">ミニゲーム</a>
+      <a href="secret.html">秘密基地</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="stage">
+<h1>動体視力テスト</h1>
+<p>言葉がぐるぐる素早く回転します<br>
+動体視力を頼りに、何と書いてあるか3択で当ててください<br>
+ラウンドが進むほど速くなります　全10問</p>
+<div class="hud">
+<span id="progress">第 ー 問</span>
+<span>スコア <b id="score">0</b></span>
+<span>ベスト <b id="best">―</b></span>
+</div>
+<div class="spinarea"><span id="word">スタートを押してください</span></div>
+<button class="bigbtn" id="btnGo" type="button">スタート</button>
+<div class="choices" id="choices" style="display:none">
+<button type="button" id="c0"></button>
+<button type="button" id="c1"></button>
+<button type="button" id="c2"></button>
+</div>
+<div class="feedback" id="feedback"></div>
+<button class="bigbtn" id="btnNext" type="button" style="display:none">次へ</button>
+<div id="overNav" style="display:none;text-align:center;margin:16px auto;padding:14px;border:1px solid #a06cd5;border-radius:12px;max-width:560px">
+<p style="margin:4px 0;font-weight:bold">おつかれさまでした</p>
+<p id="visionResult" style="margin:4px 0"></p>
+<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px">
+<button type="button" onclick="location.reload()">🔁 また遊ぶ</button>
+<a href="games.html"><button type="button">🎮 違うゲームをする</button></a>
+<a href="index.html"><button type="button">🏰 トップへ戻る</button></a>
+<a href="https://youtu.be/YL26sVq0rjE" target="_blank" rel="noopener"><button type="button">🎵 404あたし未検出</button></a>
+<a href="https://youtu.be/6c3PI1Vy3Nc" target="_blank" rel="noopener"><button type="button">🎧 らてらるのヒーリング動画</button></a>
+<a href="https://store.line.me/stickershop/author/6590694/ja" target="_blank" rel="noopener"><button type="button">🛒 魔王さん制作のLINEスタンプを買う</button></a>
+<button type="button" onclick="shareSite()">📣 このサイトを知り合いに教える</button>
+</div>
+</div>
+  <div class="back-list">
+    <p><a href="games.html">← ミニゲーム一覧に戻る</a></p>
+  </div>
+</div>
+</main>
+
+<div style="text-align:center;margin:22px 0 6px"><a href="index.html" style="color:#c9a227;font-weight:bold">トップページに戻る</a></div>
+<script>
+function showOverNav(){ var n = document.getElementById('overNav'); if (n) n.style.display = 'block'; }
+function shareSite(){
+  var url = 'https://king-of-the-darkness.trailer-project.com/';
+  var text = '魔王らてらる・魔王らて子の公式ファンサイト　ミニゲームと画像便利ツールがあります';
+  if (navigator.share) { navigator.share({ title: document.title, text: text, url: url }).catch(function(){}); }
+  else { window.open('https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(url), '_blank'); }
+}
+</script>
+<script>
+function $(id){ return document.getElementById(id); }
+var BANK = [
+  ['黒猫', '白猫', '三毛猫'],
+  ['金貨', '銀貨', '銅貨'],
+  ['青い鳥', '青い海', '青い空'],
+  ['月曜日', '火曜日', '水曜日'],
+  ['魔法陣', '魔法瓶', '魔法院'],
+  ['ポーション', 'モーション', 'ローション'],
+  ['魔王城', '魔王窟', '魔界城'],
+  ['図書館', '図書室', '博物館'],
+  ['異世界', '異次元', '異国'],
+  ['星空', '星屑', '星祭り'],
+  ['回復薬', '解毒薬', '回復魔法'],
+  ['温泉旅行', '温泉旅館', '温泉饅頭'],
+  ['メロディ', 'メロディー', 'メロデー'],
+  ['ドラゴン', 'トラゴン', 'ドラコソ'],
+  ['転生', '転世', '転生者'],
+  ['魔法少女', '魔法少年', '魔法使い'],
+  ['パンケーキ', 'ホットケーキ', 'パソケーキ'],
+  ['剣と盾', '剣と魔法', '弓と矢'],
+  ['魔王らてらる', '魔王らて子', '魔王らてらら']
+];
+var TOTAL_Q = 10, SPIN_TICKS = 375; // 約6秒
+var qs = [], qi = 0, score = 0, correctCount = 0;
+var spinning = false, angle = 0, degPerTick = 4, dir = 1, ticksLeft = 0, timer = null, correctIdx = -1, answered = false;
+var best = 0;
+try { best = parseInt(localStorage.getItem('maouVisionBest') || '0', 10) || 0; } catch(e) {}
+if (best) $('best').textContent = best;
+
+function shuffle(a){
+  var arr = a.slice();
+  for (var i = arr.length - 1; i > 0; i--){
+    var j = Math.floor(Math.random() * (i + 1));
+    var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+  }
+  return arr;
+}
+function periodFor(q){ return Math.max(0.45, 1.3 - q * 0.095); }
+function titleFor(n){
+  if (n >= 10) return '動体視力の達人';
+  if (n >= 8) return '鷹の目';
+  if (n >= 6) return 'なかなかの目';
+  if (n >= 4) return '普通の目';
+  return 'もっと鍛えよう';
+}
+function startGame(){
+  qs = shuffle(BANK).slice(0, TOTAL_Q);
+  qi = 0; score = 0; correctCount = 0;
+  $('score').textContent = '0';
+  $('btnGo').style.display = 'none';
+  startQuestion();
+}
+function startQuestion(){
+  answered = false;
+  var set = qs[qi];
+  var order = shuffle([0, 1, 2]);
+  correctIdx = order.indexOf(0);
+  for (var k = 0; k < 3; k++){ $('c' + k).textContent = set[order[k]]; $('c' + k).className = ''; }
+  $('progress').textContent = '第 ' + (qi + 1) + ' 問 / ' + TOTAL_Q;
+  $('feedback').textContent = '';
+  $('choices').style.display = 'none';
+  $('btnNext').style.display = 'none';
+  $('btnGo').style.display = 'inline-block';
+  $('btnGo').textContent = 'こたえる';
+  var w = $('word');
+  w.textContent = set[0];
+  angle = 0;
+  dir = Math.random() < 0.5 ? 1 : -1;
+  degPerTick = 360 / (periodFor(qi) * 1000 / 16) * dir;
+  ticksLeft = SPIN_TICKS;
+  spinning = true;
+  w.style.transform = 'rotate(0deg)';
+  clearInterval(timer);
+  timer = setInterval(tick, 16);
+}
+function tick(){
+  if (!spinning) return;
+  angle += degPerTick;
+  $('word').style.transform = 'rotate(' + angle + 'deg)';
+  ticksLeft--;
+  if (ticksLeft <= 0) stopSpin();
+}
+function stopSpin(){
+  if (!spinning) return;
+  spinning = false;
+  clearInterval(timer);
+  $('word').style.transform = 'rotate(' + angle + 'deg)';
+  $('btnGo').style.display = 'none';
+  $('choices').style.display = 'flex';
+  for (var k = 0; k < 3; k++) $('c' + k).disabled = false;
+}
+function answer(i){
+  if (answered || spinning) return;
+  answered = true;
+  var set = qs[qi];
+  for (var k = 0; k < 3; k++){
+    $('c' + k).disabled = true;
+    if (k === correctIdx) $('c' + k).className = 'right';
+    else if (k === i) $('c' + k).className = 'wrong';
+  }
+  $('word').style.transform = 'rotate(0deg)';
+  if (i === correctIdx){
+    correctCount++;
+    score += 100 + qi * 10;
+    $('feedback').textContent = '⭕ 正解！　「' + set[0] + '」でした';
+    $('feedback').style.color = '#57ab5a';
+  } else {
+    $('feedback').textContent = '❌ 不正解　正解は「' + set[0] + '」でした';
+    $('feedback').style.color = '#e5484d';
+  }
+  $('score').textContent = score;
+  $('btnNext').style.display = 'inline-block';
+  $('btnNext').textContent = qi + 1 >= TOTAL_Q ? '結果を見る' : '次へ';
+}
+function finish(){
+  $('progress').textContent = '終了';
+  $('word').textContent = 'おつかれさまでした';
+  $('choices').style.display = 'none';
+  $('btnNext').style.display = 'none';
+  $('feedback').textContent = '';
+  $('visionResult').textContent = '正解 ' + correctCount + ' / ' + TOTAL_Q + ' 問　スコア ' + score + ' 点　称号：' + titleFor(correctCount);
+  if (score > best){
+    best = score;
+    $('best').textContent = best;
+    try { localStorage.setItem('maouVisionBest', String(best)); } catch(e) {}
+  }
+  showOverNav();
+}
+$('btnGo').addEventListener('click', function(){
+  if (spinning) { stopSpin(); return; }
+  if (qi === 0 && qs.length === 0) { startGame(); return; }
+  startGame();
+});
+$('btnNext').addEventListener('click', function(){
+  qi++;
+  if (qi >= TOTAL_Q) finish();
+  else startQuestion();
+});
+for (var k = 0; k < 3; k++){
+  (function(idx){ $('c' + idx).addEventListener('click', function(){ answer(idx); }); })(k);
+}
+</script>
+</body>
+</html>

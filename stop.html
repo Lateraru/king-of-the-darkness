@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ピッタリ止めろ | ミニゲーム | 魔王らてらる・魔王らて子 公式ファンサイト</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .stage{max-width:520px;margin:0 auto;text-align:center}
+  .clock{font-size:4rem;font-weight:bold;font-variant-numeric:tabular-nums;margin:22px 0 6px;color:#e8b34b}
+  .bigbtn{font-size:1.4rem;padding:16px 44px;border-radius:999px;border:2px solid var(--purple);background:#3d2a5e;color:#fff;cursor:pointer;margin-top:14px}
+  .bigbtn:active{transform:scale(.96)}
+  .result{margin-top:18px;line-height:1.8;font-size:1.05rem;min-height:5.4em}
+  .rating{font-size:1.5rem;font-weight:bold;color:#e8b34b}
+  select{background:#100d20;color:#eee;border:1px solid #3a3358;border-radius:8px;padding:8px;font-size:1rem}
+  .back-list{margin-top:28px;text-align:left}
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="inner">
+    <a class="logo" href="index.html">魔王<span>らてらる</span> × 魔王<span style="color:#a06cd5">らて子</span></a>
+    <nav class="main">
+      <a href="index.html">ホーム</a>
+      <a href="index.html#news">お知らせ</a>
+      <a href="board.html">ファン掲示板</a>
+      <a href="chat.html">AIチャット</a>
+      <a href="games.html" class="active">ミニゲーム</a>
+      <a href="secret.html">秘密基地</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="stage">
+<h1>ピッタリ止めろ</h1>
+<p>目標の秒数ピッタリで止めるゲームです<br>
+2秒を過ぎるとタイマーが見えなくなります　あとは感覚だけが頼りです</p>
+<div>
+目標：
+<select id="targetSel">
+<option value="5">5秒</option>
+<option value="10" selected>10秒</option>
+<option value="15">15秒</option>
+<option value="20">20秒</option>
+<option value="30">30秒</option>
+</select>
+</div>
+<div id="bestLine" style="margin-top:8px"></div>
+<div class="clock" id="clock">0.00</div>
+<button class="bigbtn" id="mainBtn" type="button">スタート</button>
+<div class="result" id="result"></div>
+<div id="overNav" style="display:none;text-align:center;margin:16px auto;padding:14px;border:1px solid #a06cd5;border-radius:12px;max-width:560px">
+<p style="margin:4px 0;font-weight:bold">おつかれさまでした</p>
+<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px">
+<button type="button" onclick="location.reload()">🔁 また遊ぶ</button>
+<a href="games.html"><button type="button">🎮 違うゲームをする</button></a>
+<a href="index.html"><button type="button">🏰 トップへ戻る</button></a>
+<a href="https://youtu.be/YL26sVq0rjE" target="_blank" rel="noopener"><button type="button">🎵 404あたし未検出</button></a>
+<a href="https://youtu.be/6c3PI1Vy3Nc" target="_blank" rel="noopener"><button type="button">🎧 らてらるのヒーリング動画</button></a>
+<a href="https://store.line.me/stickershop/author/6590694/ja" target="_blank" rel="noopener"><button type="button">🛒 魔王さん制作のLINEスタンプを買う</button></a>
+<button type="button" onclick="shareSite()">📣 このサイトを知り合いに教える</button>
+</div>
+</div>
+  <div class="back-list">
+    <p><a href="games.html">← ミニゲーム一覧に戻る</a></p>
+  </div>
+</div>
+</main>
+
+<div style="text-align:center;margin:22px 0 6px"><a href="index.html" style="color:#c9a227;font-weight:bold">トップページに戻る</a></div>
+<script>
+function showOverNav(){ var n = document.getElementById('overNav'); if (n) n.style.display = 'block'; }
+function shareSite(){
+  var url = 'https://king-of-the-darkness.trailer-project.com/';
+  var text = '魔王らてらる・魔王らて子の公式ファンサイト　ミニゲームと画像便利ツールがあります';
+  if (navigator.share) { navigator.share({ title: document.title, text: text, url: url }).catch(function(){}); }
+  else { window.open('https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(url), '_blank'); }
+}
+</script>
+<script>
+function $(id){ return document.getElementById(id); }
+var state = 'idle'; // idle | running | stopped
+var t0 = 0, timer = null;
+
+function ratingFor(absDiff){
+  if (absDiff <= 0.10) return '神業です！';
+  if (absDiff <= 0.30) return 'すごい！　ほぼピッタリ';
+  if (absDiff <= 0.50) return 'おしい！';
+  if (absDiff <= 1.00) return 'なかなかの感覚です';
+  return 'まだまだ　感覚を研ぎ澄ましましょう';
+}
+function loadBests(){
+  try { return JSON.parse(localStorage.getItem('maouStopBestV1') || '{}'); } catch(e){ return {}; }
+}
+function showBest(){
+  var target = $('targetSel').value;
+  var bests = loadBests();
+  var b = bests[target];
+  $('bestLine').textContent = b !== undefined ? 'この目標のベスト： ' + b.toFixed(2) + ' 秒のズレ' : 'この目標のベスト： まだありません';
+}
+function fmt(sec){ return sec.toFixed(2); }
+
+function startGame(){
+  state = 'running';
+  t0 = performance.now();
+  $('result').innerHTML = '';
+  $('targetSel').disabled = true;
+  $('mainBtn').textContent = 'ストップ';
+  timer = setInterval(function(){
+    var el = (performance.now() - t0) / 1000;
+    $('clock').textContent = el < 2 ? fmt(el) : '？.？？';
+  }, 31);
+}
+function stopGame(){
+  clearInterval(timer);
+  var el = (performance.now() - t0) / 1000;
+  var target = Number($('targetSel').value);
+  var diff = el - target;
+  var abs = Math.abs(diff);
+  $('clock').textContent = fmt(el);
+  var dir = diff === 0 ? 'ピッタリ' : (diff > 0 ? '遅かったです' : '早かったです');
+  var bests = loadBests();
+  var prev = bests[String(target)];
+  var isRecord = prev === undefined || abs < prev;
+  if (isRecord){
+    bests[String(target)] = abs;
+    localStorage.setItem('maouStopBestV1', JSON.stringify(bests));
+  }
+  $('result').innerHTML = 'あなたは <b>' + fmt(el) + ' 秒</b> で止めました<br>'
+    + '目標の ' + target + ' 秒より <b>' + fmt(abs) + ' 秒</b> ' + dir + '<br>'
+    + '<span class="rating">' + ratingFor(abs) + '</span>'
+    + (isRecord ? '<br>🎉 ベスト記録を更新しました' : '');
+  state = 'stopped';
+  $('mainBtn').textContent = 'もう一度';
+  $('targetSel').disabled = false;
+  showBest();
+  showOverNav();
+}
+$('mainBtn').addEventListener('click', function(){
+  if (state === 'running') stopGame();
+  else startGame();
+});
+$('targetSel').addEventListener('change', showBest);
+showBest();
+</script>
+</body>
+</html>
