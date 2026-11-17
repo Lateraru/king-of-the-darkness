@@ -607,7 +607,6 @@
         addFloat(W / 2, 90, '🐾 スタンピード発生！', '#ffd76b');
         sfxWarn();
       }
-      bossAlive = enemies.some(function(en){ return en.boss; });
       var bl = enemies.filter(function(en){ return en.boss && !en.fused; });
       if (bl.length >= 2) {
         fusionT++;
