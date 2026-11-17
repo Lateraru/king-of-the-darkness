@@ -48,14 +48,14 @@
 
 <main>
   <h1 class="page">こっそりお菓子大作戦</h1>
-  <p class="lead">立ったまま寝ている魔王らてらるの奥に、お菓子があります。気づかれずに近づいて、らて子にお菓子を食べさせよう。</p>
+  <p class="lead">立ったまま寝ている魔王らてらるの奥に、お菓子があります<br>気づかれずに近づいて、らて子にお菓子を食べさせよう</p>
 
   <section style="margin-top:24px">
     <div class="panel">
       <p style="margin-top:0"><strong>◾︎遊び方◾︎</strong></p>
       <p>「すすむ」ボタンを押しっぱなしで前進、離すと止まります（スペースキーでも可）</p>
-      <p>魔王が寝ている間だけ進めます。目を開けている時に動くと、即バレます</p>
-      <p style="margin-bottom:0">起きる直前は「む…」と気配がします。近づくほど、寝ている時間が短くなります</p>
+      <p>魔王が寝ている間だけ進めます<br>目を開けている時に動くと、即バレます</p>
+      <p style="margin-bottom:0">起きる直前は「む…」と気配がします<br>近づくほど、寝ている時間が短くなります</p>
     </div>
   </section>
 
@@ -118,7 +118,7 @@
       guardImg.src = FACE_AWAKE;
       guard.classList.add('awake');
       zzz.textContent = '‼️';
-      stateLine.textContent = '起きた。動くな';
+      stateLine.textContent = '起きた動くな';
       stateLine.className = 'state-line awake';
     } else if (mode === 'warn') {
       zzz.textContent = 'む…';
@@ -178,16 +178,18 @@
 
   function caught(){
     state = 'caught';
+    showOverNav();
     sneakImg.src = FACE_K_LOSE;
-    elResult.textContent = 'バレた。' + Math.floor(progress) + '% 地点で捕獲';
+    elResult.textContent = 'バレた' + Math.floor(progress) + '% 地点で捕獲';
     elResult.style.color = '#e5484d';
     btnStart.textContent = 'もう一度';
   }
   function clear(now){
     state = 'clear';
+    showOverNav();
     sneakImg.src = FACE_K_WIN;
     var t = (now - startedAt) / 1000;
-    elResult.textContent = 'お菓子ゲット。' + t.toFixed(1) + ' 秒';
+    elResult.textContent = 'お菓子ゲット' + t.toFixed(1) + ' 秒';
     elResult.style.color = '#57ab5a';
     if (!best || t < best) {
       best = t; elBest.textContent = best.toFixed(1) + ' 秒';
@@ -227,5 +229,20 @@
   });
 })();
 </script>
+
+<div id="overNav" style="display:none;text-align:center;margin:16px auto;padding:14px;border:1px solid #a06cd5;border-radius:12px;max-width:560px">
+<p style="margin:4px 0;font-weight:bold">おつかれさまでした</p>
+<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px">
+<button type="button" onclick="location.reload()">🔁 また遊ぶ</button>
+<a href="games.html"><button type="button">🎮 違うゲームをする</button></a>
+<a href="index.html"><button type="button">🏰 トップへ戻る</button></a>
+<a href="https://youtu.be/YL26sVq0rjE" target="_blank" rel="noopener"><button type="button">🎵 404あたし未検出</button></a>
+<a href="https://store.line.me/stickershop/author/6590694/ja" target="_blank" rel="noopener"><button type="button">🛒 魔王さん制作のLINEスタンプを買う</button></a>
+</div>
+</div>
+<script>
+function showOverNav(){ var n = document.getElementById('overNav'); if (n) n.style.display = 'block'; }
+</script>
+<div style="text-align:center;margin:22px 0 6px"><a href="index.html" style="color:#c9a227;font-weight:bold">トップページに戻る</a></div>
 </body>
 </html>

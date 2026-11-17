@@ -37,13 +37,13 @@
 
 <main>
   <h1 class="page">魔王の間合い</h1>
-  <p class="lead">反射神経テスト。赤い画面で待って、緑になって顔が出たら、すかさずタップ。</p>
+  <p class="lead">反射神経テスト<br>赤い画面で待って、緑になって顔が出たら、すかさずタップ</p>
 
   <section style="margin-top:24px">
     <div class="panel">
       <p style="margin-top:0"><strong>◾︎遊び方◾︎</strong></p>
-      <p>画面を押すと開始。緑になる前に押すとお手つきです</p>
-      <p>たまに「今だ…？」と違う絵が出るフェイントがあります。それもお手つきです</p>
+      <p>画面を押すと開始<br>緑になる前に押すとお手つきです</p>
+      <p>たまに「今だ…？」と違う絵が出るフェイントがあります<br>それもお手つきです</p>
       <p style="margin-bottom:0">3回測って、一番速いタイムで称号が決まります（200ms以下：魔王級／280ms以下：騎士級／350ms以下：兵士級）</p>
     </div>
   </section>
@@ -181,6 +181,7 @@
         big.textContent = '結果：' + sessionBest + 'ms';
         sub.textContent = '押すと、もう一度挑戦できます';
         elRank.textContent = '称号：' + rank(sessionBest);
+        showOverNav();
       } else {
         arena.className = 'arena idle';
         big.textContent = ms + 'ms';
@@ -193,5 +194,20 @@
   });
 })();
 </script>
+
+<div id="overNav" style="display:none;text-align:center;margin:16px auto;padding:14px;border:1px solid #a06cd5;border-radius:12px;max-width:560px">
+<p style="margin:4px 0;font-weight:bold">おつかれさまでした</p>
+<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px">
+<button type="button" onclick="location.reload()">🔁 また遊ぶ</button>
+<a href="games.html"><button type="button">🎮 違うゲームをする</button></a>
+<a href="index.html"><button type="button">🏰 トップへ戻る</button></a>
+<a href="https://youtu.be/YL26sVq0rjE" target="_blank" rel="noopener"><button type="button">🎵 404あたし未検出</button></a>
+<a href="https://store.line.me/stickershop/author/6590694/ja" target="_blank" rel="noopener"><button type="button">🛒 魔王さん制作のLINEスタンプを買う</button></a>
+</div>
+</div>
+<script>
+function showOverNav(){ var n = document.getElementById('overNav'); if (n) n.style.display = 'block'; }
+</script>
+<div style="text-align:center;margin:22px 0 6px"><a href="index.html" style="color:#c9a227;font-weight:bold">トップページに戻る</a></div>
 </body>
 </html>

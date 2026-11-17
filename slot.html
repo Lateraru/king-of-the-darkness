@@ -36,7 +36,7 @@
 
 <main>
   <h1 class="page">魔王スロット</h1>
-  <p class="lead">ポイント制のスロットです。お金は一切かかりません。</p>
+  <p class="lead">ポイント制のスロットです<br>お金は一切かかりません</p>
 
   <section style="margin-top:24px">
     <div class="panel">
@@ -107,8 +107,8 @@
     var ids = finals.map(function(s){ return s.id; });
     var win = 0, label = '';
     if (ids[0] === ids[1] && ids[1] === ids[2]) {
-      if (finals[0].face) { win = 500; label = '顔が3つ揃った。大当たり'; }
-      else { win = 200; label = '絵柄が3つ揃った。当たり'; }
+      if (finals[0].face) { win = 500; label = '顔が3つ揃った大当たり'; }
+      else { win = 200; label = '絵柄が3つ揃った当たり'; }
       reels.forEach(function(r){ r.classList.add('win'); });
     } else if (ids[0] === ids[1] || ids[1] === ids[2] || ids[0] === ids[2]) {
       win = 20; label = '2つ揃い';
@@ -117,12 +117,13 @@
       points += win;
       elMsg.textContent = label + ' ＋' + win + ' ポイント';
     } else {
-      elMsg.textContent = 'はずれ。また回してみよう';
+      elMsg.textContent = 'はずれまた回してみよう';
     }
     if (points > maxPoints) maxPoints = points;
     elPoints.textContent = points; elMax.textContent = maxPoints;
     btnGift.style.display = points < 10 ? 'inline-block' : 'none';
     save();
+    if (points < 10) showOverNav();
   }
 
   btn.addEventListener('click', function(){
@@ -151,11 +152,26 @@
   btnGift.addEventListener('click', function(){
     points += 100;
     elPoints.textContent = points;
-    elMsg.textContent = '魔王の施し。ありがたく受け取ろう';
+    elMsg.textContent = '魔王の施しありがたく受け取ろう';
     btnGift.style.display = 'none';
     save();
   });
 })();
 </script>
+
+<div id="overNav" style="display:none;text-align:center;margin:16px auto;padding:14px;border:1px solid #a06cd5;border-radius:12px;max-width:560px">
+<p style="margin:4px 0;font-weight:bold">おつかれさまでした</p>
+<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px">
+<button type="button" onclick="location.reload()">🔁 また遊ぶ</button>
+<a href="games.html"><button type="button">🎮 違うゲームをする</button></a>
+<a href="index.html"><button type="button">🏰 トップへ戻る</button></a>
+<a href="https://youtu.be/YL26sVq0rjE" target="_blank" rel="noopener"><button type="button">🎵 404あたし未検出</button></a>
+<a href="https://store.line.me/stickershop/author/6590694/ja" target="_blank" rel="noopener"><button type="button">🛒 魔王さん制作のLINEスタンプを買う</button></a>
+</div>
+</div>
+<script>
+function showOverNav(){ var n = document.getElementById('overNav'); if (n) n.style.display = 'block'; }
+</script>
+<div style="text-align:center;margin:22px 0 6px"><a href="index.html" style="color:#c9a227;font-weight:bold">トップページに戻る</a></div>
 </body>
 </html>
