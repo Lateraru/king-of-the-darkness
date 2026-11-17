@@ -43,6 +43,8 @@ a{color:var(--gold)}
 <div class="card" id="ctaCard" style="display:none;border-color:#a06cd5">
 <p style="margin:4px 0">🎵 作業のおともに、魔王らて子の歌はどうですか<br>
 <a href="https://youtu.be/YL26sVq0rjE" target="_blank" rel="noopener" style="color:#e8b34b;font-weight:bold">「404あたし未検出」のMVを見る（YouTube）</a></p>
+<p style="margin:4px 0">🎧 作業用BGMには、魔王らてらるのヒーリング動画もどうですか<br>
+<a href="https://youtu.be/6c3PI1Vy3Nc" target="_blank" rel="noopener" style="color:#e8b34b;font-weight:bold">ヒーリング動画を見る（YouTube）</a></p>
 <p class="small" style="margin:6px 0 2px">LINEスタンプも発売中です　<a href="https://store.line.me/stickershop/author/6590694/ja" target="_blank" rel="noopener" style="color:#e8b34b">魔王らてらる・魔王らて子のスタンプ</a></p>
 </div>
 
@@ -254,6 +256,50 @@ SNSへの投稿などにどうぞ</p>
 <a class="dl" id="sqDl" style="display:none" download="square.png">正方形画像をダウンロード</a>
 </div>
 
+
+
+<div class="card">
+<h2>🧩 画像コラージュ</h2>
+<p class="small">複数の画像を1枚に並べます（最大6枚まで）</p>
+<input type="file" id="coFiles" accept="image/*" multiple>
+<div class="row">
+並べ方：
+<select id="coMode">
+<option value="row">横一列</option>
+<option value="col">縦一列</option>
+<option value="grid">グリッド（正方形）</option>
+</select>
+</div>
+<div class="row">間隔：<input type="range" id="coGap" min="0" max="40" value="8"> <span id="coGapVal">8</span>px
+背景色：<input type="color" id="coBg" value="#11101c"></div>
+<div class="row"><button id="coRun" disabled>コラージュを作る</button> <span class="small" id="coMsg"></span></div>
+<img class="preview" id="coOut" style="display:none" alt="コラージュ結果">
+<a class="dl" id="coDl" style="display:none" download="collage.png">コラージュをダウンロード</a>
+</div>
+
+<div class="card">
+<h2>📣 このサイトを知り合いに教える</h2>
+<p class="small">気に入ったら、友達にも教えてあげてください</p>
+<div class="row">
+<button id="shareNative" type="button">📤 シェアする</button>
+<a href="https://social-plugins.line.me/lineit/share?url=https%3A%2F%2Fking-of-the-darkness.trailer-project.com%2F" target="_blank" rel="noopener"><button type="button">LINEで送る</button></a>
+<a href="https://twitter.com/intent/tweet?text=%E9%AD%94%E7%8E%8B%E3%82%89%E3%81%A6%E3%82%89%E3%82%8B%E3%83%BB%E9%AD%94%E7%8E%8B%E3%82%89%E3%81%A6%E5%AD%90%E3%81%AE%E5%85%AC%E5%BC%8F%E3%83%95%E3%82%A1%E3%83%B3%E3%82%B5%E3%82%A4%E3%83%88%E3%80%80%E3%83%9F%E3%83%8B%E3%82%B2%E3%83%BC%E3%83%A0%E3%81%A8%E7%94%BB%E5%83%8F%E4%BE%BF%E5%88%A9%E3%83%84%E3%83%BC%E3%83%AB%E3%81%8C%E3%81%82%E3%82%8A%E3%81%BE%E3%81%99&url=https%3A%2F%2Fking-of-the-darkness.trailer-project.com%2F" target="_blank" rel="noopener"><button type="button">Xで教える</button></a>
+<button id="shareCopy" type="button">URLをコピー</button>
+</div>
+<p class="small" id="shareMsg"></p>
+</div>
+
+
+<div class="card">
+<h2>⏳ 処理中の画面操作について</h2>
+<p class="small">✅ 処理が続く操作<br>
+・別のタブでゲームをしたり、他のページを見る（終わったら通知と音でお知らせします）<br>
+・画面をスクロールしたり、他のアプリを少し開く</p>
+<p class="small">❌ 結果が受け取れなくなる操作<br>
+・背景透過とAI補完拡大は、タブを閉じてもサーバ側で処理が終わります　結果はこのページの「前回の結果」から24時間以内に受け取れます（同じブラウザで開いた場合）<br>
+・ブラウザの中で処理するツール（形式変換・リサイズなど）は、そのタブを閉じたり再読み込みすると最初からやり直しになります</p>
+</div>
+
 <div class="card">
 <h2>⚠ 注意書き</h2>
 <p class="small">他人の権利を侵害する画像の加工はご遠慮ください<br>
@@ -307,6 +353,7 @@ pollStatus();
 setInterval(pollStatus, 15000);
 $('bgRun').addEventListener('click', function(){
   if (!bgFile) return;
+  prepareNotify();
   var model = $('bgMode').value;
   $('bgRun').disabled = true;
   $('bgMsg').textContent = '送信中';
@@ -331,6 +378,7 @@ $('bgRun').addEventListener('click', function(){
           $('bgMsg').textContent = 'できました';
           storeJob(j.job_id, '背景透過');
           $('ctaCard').style.display = 'block';
+          notifyDone('背景透過ができました', '結果を確認してください');
           $('bgRun').disabled = false;
         } else if (st.status === 'error'){
           clearInterval(iv);
@@ -451,6 +499,7 @@ function ukAi(mode){
           ukShowResult(API_BASE + '/api/result/' + j.job_id + '.png', '2k_ai.png', 'できました');
           storeJob(j.job_id, 'AI補完拡大');
           $('ctaCard').style.display = 'block';
+          notifyDone('AI補完拡大ができました', '結果を確認してください');
         } else if (st.status === 'error'){
           clearInterval(iv);
           $('ukMsg').textContent = '失敗しました：' + (st.error || '');
@@ -476,7 +525,7 @@ $('ukRun').addEventListener('click', function(){
   $('ukOut').style.display = 'none';
   $('ukDl').style.display = 'none';
   if (method === 'browser') ukBrowser();
-  else ukAi(method === 'ai_anime' ? 'anime' : 'general');
+  else { prepareNotify(); ukAi(method === 'ai_anime' ? 'anime' : 'general'); }
 });
 
 /* ---------- 円形アイコン ---------- */
@@ -877,6 +926,139 @@ function renderRecent(){
   card.style.display = 'block';
 }
 renderRecent();
+
+
+
+/* ---------- 完了お知らせ ---------- */
+var ORIG_TITLE = document.title;
+var audioCtx = null;
+function prepareNotify(){
+  if ('Notification' in window && Notification.permission === 'default'){
+    try { Notification.requestPermission(); } catch(e){}
+  }
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  } catch(e){}
+}
+function playDoneSound(){
+  try {
+    if (!audioCtx) return;
+    var t0 = audioCtx.currentTime;
+    [880, 1174].forEach(function(f, i){
+      var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.frequency.value = f; o.type = 'sine';
+      g.gain.setValueAtTime(0.0001, t0 + i * 0.18);
+      g.gain.exponentialRampToValueAtTime(0.18, t0 + i * 0.18 + 0.03);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + i * 0.18 + 0.35);
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(t0 + i * 0.18); o.stop(t0 + i * 0.18 + 0.4);
+    });
+  } catch(e){}
+}
+function notifyDone(title, body){
+  playDoneSound();
+  if (document.hidden){ document.title = '✅ ' + title; }
+  if ('Notification' in window && Notification.permission === 'granted'){
+    try { new Notification(title, { body: body }); } catch(e){}
+  }
+}
+document.addEventListener('visibilitychange', function(){
+  if (!document.hidden) document.title = ORIG_TITLE;
+});
+
+/* ---------- シェア ---------- */
+var SITE_URL = 'https://king-of-the-darkness.trailer-project.com/';
+var SHARE_TEXT = '魔王らてらる・魔王らて子の公式ファンサイト　ミニゲームと画像便利ツールがあります';
+$('shareNative').addEventListener('click', function(){
+  if (navigator.share) { navigator.share({ title: document.title, text: SHARE_TEXT, url: SITE_URL }).catch(function(){}); }
+  else { $('shareMsg').textContent = 'LINEかXのボタン、またはURLコピーをお使いください'; }
+});
+$('shareCopy').addEventListener('click', function(){
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(SITE_URL).then(function(){ $('shareMsg').textContent = 'URLをコピーしました'; }).catch(function(){ $('shareMsg').textContent = SITE_URL; });
+  } else { $('shareMsg').textContent = SITE_URL; }
+});
+
+
+/* ---------- コラージュ ---------- */
+var coList = [];
+$('coFiles').addEventListener('change', function(){
+  coList = Array.prototype.slice.call(this.files || []).slice(0, 6);
+  $('coRun').disabled = coList.length < 2;
+  $('coMsg').textContent = coList.length ? coList.length + '枚選ばれています' : '';
+});
+$('coGap').addEventListener('input', function(){ $('coGapVal').textContent = this.value; });
+$('coRun').addEventListener('click', function(){
+  if (coList.length < 2) return;
+  $('coRun').disabled = true;
+  $('coMsg').textContent = '作成中';
+  Promise.all(coList.map(function(f){ return loadImg(f); })).then(function(imgs){
+    var mode = $('coMode').value;
+    var gap = Number($('coGap').value);
+    var c = document.createElement('canvas');
+    var ctx = c.getContext('2d');
+    if (mode === 'row'){
+      var H = Math.min.apply(null, imgs.map(function(im){ return im.naturalHeight; }).concat([1024]));
+      var widths = imgs.map(function(im){ return Math.round(H * im.naturalWidth / im.naturalHeight); });
+      var totalW = widths.reduce(function(a, b){ return a + b; }, 0) + gap * (imgs.length + 1);
+      var scale = totalW > 4096 ? 4096 / totalW : 1;
+      c.width = Math.round(totalW * scale);
+      c.height = Math.round((H + gap * 2) * scale);
+      ctx.fillStyle = $('coBg').value; ctx.fillRect(0, 0, c.width, c.height);
+      var x = gap * scale;
+      imgs.forEach(function(im, i){
+        var w = widths[i] * scale;
+        ctx.drawImage(im, x, gap * scale, w, H * scale);
+        x += w + gap * scale;
+      });
+    } else if (mode === 'col'){
+      var W = Math.min.apply(null, imgs.map(function(im){ return im.naturalWidth; }).concat([1024]));
+      var heights = imgs.map(function(im){ return Math.round(W * im.naturalHeight / im.naturalWidth); });
+      var totalH = heights.reduce(function(a, b){ return a + b; }, 0) + gap * (imgs.length + 1);
+      var scale2 = totalH > 4096 ? 4096 / totalH : 1;
+      c.width = Math.round((W + gap * 2) * scale2);
+      c.height = Math.round(totalH * scale2);
+      ctx.fillStyle = $('coBg').value; ctx.fillRect(0, 0, c.width, c.height);
+      var y = gap * scale2;
+      imgs.forEach(function(im, i){
+        var h = heights[i] * scale2;
+        ctx.drawImage(im, gap * scale2, y, W * scale2, h);
+        y += h + gap * scale2;
+      });
+    } else {
+      var n = imgs.length;
+      var cols = Math.ceil(Math.sqrt(n));
+      var rows = Math.ceil(n / cols);
+      var cell = 512;
+      c.width = cols * cell + gap * (cols + 1);
+      c.height = rows * cell + gap * (rows + 1);
+      ctx.fillStyle = $('coBg').value; ctx.fillRect(0, 0, c.width, c.height);
+      imgs.forEach(function(im, i){
+        var cx = gap + (i % cols) * (cell + gap);
+        var cy = gap + Math.floor(i / cols) * (cell + gap);
+        var s = Math.max(cell / im.naturalWidth, cell / im.naturalHeight);
+        var w = im.naturalWidth * s, h = im.naturalHeight * s;
+        ctx.save();
+        ctx.beginPath(); ctx.rect(cx, cy, cell, cell); ctx.clip();
+        ctx.drawImage(im, cx + (cell - w) / 2, cy + (cell - h) / 2, w, h);
+        ctx.restore();
+      });
+    }
+    c.toBlob(function(b){
+      var url = URL.createObjectURL(b);
+      $('coOut').src = url;
+      $('coOut').style.display = 'block';
+      var a = $('coDl');
+      a.href = url; a.style.display = 'inline-block';
+      $('coMsg').textContent = 'できました（' + c.width + '×' + c.height + '）';
+      $('coRun').disabled = false;
+    }, 'image/png');
+  }).catch(function(){
+    $('coMsg').textContent = '読み込みに失敗しました';
+    $('coRun').disabled = false;
+  });
+});
 
 </script>
 </div></body></html>
