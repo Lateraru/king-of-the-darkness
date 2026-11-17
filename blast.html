@@ -27,6 +27,7 @@
   #btnHeal{background:#2e7d4f}
   #btnSummon{background:#6d4fc2}
   #btnExplosion{background:#b8860b}
+  #btnSkill{background:#444c8c}
   .hud{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:12px}
   .hud b{font-size:1.25rem}
   .hud button{padding:10px 22px;border:none;border-radius:10px;background:var(--red);color:#fff;font-size:1rem;cursor:pointer}
@@ -59,6 +60,8 @@
       <p>大魔法は下のボタンから：爆裂（範囲爆発）／雷撃（全体攻撃）／メテオ（隕石の雨）／波動（貫通する衝撃波）／フリーズ（敵全体を3秒止める）。それぞれクールタイムがあります</p>
       <p>敵の撃つ弾は、自分の魔法弾で撃ち落とせます（+2点）。当たると結界が削られます。魔法弾は近くの敵を少し追尾します</p>
       <p>敵が落とす⭐を魔法弾で取ると、全魔法のクールダウンが短くなります。連続撃破でコンボが伸び、15コンボごとにボーナス</p>
+      <p>エクスプロージョンは最上位魔法。その下位がインフェルノ（一直線の極太ビーム）です</p>
+      <p>キャラ特技：らてらる「立ったまま寝る」は4秒間動けなくなる代わりに結界が回復。らて子「高速まばたき」は5秒間、攻撃速度が上がる代わりに他の魔法が使えません</p>
       <p style="margin-bottom:0">敵が左端の結界に届くと結界が削られます。結界が0になると終了。50体倒すごとにボスが出ます。召喚魔法で、もう1人の魔王が12秒間一緒に戦ってくれます</p>
     </div>
   </section>
@@ -75,14 +78,17 @@
       <button type="button" class="magic-btn" id="btnMeteor" disabled>☄️ メテオ</button>
     </div>
     <div class="magic-row">
-      <button type="button" class="magic-btn" id="btnWave" disabled>🌊 波動</button>
-      <button type="button" class="magic-btn" id="btnFreeze" disabled>❄️ フリーズ</button>
       <button type="button" class="magic-btn" id="btnExplosion" disabled>💥 エクスプロージョン</button>
+      <button type="button" class="magic-btn" id="btnInferno" disabled>🔥 インフェルノ</button>
+      <button type="button" class="magic-btn" id="btnWave" disabled>🌊 波動</button>
     </div>
     <div class="magic-row">
-      <button type="button" class="magic-btn" id="btnInferno" disabled>🔥 インフェルノ</button>
+      <button type="button" class="magic-btn" id="btnFreeze" disabled>❄️ フリーズ</button>
       <button type="button" class="magic-btn" id="btnHeal" disabled>💚 結界修復</button>
       <button type="button" class="magic-btn" id="btnSummon" disabled>🪄 召喚</button>
+    </div>
+    <div class="magic-row">
+      <button type="button" class="magic-btn" id="btnSkill" disabled>💤 キャラ特技</button>
     </div>
     <div class="hud">
       <button type="button" id="btnStart">スタート</button>
@@ -124,6 +130,7 @@
   var btnWave = document.getElementById('btnWave'), btnFreeze = document.getElementById('btnFreeze');
   var btnInferno = document.getElementById('btnInferno'), btnHeal = document.getElementById('btnHeal'), btnSummon = document.getElementById('btnSummon');
   var btnExplosion = document.getElementById('btnExplosion');
+  var btnSkill = document.getElementById('btnSkill');
   var elCombo = document.getElementById('combo');
 
   var best = 0;
@@ -138,8 +145,9 @@
   var freezeT = 0, waveSeq = 0;
   var ebullets = [], beamT = 0, helperT = 0, helperY = 0;
   var starsArr = [], rings = [], combo = 0, comboT = 0, comboShown = -1, flashT = 0;
+  var sleepT = 0, blinkT = 0;
   var lastShot = 0, spawnAt = 0, shake = 0, flash = 0;
-  var cd = { bomb: 0, bolt2: 0, meteor: 0, wave: 0, freeze: 0, inferno: 0, heal: 0, summon: 0, explosion: 0 };
+  var cd = { bomb: 0, bolt2: 0, meteor: 0, wave: 0, freeze: 0, inferno: 0, heal: 0, summon: 0, explosion: 0, skill: 0 };
   var bossCount = 0;
   var keys = {};
 
@@ -164,8 +172,8 @@
     py = H / 2; targetY = H / 2;
     bolts = []; enemies = []; parts = []; floats = []; meteors = []; strikes = [];
     lastShot = 0; spawnAt = 30; shake = 0; flash = 0;
-    cd = { bomb: 0, bolt2: 0, meteor: 0, wave: 0, freeze: 0, inferno: 0, heal: 0, summon: 0, explosion: 0 };
-    waves = []; freezeT = 0; ebullets = []; beamT = 0; helperT = 0; starsArr = []; rings = []; combo = 0; comboT = 0; flashT = 0;
+    cd = { bomb: 0, bolt2: 0, meteor: 0, wave: 0, freeze: 0, inferno: 0, heal: 0, summon: 0, explosion: 0, skill: 0 };
+    waves = []; freezeT = 0; ebullets = []; beamT = 0; helperT = 0; starsArr = []; rings = []; combo = 0; comboT = 0; flashT = 0; sleepT = 0; blinkT = 0;
     elCombo.textContent = '0';
     bossCount = 0;
     elKills.textContent = '0'; elScore.textContent = '0'; elHp.textContent = '100';
@@ -186,6 +194,8 @@
     set(btnHeal, '結界修復', '💚', cd.heal);
     set(btnSummon, charKey === 'rateraru' ? '召喚：らて子' : '召喚：らてらる', '🪄', cd.summon);
     set(btnExplosion, 'エクスプロージョン', '💥', cd.explosion);
+    set(btnSkill, charKey === 'rateraru' ? '立ったまま寝る' : '高速まばたき', charKey === 'rateraru' ? '💤' : '👀', cd.skill);
+    if (sleepT > 0 || blinkT > 0) btnSkill.disabled = true;
   }
 
   function boom(x, y, n, col, power){
@@ -246,7 +256,7 @@
   }
 
   function castBomb(){
-    if (state !== 'run' || cd.bomb > 0) return;
+    if (state !== 'run' || cd.bomb > 0 || blinkT > 0) return;
     cd.bomb = 360;
     var tx = W * 0.62, ty = H / 2, bestN = -1;
     for (var i = 0; i < enemies.length; i++) {
@@ -268,7 +278,7 @@
   }
 
   function castBolt2(){
-    if (state !== 'run' || cd.bolt2 > 0) return;
+    if (state !== 'run' || cd.bolt2 > 0 || blinkT > 0) return;
     cd.bolt2 = 600;
     flash = 0.35; shake = Math.max(shake, 6);
     for (var i = 0; i < enemies.length; i++) {
@@ -279,7 +289,7 @@
   }
 
   function castMeteor(){
-    if (state !== 'run' || cd.meteor > 0) return;
+    if (state !== 'run' || cd.meteor > 0 || blinkT > 0) return;
     cd.meteor = 900;
     for (var i = 0; i < 8; i++) {
       meteors.push({ x: 180 + Math.random() * (W - 240), y: -30 - i * 46, tx: 0, delay: i * 9 });
@@ -288,7 +298,7 @@
   }
 
   function castWave(){
-    if (state !== 'run' || cd.wave > 0) return;
+    if (state !== 'run' || cd.wave > 0 || blinkT > 0) return;
     cd.wave = 480;
     waveSeq++;
     waves.push({ x: 130, y: py, id: waveSeq, hit: [] });
@@ -296,7 +306,7 @@
   }
 
   function castFreeze(){
-    if (state !== 'run' || cd.freeze > 0) return;
+    if (state !== 'run' || cd.freeze > 0 || blinkT > 0) return;
     cd.freeze = 840;
     freezeT = 180;
     flash = Math.max(flash, 0.2);
@@ -330,7 +340,7 @@
   }
 
   function castInferno(){
-    if (state !== 'run' || cd.inferno > 0) return;
+    if (state !== 'run' || cd.inferno > 0 || blinkT > 0) return;
     cd.inferno = 1080;
     beamT = 72;
     shake = Math.max(shake, 8);
@@ -338,7 +348,7 @@
   }
 
   function castHeal(){
-    if (state !== 'run' || cd.heal > 0) return;
+    if (state !== 'run' || cd.heal > 0 || blinkT > 0) return;
     cd.heal = 1500;
     hp = Math.min(100, hp + 35);
     elHp.textContent = hp;
@@ -347,7 +357,7 @@
   }
 
   function castSummon(){
-    if (state !== 'run' || cd.summon > 0) return;
+    if (state !== 'run' || cd.summon > 0 || blinkT > 0) return;
     cd.summon = 1800;
     helperT = 720;
     helperY = py + (py < H / 2 ? 130 : -130);
@@ -356,7 +366,7 @@
   }
 
   function castExplosion(){
-    if (state !== 'run' || cd.explosion > 0) return;
+    if (state !== 'run' || cd.explosion > 0 || blinkT > 0) return;
     cd.explosion = 1800;
     flashT = 14;
     shake = 16;
@@ -369,6 +379,20 @@
     ebullets = [];
     elScore.textContent = score;
     addFloat(W / 2, 90, 'エクスプロージョン！', '#ffb84d');
+    updButtons();
+  }
+
+  function castSkill(){
+    if (state !== 'run' || cd.skill > 0 || sleepT > 0 || blinkT > 0) return;
+    if (charKey === 'rateraru') {
+      cd.skill = 2100;
+      sleepT = 240;
+      addFloat(112, py - 110, '立ったまま寝る…💤', '#a8c8ff');
+    } else {
+      cd.skill = 1500;
+      blinkT = 300;
+      addFloat(112, py - 110, '高速まばたき！', '#ffd7ec');
+    }
     updButtons();
   }
 
@@ -386,11 +410,21 @@
         spawnAt = frame + Math.max(10, gap) * (0.7 + Math.random() * 0.6);
       }
 
-      if (frame - lastShot >= 7) {
+      if (frame - lastShot >= (blinkT > 0 ? 3 : 7)) {
         lastShot = frame;
         bolts.push({ x: 150, y: py - 8, vx: 15, vy: -0.5, col: boltColor() });
         bolts.push({ x: 150, y: py + 6, vx: 15, vy: 0.5, col: boltColor() });
       }
+      if (sleepT > 0) {
+        sleepT--;
+        targetY = py;
+        if (frame % 60 === 0) {
+          hp = Math.min(100, hp + 10);
+          elHp.textContent = hp;
+        }
+        if (frame % 45 === 0) addFloat(150, py - 96, '💤', '#a8c8ff');
+      }
+      if (blinkT > 0) blinkT--;
       if (helperT > 0) {
         helperT--;
         var hTarget = py + (py < H / 2 ? 130 : -130);
@@ -418,6 +452,7 @@
       if (cd.heal > 0) cd.heal--;
       if (cd.summon > 0) cd.summon--;
       if (cd.explosion > 0) cd.explosion--;
+      if (cd.skill > 0) cd.skill--;
       if (comboT > 0) { comboT--; if (comboT === 0) combo = 0; }
       if (combo !== comboShown) { comboShown = combo; elCombo.textContent = combo; }
       if (freezeT > 0) freezeT--;
@@ -731,7 +766,12 @@
     var simg = sprImg();
     if (simg.complete && simg.naturalWidth > 0) {
       var sh = 184, sw = sh * simg.naturalWidth / simg.naturalHeight;
-      ctx.drawImage(simg, 112 - sw / 2, py + 66 + bobY - sh, sw, sh);
+      ctx.save();
+      ctx.translate(112, py + 66 + bobY);
+      if (sleepT > 0) ctx.rotate(Math.sin(frame * 0.03) * 0.03);
+      if (blinkT > 0) ctx.scale(1, 1 - 0.14 * Math.abs(Math.sin(frame * 0.55)));
+      ctx.drawImage(simg, -sw / 2, -sh, sw, sh);
+      ctx.restore();
     }
 
     if (flashT > 0) {
@@ -811,6 +851,7 @@
   btnHeal.addEventListener('click', castHeal);
   btnSummon.addEventListener('click', castSummon);
   btnExplosion.addEventListener('click', castExplosion);
+  btnSkill.addEventListener('click', castSkill);
   var stageEl = document.querySelector('.stage');
   stageEl.addEventListener('touchmove', function(e){ if (state === 'run') e.preventDefault(); }, { passive: false });
 
@@ -832,6 +873,7 @@
     if (e.key === 'o' || e.key === 'O') castHeal();
     if (e.key === 'p' || e.key === 'P') castSummon();
     if (e.key === 'e' || e.key === 'E') castExplosion();
+    if (e.key === 'q' || e.key === 'Q') castSkill();
   });
   document.addEventListener('keyup', function(e){
     if (e.key === 'ArrowUp') keys.up = false;
