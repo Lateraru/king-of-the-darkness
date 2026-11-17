@@ -39,7 +39,7 @@
 
 <main>
   <h1 class="page">魔王みくじ</h1>
-  <p class="lead">魔王城のおみくじです。1日1回、今日の運勢をどうぞ。</p>
+  <p class="lead">魔王城のおみくじです<br>1日1回、今日の運勢をどうぞ</p>
 
   <div class="omikuji-box">
     <div class="kuji-img" id="kujiImg">🎋</div>
@@ -86,12 +86,12 @@
   var COLORS = ['紫', '黒', '赤', 'エメラルドグリーン', 'ピンク', '銀色'];
   var SPOTS = ['魔王城の玉座の間', 'ピグパーティのパーティー会場', '秘密基地', 'らてまりチャンネルの動画の中', 'お城の図書室'];
   var VOICES = {
-    '大吉': { r: '見事だ。今日の魔王はご機嫌だぞ', k: 'すごーい♡ 今日はらて子も太鼓判だぉ' },
-    '中吉': { r: '悪くない運気だ。その調子で進め', k: 'いい感じだぉ。その笑顔で大丈夫' },
+    '大吉': { r: '見事だ今日の魔王はご機嫌だぞ', k: 'すごーい♡ 今日はらて子も太鼓判だぉ' },
+    '中吉': { r: '悪くない運気だその調子で進め', k: 'いい感じだぉその笑顔で大丈夫' },
     '小吉': { r: '小さな幸運は、拾った者のものだ', k: 'ちっちゃなラッキー、見逃さないでね' },
-    '吉': { r: '平穏こそ力だ。今日はそれでよい', k: 'ふつうの日が、いちばん平和だぉ' },
-    '末吉': { r: '焦るな。運気はこれから上向く', k: 'あとから良くなる日だぉ。のんびりいこ' },
-    '凶': { r: 'ふむ。今日は城で大人しくしているがよい', k: '今日は無理しないで。お茶でも飲も' }
+    '吉': { r: '平穏こそ力だ今日はそれでよい', k: 'ふつうの日が、いちばん平和だぉ' },
+    '末吉': { r: '焦るな運気はこれから上向く', k: 'あとから良くなる日だぉのんびりいこ' },
+    '凶': { r: 'ふむ今日は城で大人しくしているがよい', k: '今日は無理しないでお茶でも飲も' }
   };
 
   function todayKey(){
@@ -119,6 +119,7 @@
     document.getElementById('voiceR').textContent = VOICES[data.f].r;
     document.getElementById('voiceK').textContent = VOICES[data.f].k;
     result.classList.add('show');
+    showOverNav();
   }
 
   var saved = null;
@@ -146,5 +147,20 @@
   });
 })();
 </script>
+
+<div id="overNav" style="display:none;text-align:center;margin:16px auto;padding:14px;border:1px solid #a06cd5;border-radius:12px;max-width:560px">
+<p style="margin:4px 0;font-weight:bold">おつかれさまでした</p>
+<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px">
+<button type="button" onclick="location.reload()">🔁 また遊ぶ</button>
+<a href="games.html"><button type="button">🎮 違うゲームをする</button></a>
+<a href="index.html"><button type="button">🏰 トップへ戻る</button></a>
+<a href="https://youtu.be/YL26sVq0rjE" target="_blank" rel="noopener"><button type="button">🎵 404あたし未検出</button></a>
+<a href="https://store.line.me/stickershop/author/6590694/ja" target="_blank" rel="noopener"><button type="button">🛒 魔王さん制作のLINEスタンプを買う</button></a>
+</div>
+</div>
+<script>
+function showOverNav(){ var n = document.getElementById('overNav'); if (n) n.style.display = 'block'; }
+</script>
+<div style="text-align:center;margin:22px 0 6px"><a href="index.html" style="color:#c9a227;font-weight:bold">トップページに戻る</a></div>
 </body>
 </html>

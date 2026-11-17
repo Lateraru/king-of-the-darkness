@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ミニゲーム | 魔王らてらる・魔王らて子 公式ファンサイト</title>
-<meta name="description" content="魔王らてらると魔王らて子が走る、公式ファンサイトのミニゲーム。タップやスペースキーでジャンプして障害物をよけよう。">
+<meta name="description" content="魔王らてらると魔王らて子が走る、公式ファンサイトのミニゲーム、タップやスペースキーでジャンプして障害物をよけよう">
 <link rel="stylesheet" href="style.css">
 <style>
   .char-select{display:flex;gap:12px;margin:16px 0}
@@ -38,15 +38,15 @@
 
 <main>
   <h1 class="page">ミニゲーム</h1>
-  <p class="lead">魔王城ダッシュ。走る2人を操作して、障害物をジャンプでよけよう。</p>
+  <p class="lead">魔王城ダッシュ<br>走る2人を操作して、障害物をジャンプでよけよう</p>
 
   <section style="margin-top:24px">
     <div class="panel">
       <p style="margin-top:0"><strong>◾︎遊び方◾︎</strong></p>
       <p>キャラを選んで、タップ（またはスペースキー）でスタート</p>
-      <p>ジャンプはタップ／クリック／スペースキー／↑キー。空中でもう一度押すと2段ジャンプ（足元に魔法陣が出ます）</p>
-      <p>岩と炎はジャンプで飛び越える。大きな炎と岩の連続は2段ジャンプで。空の鳥は上下に揺れるので、走り抜けるか高さを見て避けよう</p>
-      <p>地面のゾーン：緑は加速、橙は減速します。⭐️を取ると+25点（高い所の星はジャンプで取ろう）</p>
+      <p>ジャンプはタップ／クリック／スペースキー／↑キー<br>空中でもう一度押すと2段ジャンプ（足元に魔法陣が出ます）</p>
+      <p>岩と炎はジャンプで飛び越える<br>大きな炎と岩の連続は2段ジャンプで<br>空の鳥は上下に揺れるので、走り抜けるか高さを見て避けよう</p>
+      <p>地面のゾーン：緑は加速、橙は減速します<br>⭐️を取ると+25点（高い所の星はジャンプで取ろう）</p>
       <p style="margin-bottom:0">スコアはあなたのブラウザの中にだけ保存されます</p>
     </div>
   </section>
@@ -124,6 +124,7 @@
 
   function gameOver(){
     state = 'over';
+    showOverNav();
     btnAction.textContent = 'もう一度';
     if (score > high) {
       high = score; elHigh.textContent = high;
@@ -438,5 +439,20 @@
   requestAnimationFrame(step);
 })();
 </script>
+
+<div id="overNav" style="display:none;text-align:center;margin:16px auto;padding:14px;border:1px solid #a06cd5;border-radius:12px;max-width:560px">
+<p style="margin:4px 0;font-weight:bold">おつかれさまでした</p>
+<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px">
+<button type="button" onclick="location.reload()">🔁 また遊ぶ</button>
+<a href="games.html"><button type="button">🎮 違うゲームをする</button></a>
+<a href="index.html"><button type="button">🏰 トップへ戻る</button></a>
+<a href="https://youtu.be/YL26sVq0rjE" target="_blank" rel="noopener"><button type="button">🎵 404あたし未検出</button></a>
+<a href="https://store.line.me/stickershop/author/6590694/ja" target="_blank" rel="noopener"><button type="button">🛒 魔王さん制作のLINEスタンプを買う</button></a>
+</div>
+</div>
+<script>
+function showOverNav(){ var n = document.getElementById('overNav'); if (n) n.style.display = 'block'; }
+</script>
+<div style="text-align:center;margin:22px 0 6px"><a href="index.html" style="color:#c9a227;font-weight:bold">トップページに戻る</a></div>
 </body>
 </html>

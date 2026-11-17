@@ -41,7 +41,7 @@
 
 <main>
   <h1 class="page">ひょっこり魔王</h1>
-  <p class="lead">穴から顔を出す2人をタップ。制限時間は30秒です。</p>
+  <p class="lead">穴から顔を出す2人をタップ<br>制限時間は30秒です</p>
 
   <section style="margin-top:24px">
     <div class="panel">
@@ -159,6 +159,7 @@
 
   function finish(){
     playing = false;
+    showOverNav();
     clearTimeout(spawnTimer); clearTimeout(tickTimer);
     holes.forEach(function(s){ clearTimeout(s.hideAt); s.el.classList.remove('up'); s.busy = false; s.kind = null; });
     elTime.style.width = '0%';
@@ -166,7 +167,7 @@
       high = score; elHigh.textContent = high;
       try { localStorage.setItem('maouMoleHigh', String(high)); } catch(e) {}
     }
-    elMsg.textContent = '終了。スコア ' + score + ' 点';
+    elMsg.textContent = '終了スコア ' + score + ' 点';
     btn.textContent = 'もう一度';
   }
 
@@ -186,5 +187,20 @@
 <script>
 document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive: false });
 </script>
+
+<div id="overNav" style="display:none;text-align:center;margin:16px auto;padding:14px;border:1px solid #a06cd5;border-radius:12px;max-width:560px">
+<p style="margin:4px 0;font-weight:bold">おつかれさまでした</p>
+<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px">
+<button type="button" onclick="location.reload()">🔁 また遊ぶ</button>
+<a href="games.html"><button type="button">🎮 違うゲームをする</button></a>
+<a href="index.html"><button type="button">🏰 トップへ戻る</button></a>
+<a href="https://youtu.be/YL26sVq0rjE" target="_blank" rel="noopener"><button type="button">🎵 404あたし未検出</button></a>
+<a href="https://store.line.me/stickershop/author/6590694/ja" target="_blank" rel="noopener"><button type="button">🛒 魔王さん制作のLINEスタンプを買う</button></a>
+</div>
+</div>
+<script>
+function showOverNav(){ var n = document.getElementById('overNav'); if (n) n.style.display = 'block'; }
+</script>
+<div style="text-align:center;margin:22px 0 6px"><a href="index.html" style="color:#c9a227;font-weight:bold">トップページに戻る</a></div>
 </body>
 </html>
