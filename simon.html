@@ -38,7 +38,7 @@
 
 <main>
   <h1 class="page">詠唱メモリー</h1>
-  <p class="lead">光ったルーンの順番を覚えて、同じ順に唱えよう（タップ）。レベルが上がるほど長く、速くなります。</p>
+  <p class="lead">光ったルーンの順番を覚えて、同じ順に唱えよう（タップ）<br>レベルが上がるほど長く、速くなります</p>
 
   <div class="stage">
     <div class="pads">
@@ -110,7 +110,7 @@
     setTimeout(function(){
       accepting = true;
       inputIdx = 0;
-      elMsg.textContent = 'あなたの番。同じ順に唱えて';
+      elMsg.textContent = 'あなたの番同じ順に唱えて';
     }, 420 + seq.length * stepMs + 120);
   }
 
@@ -122,13 +122,14 @@
 
   function gameOver(){
     playing = false;
+    showOverNav();
     accepting = false;
     var lv = seq.length - 1;
     if (lv > best) {
       best = lv; elBest.textContent = best;
       try { localStorage.setItem('maouSimonBest', String(best)); } catch(e) {}
     }
-    elMsg.textContent = '詠唱失敗。レベル ' + lv + ' まで到達';
+    elMsg.textContent = '詠唱失敗レベル ' + lv + ' まで到達';
     btn.textContent = 'もう一度';
     btn.disabled = false;
   }
@@ -142,7 +143,7 @@
         inputIdx++;
         if (inputIdx >= seq.length) {
           accepting = false;
-          elMsg.textContent = '正解。次の詠唱へ';
+          elMsg.textContent = '正解次の詠唱へ';
           setTimeout(nextLevel, 750);
         }
       } else {
@@ -162,5 +163,20 @@
   });
 })();
 </script>
+
+<div id="overNav" style="display:none;text-align:center;margin:16px auto;padding:14px;border:1px solid #a06cd5;border-radius:12px;max-width:560px">
+<p style="margin:4px 0;font-weight:bold">おつかれさまでした</p>
+<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px">
+<button type="button" onclick="location.reload()">🔁 また遊ぶ</button>
+<a href="games.html"><button type="button">🎮 違うゲームをする</button></a>
+<a href="index.html"><button type="button">🏰 トップへ戻る</button></a>
+<a href="https://youtu.be/YL26sVq0rjE" target="_blank" rel="noopener"><button type="button">🎵 404あたし未検出</button></a>
+<a href="https://store.line.me/stickershop/author/6590694/ja" target="_blank" rel="noopener"><button type="button">🛒 魔王さん制作のLINEスタンプを買う</button></a>
+</div>
+</div>
+<script>
+function showOverNav(){ var n = document.getElementById('overNav'); if (n) n.style.display = 'block'; }
+</script>
+<div style="text-align:center;margin:22px 0 6px"><a href="index.html" style="color:#c9a227;font-weight:bold">トップページに戻る</a></div>
 </body>
 </html>

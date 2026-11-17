@@ -24,7 +24,7 @@
 
 <main>
   <h1 class="page">AIチャット</h1>
-  <p class="lead">魔王らてらる・らて子とおしゃべりできます。</p>
+  <p class="lead">魔王らてらる・らて子とおしゃべりできます</p>
 
   <section style="margin-top:24px">
     <div class="panel">
@@ -39,13 +39,13 @@
 
   <section style="margin-top:24px">
     <div class="panel" style="margin-bottom:16px">
-      <p style="margin-top:0">ピグパーティで遊んでいる人は、IDとピグパでの名前を教えてください。その名前で呼びかけます（任意・スキップできます）</p>
+      <p style="margin-top:0">ピグパーティで遊んでいる人は、IDとピグパでの名前を教えてください<br>その名前で呼びかけます（任意・スキップできます）</p>
       <form class="chat-form" id="introForm">
         <input id="piggId" type="text" placeholder="ピグパID（例：PH-1141-6337）" autocomplete="off" maxlength="20">
         <input id="piggName" type="text" placeholder="ピグパでの名前" autocomplete="off" maxlength="30">
         <button class="btn" type="submit">この名前ではじめる</button>
       </form>
-      <p class="note" style="margin-bottom:0">本人確認の仕組みはないので、あくまで呼びかけ用です。ピグパをやっていない人は、そのまま下のチャットで話しかけてください。</p>
+      <p class="note" style="margin-bottom:0">本人確認の仕組みはないので、あくまで呼びかけ用です<br>ピグパをやっていない人は、そのまま下のチャットで話しかけてください</p>
     </div>
     <div class="char-switch">
       <button id="sw-raru" class="active" type="button">魔王らてらる</button>
@@ -56,9 +56,9 @@
       <input id="chatInput" type="text" placeholder="メッセージを入力…" autocomplete="off" maxlength="200">
       <button class="btn" type="submit">送信</button>
     </form>
-    <p class="note">試しに「こんにちは」「誕生日」「ピグパ」「歌」「404」などと話しかけてみてください。</p>
+    <p class="note">試しに「こんにちは」「誕生日」「ピグパ」「歌」「404」などと話しかけてみてください</p>
     <p><button class="btn" id="fanLetterBtn" type="button">ファンレターを送る</button></p>
-    <p class="note" id="fanLetterNote" hidden>ファンレターの受付は本格版で始まります。届いたデータは、魔王らてらる・魔王らて子の私書箱だけに届き、外部へ公開しません。</p>
+    <p class="note" id="fanLetterNote" hidden>ファンレターの受付は本格版で始まります<br>届いたデータは、魔王らてらる・魔王らて子の私書箱だけに届き、外部へ公開しません</p>
   </section>
 </main>
 
@@ -314,5 +314,6 @@ document.getElementById("chatForm").addEventListener("submit", (e) => {
 switchChar("raru");
 </script>
 
+<div style="text-align:center;margin:22px 0 6px"><a href="index.html" style="color:#c9a227;font-weight:bold">トップページに戻る</a></div>
 </body>
 </html>

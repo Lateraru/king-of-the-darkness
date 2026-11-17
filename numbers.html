@@ -36,7 +36,7 @@
 
 <main>
   <h1 class="page">魔法陣起動</h1>
-  <p class="lead">1から25まで、順番にタップして魔法陣を起動しよう。タイムアタックです。</p>
+  <p class="lead">1から25まで、順番にタップして魔法陣を起動しよう<br>タイムアタックです</p>
 
   <div class="stage">
     <div class="hud">
@@ -102,12 +102,13 @@
         playing = false;
         clearInterval(timer);
         var t = (Date.now() - startedAt) / 1000;
-        elMsg.textContent = '魔法陣、起動。' + t.toFixed(1) + ' 秒（ミス ' + miss + ' 回）';
+        elMsg.textContent = '魔法陣、起動' + t.toFixed(1) + ' 秒（ミス ' + miss + ' 回）';
         if (!best || t < best) {
           best = t; elBest.textContent = best.toFixed(1) + ' 秒';
           try { localStorage.setItem('maouNumbersBest', String(best)); } catch(e) {}
         }
         btn.textContent = 'もう一度';
+        showOverNav();
       }
     } else {
       miss++;
@@ -130,5 +131,20 @@
   build();
 })();
 </script>
+
+<div id="overNav" style="display:none;text-align:center;margin:16px auto;padding:14px;border:1px solid #a06cd5;border-radius:12px;max-width:560px">
+<p style="margin:4px 0;font-weight:bold">おつかれさまでした</p>
+<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px">
+<button type="button" onclick="location.reload()">🔁 また遊ぶ</button>
+<a href="games.html"><button type="button">🎮 違うゲームをする</button></a>
+<a href="index.html"><button type="button">🏰 トップへ戻る</button></a>
+<a href="https://youtu.be/YL26sVq0rjE" target="_blank" rel="noopener"><button type="button">🎵 404あたし未検出</button></a>
+<a href="https://store.line.me/stickershop/author/6590694/ja" target="_blank" rel="noopener"><button type="button">🛒 魔王さん制作のLINEスタンプを買う</button></a>
+</div>
+</div>
+<script>
+function showOverNav(){ var n = document.getElementById('overNav'); if (n) n.style.display = 'block'; }
+</script>
+<div style="text-align:center;margin:22px 0 6px"><a href="index.html" style="color:#c9a227;font-weight:bold">トップページに戻る</a></div>
 </body>
 </html>
