@@ -62,7 +62,7 @@
       <p>敵が落とす⭐を魔法弾で取ると、全魔法のクールダウンが短くなります。連続撃破でコンボが伸び、15コンボごとにボーナス</p>
       <p>エクスプロージョンは最上位魔法。その下位がインフェルノ（一直線の極太ビーム）です</p>
       <p>キャラ特技：らてらる「立ったまま寝る」は4秒間動けなくなる代わりに結界が回復。らて子「高速まばたき」は5秒間、攻撃速度が上がる代わりに他の魔法が使えません</p>
-      <p>ボスは10体（ネタキャラ含む）が順番に出現し、それぞれ固有の必殺技を持っています。必殺技の前には警告が出ます。時々スタンピード（敵の大群）が発生します。敵が落とす🔆を魔法弾で取ると、10秒間自動で攻撃が拡散します</p>
+      <p>ボスは14体（ネタキャラ含む）が順番に出現し、それぞれ固有の必殺技を持っています。必殺技の前には警告が出ます。時々スタンピード（敵の大群）が発生します。ボスが2体そろうと合体して巨大化・パワーアップします（撃破で+2000）。結界が攻撃を受けると、2人が慌てます。敵が落とす🔆を魔法弾で取ると、10秒間自動で攻撃が拡散します</p>
       <p style="margin-bottom:0">敵が左端の結界に届くと結界が削られます。結界が0になると終了。50体倒すごとにボスが出ます。召喚魔法で、もう1人の魔王が12秒間一緒に戦ってくれます</p>
     </div>
   </section>
@@ -149,6 +149,7 @@
   var hitStopT = 0, warnT = 0, pendingBoss = false, pendingBossName = '', shootStar = null, lastKillSfx = 0, lastHitSfx = 0;
   var drops = [], wideT = 0;
   var stampedeLeft = 0, stampedeAt = 2700;
+  var panicT = 0, fusionT = 0;
   var lastShot = 0, spawnAt = 0, shake = 0, flash = 0;
   var cd = { bomb: 0, bolt2: 0, meteor: 0, wave: 0, freeze: 0, inferno: 0, heal: 0, summon: 0, explosion: 0, skill: 0 };
   var bossCount = 0;
@@ -159,7 +160,12 @@
     { e: '🦇', hp: 1, sp: 2.6, size: 30, dmg: 4, shot: false },
     { e: '👾', hp: 3, sp: 1.1, size: 38, dmg: 8, shot: true },
     { e: '💀', hp: 2, sp: 1.9, size: 34, dmg: 6, shot: true },
-    { e: '🕷️', hp: 2, sp: 2.2, size: 32, dmg: 6, shot: true }
+    { e: '🕷️', hp: 2, sp: 2.2, size: 32, dmg: 6, shot: true },
+    { e: '🪰', hp: 1, sp: 3.0, size: 26, dmg: 3, shot: false },
+    { e: '🐝', hp: 3, sp: 1.9, size: 32, dmg: 6, shot: true },
+    { e: '🦉', hp: 9, sp: 0.8, size: 44, dmg: 10, shot: true },
+    { e: '🧟', hp: 7, sp: 1.0, size: 40, dmg: 9, shot: false },
+    { e: '🛸', hp: 5, sp: 2.3, size: 40, dmg: 8, shot: true }
   ];
   var BOSSES = [
     { e: '🐉', name: 'ドラゴン', hp: 70, size: 104, pattern: 'aimed', skill: 'フレイムブレス', kind: 'breath' },
@@ -171,7 +177,11 @@
     { e: '🦑', name: 'クラーケン', hp: 130, size: 116, pattern: 'aimed', skill: '触手渦巻き', kind: 'spiral' },
     { e: '🍞', name: 'ショクパン大王', hp: 160, size: 120, pattern: 'burst', skill: '三連こんがり岩盤', kind: 'rocks', rockE: '🍞' },
     { e: '🧙‍♀️', name: '魔女', hp: 120, size: 100, pattern: 'spread', skill: '瞬間移動狙撃', kind: 'teleport' },
-    { e: '😈', name: '大魔公', hp: 190, size: 126, pattern: 'burst', skill: '全方位弾幕', kind: 'radial' }
+    { e: '😈', name: '大魔公', hp: 190, size: 126, pattern: 'burst', skill: '全方位弾幕', kind: 'radial' },
+    { e: '🍙', name: 'おにぎり侍', hp: 120, size: 102, pattern: 'spread', skill: '三連おにぎり', kind: 'rocks', rockE: '🍙' },
+    { e: '🍕', name: 'ピザ卿', hp: 150, size: 116, pattern: 'aimed', skill: 'チーズ大噴火', kind: 'radial' },
+    { e: '🧦', name: 'くつした大臣', hp: 110, size: 98, pattern: 'spread', skill: 'におい渦巻き', kind: 'spiral' },
+    { e: '🐙', name: 'たこやき小僧', hp: 135, size: 108, pattern: 'burst', skill: 'たこ焼き増殖', kind: 'summon' }
   ];
 
   function boltColor(){ return charKey === 'rateraru' ? '#ff6b6b' : '#c77dff'; }
@@ -183,7 +193,7 @@
     bolts = []; enemies = []; parts = []; floats = []; meteors = []; strikes = [];
     lastShot = 0; spawnAt = 30; shake = 0; flash = 0;
     cd = { bomb: 0, bolt2: 0, meteor: 0, wave: 0, freeze: 0, inferno: 0, heal: 0, summon: 0, explosion: 0, skill: 0 };
-    waves = []; freezeT = 0; ebullets = []; beamT = 0; helperT = 0; starsArr = []; rings = []; combo = 0; comboT = 0; flashT = 0; sleepT = 0; blinkT = 0; hitStopT = 0; warnT = 0; pendingBoss = false; shootStar = null; drops = []; wideT = 0; stampedeLeft = 0; stampedeAt = frame + 2700;
+    waves = []; freezeT = 0; ebullets = []; beamT = 0; helperT = 0; starsArr = []; rings = []; combo = 0; comboT = 0; flashT = 0; sleepT = 0; blinkT = 0; hitStopT = 0; warnT = 0; pendingBoss = false; shootStar = null; drops = []; wideT = 0; stampedeLeft = 0; stampedeAt = frame + 2700; panicT = 0; fusionT = 0;
     elCombo.textContent = '0';
     bossCount = 0;
     elKills.textContent = '0'; elScore.textContent = '0'; elHp.textContent = '100';
@@ -228,7 +238,7 @@
     if (e.hp <= 0 && !e.dead) {
       e.dead = true;
       kills++;
-      var gain = e.boss ? 300 : 10;
+      var gain = e.boss ? (e.fused ? 2000 : 300) : 10;
       score += gain;
       elKills.textContent = kills;
       elScore.textContent = score;
@@ -239,7 +249,7 @@
         elScore.textContent = score;
         addFloat(e.x, e.y - 34, 'コンボボーナス +100', '#ffd76b');
       }
-      if (e.boss) addFloat(e.x, e.y - 44, 'ボス撃破！', '#ffb84d');
+      if (e.boss) addFloat(e.x, e.y - 44, e.fused ? '合体ボス撃破！ +2000' : 'ボス撃破！', '#ffb84d');
       if (e.boss) { hitStopT = 4; sfxFanfare(); } else { sfxKill(); }
       if (kills % 100 === 0) {
         addFloat(W / 2, 110, '🎉 ' + kills + '体撃破！', '#ffe14d');
@@ -381,12 +391,29 @@
   function sfxWarn(){ tone(440, 440, 0.14, 'square', 0.06); tone(587, 587, 0.14, 'square', 0.06, 0.2); tone(440, 440, 0.14, 'square', 0.06, 0.4); }
   function sfxFanfare(){ tone(523, 523, 0.12, 'square', 0.05); tone(659, 659, 0.12, 'square', 0.05, 0.11); tone(784, 784, 0.12, 'square', 0.05, 0.22); tone(1046, 1046, 0.22, 'square', 0.05, 0.33); }
 
-  function spawnBoss(){
-    var bd = BOSSES[bossCount % BOSSES.length];
-    var bHp = Math.round(bd.hp * (1 + 0.25 * Math.floor(bossCount / BOSSES.length)));
-    bossCount++;
-    enemies.push({ e: bd.e, name: bd.name, hp: bHp, maxhp: bHp, sp: 0.55, size: bd.size, dmg: 30, x: W + 80, y: H / 2, boss: true, pattern: bd.pattern, skill: bd.skill, kind: bd.kind, rockE: bd.rockE || null, shootT: 90, entered: false, specT: 260, specWarn: 0, breathT: 0, spiralT: 0, teleT: 0, burst2: 0, spiralA: 0, ph: Math.random() * 6.28 });
+  function pushBoss(idx, yy){
+    var bd = BOSSES[idx % BOSSES.length];
+    var bHp = Math.round(bd.hp * (1 + 0.25 * Math.floor(idx / BOSSES.length)));
+    enemies.push({ e: bd.e, name: bd.name, hp: bHp, maxhp: bHp, sp: 0.55, size: bd.size, dmg: 30, x: W + 80, y: yy, boss: true, fused: false, pattern: bd.pattern, skill: bd.skill, kind: bd.kind, rockE: bd.rockE || null, shootT: 90, entered: false, specT: 260, specWarn: 0, breathT: 0, spiralT: 0, teleT: 0, burst2: 0, spiralA: 0, ph: Math.random() * 6.28 });
     addFloat(W / 2, 70, 'ボス「' + bd.name + '」出現！', '#ffb84d');
+  }
+  function spawnBoss(){
+    pushBoss(bossCount, 110 + Math.random() * (H - 220));
+    bossCount++;
+    if (bossCount >= 4 && Math.random() < 0.45) {
+      pushBoss(bossCount, 110 + Math.random() * (H - 220));
+      bossCount++;
+      addFloat(W / 2, 104, 'ボスが2体現れた！合体に注意！', '#ff9a9a');
+    }
+  }
+  function doFusion(a, b){
+    enemies = enemies.filter(function(en){ return en !== a && en !== b; });
+    var fhp = Math.round((a.hp + b.hp) * 1.5);
+    var nm = a.name + '×' + b.name;
+    enemies.push({ e: a.e, e2: b.e, name: nm, hp: fhp, maxhp: fhp, sp: 0.45, size: 205, dmg: 34, x: Math.min(a.x, b.x), y: (a.y + b.y) / 2, boss: true, fused: true, pattern: a.pattern, pats: [a.pattern, b.pattern], skill: a.skill, skills: [a.skill, b.skill], kind: a.kind, kinds: [a.kind, b.kind], rockE: a.rockE || b.rockE || null, shootT: 80, entered: true, specT: 320, specWarn: 0, specCount: 0, breathT: 0, spiralT: 0, teleT: 0, burst2: 0, spiralA: 0, ph: Math.random() * 6.28 });
+    addFloat(W / 2, 110, '⚠ ' + nm + ' 合体・巨大化！', '#ff6b6b');
+    sfxWarn();
+    shake = 14;
   }
 
   function radialBurst(e, off){
@@ -397,6 +424,12 @@
   }
   function execSpecial(e){
     e.specT = 700 + Math.random() * 300;
+    if (e.fused && e.kinds) {
+      var ki = e.specCount % 2;
+      e.kind = e.kinds[ki];
+      e.skill = e.skills[ki];
+      e.specCount++;
+    }
     addFloat(e.x, e.y - e.size / 2 - 26, '必殺『' + e.skill + '』！', '#ffb84d');
     if (e.kind === 'breath') {
       e.breathT = 100;
@@ -459,9 +492,10 @@
     ebullets.push({ x: e.x - e.size / 2, y: e.y, vx: dx / len * 3.1, vy: dy / len * 3.1 });
   }
   function bossShoot(e){
-    if (e.pattern === 'aimed') {
+    var pat = e.fused ? e.pats[Math.floor(frame / 240) % 2] : e.pattern;
+    if (pat === 'aimed') {
       foeShoot(e);
-    } else if (e.pattern === 'spread') {
+    } else if (pat === 'spread') {
       for (var a = -0.32; a <= 0.33; a += 0.32) {
         var dx = 112 - e.x, dy = py - e.y;
         var len = Math.sqrt(dx * dx + dy * dy) || 1;
@@ -572,6 +606,16 @@
         stampedeAt = frame + 3600 + Math.random() * 1800;
         addFloat(W / 2, 90, '🐾 スタンピード発生！', '#ffd76b');
         sfxWarn();
+      }
+      bossAlive = enemies.some(function(en){ return en.boss; });
+      var bl = enemies.filter(function(en){ return en.boss && !en.fused; });
+      if (bl.length >= 2) {
+        fusionT++;
+        if (fusionT >= 300) { doFusion(bl[0], bl[1]); fusionT = 0; }
+      } else fusionT = 0;
+      if (panicT > 0) {
+        panicT--;
+        if (panicT % 10 === 0) addFloat(150, py - 100, '💦', '#6bc5ff');
       }
       if (warnT > 0) {
         warnT--;
@@ -781,6 +825,7 @@
         }
         if (e2.x < 78) {
           hp -= e2.dmg;
+          panicT = 45;
           elHp.textContent = Math.max(0, hp);
           boom(70, e2.y, 18, '#e5484d', 5);
           shake = Math.max(shake, 8);
@@ -796,6 +841,7 @@
         if (ubb.x < 62 || hitP) {
           tone(150, 65, 0.14, 'triangle', 0.08);
           hp -= hitP ? 5 : 3;
+          panicT = 45;
           elHp.textContent = Math.max(0, hp);
           boom(ubb.x, ubb.y, 10, '#e5484d', 4);
           shake = Math.max(shake, 5);
@@ -896,12 +942,16 @@
       var en2 = enemies[ei2];
       ctx.font = en2.size + 'px serif';
       ctx.fillText(en2.e, en2.x, en2.y);
+      if (en2.e2) {
+        ctx.font = Math.round(en2.size * 0.45) + 'px serif';
+        ctx.fillText(en2.e2, en2.x + en2.size * 0.34, en2.y - en2.size * 0.34);
+      }
       if (freezeT > 0) {
         ctx.fillStyle = 'rgba(120,200,255,0.35)';
         ctx.beginPath(); ctx.arc(en2.x, en2.y, en2.size / 2 + 4, 0, Math.PI * 2); ctx.fill();
       }
       if (en2.maxhp > 1 || en2.boss) {
-        var bw2 = en2.boss ? 100 : 48;
+        var bw2 = en2.boss ? (en2.fused ? 170 : 100) : 48;
         ctx.fillStyle = '#3d2a5e';
         ctx.fillRect(en2.x - bw2 / 2, en2.y - en2.size / 2 - 12, bw2, 6);
         ctx.fillStyle = en2.boss ? '#ffb84d' : '#e5484d';
@@ -1019,6 +1069,7 @@
       ctx.translate(112, py + 66 + bobY);
       if (sleepT > 0) ctx.rotate(Math.sin(frame * 0.03) * 0.03);
       if (blinkT > 0) ctx.scale(1, 1 - 0.14 * Math.abs(Math.sin(frame * 0.55)));
+      if (panicT > 0 && sleepT <= 0) { ctx.translate(Math.sin(frame * 2.3) * 4, 0); ctx.rotate(Math.sin(frame * 2.6) * 0.06); }
       ctx.drawImage(simg, -sw / 2, -sh, sw, sh);
       ctx.restore();
     }
