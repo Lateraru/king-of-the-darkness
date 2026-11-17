@@ -62,7 +62,7 @@
       <p>敵が落とす⭐を魔法弾で取ると、全魔法のクールダウンが短くなります。連続撃破でコンボが伸び、15コンボごとにボーナス</p>
       <p>エクスプロージョンは最上位魔法。その下位がインフェルノ（一直線の極太ビーム）です</p>
       <p>キャラ特技：らてらる「立ったまま寝る」は4秒間動けなくなる代わりに結界が回復。らて子「高速まばたき」は5秒間、攻撃速度が上がる代わりに他の魔法が使えません</p>
-      <p>ボスは14体（ネタキャラ含む）が順番に出現し、それぞれ固有の必殺技を持っています。必殺技の前には警告が出ます。時々スタンピード（敵の大群）が発生します。ボスが2体そろうと合体して巨大化・パワーアップします（撃破で+2000）。結界が攻撃を受けると、2人が慌てます。敵が落とす🔆を魔法弾で取ると、10秒間自動で攻撃が拡散します</p>
+      <p>ボスは18体（ネタキャラ含む）が順番に出現し、それぞれ固有の必殺技を持っています。5回に1回は大ボス「魔界大皇帝」（撃破で+5000）が出現します。ボスの攻撃には、追いかけてくる紫の玉（撃ち落とせます）と、予兆のあと結界に直接当たる回避不能攻撃（防ぐには予兆の間にボスを倒すこと）があります。時々スタンピード（敵の大群）が発生します。ボスが2体そろうと合体して巨大化・パワーアップします（撃破で+2000）。結界が攻撃を受けると、2人が慌てます。敵が落とす🔆を魔法弾で取ると、10秒間自動で攻撃が拡散します</p>
       <p style="margin-bottom:0">敵が左端の結界に届くと結界が削られます。結界が0になると終了。50体倒すごとにボスが出ます。召喚魔法で、もう1人の魔王が12秒間一緒に戦ってくれます</p>
     </div>
   </section>
@@ -149,7 +149,7 @@
   var hitStopT = 0, warnT = 0, pendingBoss = false, pendingBossName = '', shootStar = null, lastKillSfx = 0, lastHitSfx = 0;
   var drops = [], wideT = 0;
   var stampedeLeft = 0, stampedeAt = 2700;
-  var panicT = 0, fusionT = 0;
+  var panicT = 0, fusionT = 0, bossEvents = 0;
   var lastShot = 0, spawnAt = 0, shake = 0, flash = 0;
   var cd = { bomb: 0, bolt2: 0, meteor: 0, wave: 0, freeze: 0, inferno: 0, heal: 0, summon: 0, explosion: 0, skill: 0 };
   var bossCount = 0;
@@ -165,7 +165,11 @@
     { e: '🐝', hp: 3, sp: 1.9, size: 32, dmg: 6, shot: true },
     { e: '🦉', hp: 9, sp: 0.8, size: 44, dmg: 10, shot: true },
     { e: '🧟', hp: 7, sp: 1.0, size: 40, dmg: 9, shot: false },
-    { e: '🛸', hp: 5, sp: 2.3, size: 40, dmg: 8, shot: true }
+    { e: '🛸', hp: 5, sp: 2.3, size: 40, dmg: 8, shot: true },
+    { e: '🦂', hp: 4, sp: 1.6, size: 36, dmg: 7, shot: false },
+    { e: '🐌', hp: 12, sp: 0.4, size: 46, dmg: 10, shot: false },
+    { e: '👁️', hp: 4, sp: 1.4, size: 38, dmg: 7, shot: true },
+    { e: '🚀', hp: 2, sp: 3.4, size: 34, dmg: 5, shot: false }
   ];
   var BOSSES = [
     { e: '🐉', name: 'ドラゴン', hp: 70, size: 104, pattern: 'aimed', skill: 'フレイムブレス', kind: 'breath' },
@@ -181,7 +185,11 @@
     { e: '🍙', name: 'おにぎり侍', hp: 120, size: 102, pattern: 'spread', skill: '三連おにぎり', kind: 'rocks', rockE: '🍙' },
     { e: '🍕', name: 'ピザ卿', hp: 150, size: 116, pattern: 'aimed', skill: 'チーズ大噴火', kind: 'radial' },
     { e: '🧦', name: 'くつした大臣', hp: 110, size: 98, pattern: 'spread', skill: 'におい渦巻き', kind: 'spiral' },
-    { e: '🐙', name: 'たこやき小僧', hp: 135, size: 108, pattern: 'burst', skill: 'たこ焼き増殖', kind: 'summon' }
+    { e: '🐙', name: 'たこやき小僧', hp: 135, size: 108, pattern: 'burst', skill: 'たこ焼き増殖', kind: 'summon' },
+    { e: '🍰', name: 'ケーキ女王', hp: 145, size: 112, pattern: 'aimed', skill: '生クリーム大噴火', kind: 'radial' },
+    { e: '🥦', name: 'ブロッコリー将軍', hp: 125, size: 106, pattern: 'spread', skill: 'ビタミン渦巻き', kind: 'spiral' },
+    { e: '🍩', name: 'ドーナツ警部', hp: 130, size: 104, pattern: 'burst', skill: '輪っか召喚', kind: 'summon' },
+    { e: '🧀', name: 'チーズ伯爵', hp: 155, size: 114, pattern: 'spread', skill: 'とろける岩盤', kind: 'rocks', rockE: '🧀' }
   ];
 
   function boltColor(){ return charKey === 'rateraru' ? '#ff6b6b' : '#c77dff'; }
@@ -193,7 +201,7 @@
     bolts = []; enemies = []; parts = []; floats = []; meteors = []; strikes = [];
     lastShot = 0; spawnAt = 30; shake = 0; flash = 0;
     cd = { bomb: 0, bolt2: 0, meteor: 0, wave: 0, freeze: 0, inferno: 0, heal: 0, summon: 0, explosion: 0, skill: 0 };
-    waves = []; freezeT = 0; ebullets = []; beamT = 0; helperT = 0; starsArr = []; rings = []; combo = 0; comboT = 0; flashT = 0; sleepT = 0; blinkT = 0; hitStopT = 0; warnT = 0; pendingBoss = false; shootStar = null; drops = []; wideT = 0; stampedeLeft = 0; stampedeAt = frame + 2700; panicT = 0; fusionT = 0;
+    waves = []; freezeT = 0; ebullets = []; beamT = 0; helperT = 0; starsArr = []; rings = []; combo = 0; comboT = 0; flashT = 0; sleepT = 0; blinkT = 0; hitStopT = 0; warnT = 0; pendingBoss = false; shootStar = null; drops = []; wideT = 0; stampedeLeft = 0; stampedeAt = frame + 2700; panicT = 0; fusionT = 0; bossEvents = 0;
     elCombo.textContent = '0';
     bossCount = 0;
     elKills.textContent = '0'; elScore.textContent = '0'; elHp.textContent = '100';
@@ -238,7 +246,7 @@
     if (e.hp <= 0 && !e.dead) {
       e.dead = true;
       kills++;
-      var gain = e.boss ? (e.fused ? 2000 : 300) : 10;
+      var gain = e.boss ? (e.mega ? 5000 : (e.fused ? 2000 : 300)) : 10;
       score += gain;
       elKills.textContent = kills;
       elScore.textContent = score;
@@ -249,7 +257,7 @@
         elScore.textContent = score;
         addFloat(e.x, e.y - 34, 'コンボボーナス +100', '#ffd76b');
       }
-      if (e.boss) addFloat(e.x, e.y - 44, e.fused ? '合体ボス撃破！ +2000' : 'ボス撃破！', '#ffb84d');
+      if (e.boss) addFloat(e.x, e.y - 44, e.mega ? '大ボス撃破！ +5000' : (e.fused ? '合体ボス撃破！ +2000' : 'ボス撃破！'), '#ffb84d');
       if (e.boss) { hitStopT = 4; sfxFanfare(); } else { sfxKill(); }
       if (kills % 100 === 0) {
         addFloat(W / 2, 110, '🎉 ' + kills + '体撃破！', '#ffe14d');
@@ -394,13 +402,22 @@
   function pushBoss(idx, yy){
     var bd = BOSSES[idx % BOSSES.length];
     var bHp = Math.round(bd.hp * (1 + 0.25 * Math.floor(idx / BOSSES.length)));
-    enemies.push({ e: bd.e, name: bd.name, hp: bHp, maxhp: bHp, sp: 0.55, size: bd.size, dmg: 30, x: W + 80, y: yy, boss: true, fused: false, pattern: bd.pattern, skill: bd.skill, kind: bd.kind, rockE: bd.rockE || null, shootT: 90, entered: false, specT: 260, specWarn: 0, breathT: 0, spiralT: 0, teleT: 0, burst2: 0, spiralA: 0, ph: Math.random() * 6.28 });
+    enemies.push({ e: bd.e, name: bd.name, hp: bHp, maxhp: bHp, sp: 0.55, size: bd.size, dmg: 30, x: W + 80, y: yy, boss: true, fused: false, pattern: bd.pattern, skill: bd.skill, kind: bd.kind, rockE: bd.rockE || null, shootT: 90, shotN: 0, doomT: 1400 + Math.random() * 500, doomWarn: 0, entered: false, specT: 260, specWarn: 0, breathT: 0, spiralT: 0, teleT: 0, burst2: 0, spiralA: 0, ph: Math.random() * 6.28 });
     addFloat(W / 2, 70, 'ボス「' + bd.name + '」出現！', '#ffb84d');
   }
+  function pushMega(){
+    var cyc = Math.floor(bossEvents / 5) - 1;
+    var mhp = Math.round(650 * (1 + 0.3 * cyc));
+    enemies.push({ e: '🐲', e2: '👑', name: '魔界大皇帝', hp: mhp, maxhp: mhp, sp: 0.35, size: 250, dmg: 40, x: W + 150, y: H / 2, boss: true, fused: false, mega: true, pattern: 'burst', pats: ['aimed', 'spread', 'burst'], skill: '終末弾幕', skills: ['終末弾幕', '煉獄ブレス', '瞬間移動狙撃'], kind: 'radial', kinds: ['radial', 'breath', 'teleport'], rockE: null, shootT: 70, shotN: 0, doomT: 1100, doomWarn: 0, entered: false, specT: 300, specWarn: 0, specCount: 0, breathT: 0, spiralT: 0, teleT: 0, burst2: 0, spiralA: 0, ph: 0 });
+    addFloat(W / 2, 70, '👑 大ボス「魔界大皇帝」出現！', '#ff6b6b');
+    sfxWarn();
+  }
   function spawnBoss(){
+    bossEvents++;
+    if (bossEvents % 5 === 0) { pushMega(); return; }
     pushBoss(bossCount, 110 + Math.random() * (H - 220));
     bossCount++;
-    if (bossCount >= 4 && Math.random() < 0.45) {
+    if (bossCount >= 2 && Math.random() < 0.75) {
       pushBoss(bossCount, 110 + Math.random() * (H - 220));
       bossCount++;
       addFloat(W / 2, 104, 'ボスが2体現れた！合体に注意！', '#ff9a9a');
@@ -410,7 +427,7 @@
     enemies = enemies.filter(function(en){ return en !== a && en !== b; });
     var fhp = Math.round((a.hp + b.hp) * 1.5);
     var nm = a.name + '×' + b.name;
-    enemies.push({ e: a.e, e2: b.e, name: nm, hp: fhp, maxhp: fhp, sp: 0.45, size: 205, dmg: 34, x: Math.min(a.x, b.x), y: (a.y + b.y) / 2, boss: true, fused: true, pattern: a.pattern, pats: [a.pattern, b.pattern], skill: a.skill, skills: [a.skill, b.skill], kind: a.kind, kinds: [a.kind, b.kind], rockE: a.rockE || b.rockE || null, shootT: 80, entered: true, specT: 320, specWarn: 0, specCount: 0, breathT: 0, spiralT: 0, teleT: 0, burst2: 0, spiralA: 0, ph: Math.random() * 6.28 });
+    enemies.push({ e: a.e, e2: b.e, name: nm, hp: fhp, maxhp: fhp, sp: 0.45, size: 205, dmg: 34, x: Math.min(a.x, b.x), y: (a.y + b.y) / 2, boss: true, fused: true, pattern: a.pattern, pats: [a.pattern, b.pattern], skill: a.skill, skills: [a.skill, b.skill], kind: a.kind, kinds: [a.kind, b.kind], rockE: a.rockE || b.rockE || null, shootT: 80, shotN: 0, doomT: 1200, doomWarn: 0, entered: true, specT: 320, specWarn: 0, specCount: 0, breathT: 0, spiralT: 0, teleT: 0, burst2: 0, spiralA: 0, ph: Math.random() * 6.28 });
     addFloat(W / 2, 110, '⚠ ' + nm + ' 合体・巨大化！', '#ff6b6b');
     sfxWarn();
     shake = 14;
@@ -424,7 +441,7 @@
   }
   function execSpecial(e){
     e.specT = 700 + Math.random() * 300;
-    if (e.fused && e.kinds) {
+    if (e.kinds) {
       var ki = e.specCount % 2;
       e.kind = e.kinds[ki];
       e.skill = e.skills[ki];
@@ -492,7 +509,13 @@
     ebullets.push({ x: e.x - e.size / 2, y: e.y, vx: dx / len * 3.1, vy: dy / len * 3.1 });
   }
   function bossShoot(e){
-    var pat = e.fused ? e.pats[Math.floor(frame / 240) % 2] : e.pattern;
+    var pat = e.pats ? e.pats[Math.floor(frame / 240) % e.pats.length] : e.pattern;
+    e.shotN = (e.shotN || 0) + 1;
+    if (e.shotN % 3 === 0) {
+      var hang = Math.atan2(py - e.y, 112 - e.x);
+      ebullets.push({ x: e.x - 30, y: e.y, vx: Math.cos(hang) * 2.3, vy: Math.sin(hang) * 2.3, homing: true, life: 420 });
+      return;
+    }
     if (pat === 'aimed') {
       foeShoot(e);
     } else if (pat === 'spread') {
@@ -607,7 +630,7 @@
         addFloat(W / 2, 90, '🐾 スタンピード発生！', '#ffd76b');
         sfxWarn();
       }
-      var bl = enemies.filter(function(en){ return en.boss && !en.fused; });
+      var bl = enemies.filter(function(en){ return en.boss && !en.fused && !en.mega; });
       if (bl.length >= 2) {
         fusionT++;
         if (fusionT >= 300) { doFusion(bl[0], bl[1]); fusionT = 0; }
@@ -794,6 +817,21 @@
             } else {
               e2.y += Math.sin(frame * 0.02 + e2.ph) * 0.9;
               e2.y = Math.max(80, Math.min(H - 80, e2.y));
+              if (e2.doomWarn > 0) {
+                e2.doomWarn--;
+                if (e2.doomWarn === 0) {
+                  hp -= 8;
+                  elHp.textContent = Math.max(0, hp);
+                  flashT = 10; shake = 12; panicT = 60;
+                  boom(70, py, 22, '#e5484d', 6);
+                  sfxExplosion();
+                  addFloat(W / 2, 140, '回避不能攻撃！ 結界に8ダメージ', '#ff6b6b');
+                  if (hp <= 0) { gameOver(); }
+                }
+              } else if (e2.doomT > 0) {
+                e2.doomT--;
+                if (e2.doomT === 0) { e2.doomWarn = 120; e2.doomT = 1500 + Math.random() * 600; sfxWarn(); addFloat(e2.x, e2.y - e2.size / 2 - 30, '⚠ 回避不能攻撃の予兆…', '#ff6b6b'); }
+              }
               var specActive = e2.breathT > 0 || e2.spiralT > 0 || e2.teleT > 0 || e2.burst2 > 0;
               if (e2.specWarn > 0) {
                 e2.specWarn--;
@@ -835,6 +873,17 @@
 
       for (var ub = ebullets.length - 1; ub >= 0; ub--) {
         var ubb = ebullets[ub];
+        if (ubb.homing) {
+          var ha = Math.atan2(py - ubb.y, 112 - ubb.x);
+          var ca = Math.atan2(ubb.vy, ubb.vx);
+          var da = ha - ca;
+          while (da > Math.PI) da -= Math.PI * 2;
+          while (da < -Math.PI) da += Math.PI * 2;
+          var na = ca + Math.max(-0.055, Math.min(0.055, da));
+          ubb.vx = Math.cos(na) * 2.3; ubb.vy = Math.sin(na) * 2.3;
+          ubb.life = (ubb.life || 420) - 1;
+          if (ubb.life <= 0) ubb.homing = false;
+        }
         ubb.x += ubb.vx; ubb.y += ubb.vy;
         var hitP = Math.abs(ubb.x - 112) < 42 && Math.abs(ubb.y - py) < 56;
         if (ubb.x < 62 || hitP) {
@@ -976,9 +1025,9 @@
     for (var ub2 = 0; ub2 < ebullets.length; ub2++) {
       var ubb2 = ebullets[ub2];
       ctx.save();
-      ctx.shadowColor = '#ff8a3d'; ctx.shadowBlur = 10;
-      ctx.fillStyle = '#ffb84d';
-      ctx.beginPath(); ctx.arc(ubb2.x, ubb2.y, 7, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowColor = ubb2.homing ? '#c77dff' : '#ff8a3d'; ctx.shadowBlur = 10;
+      ctx.fillStyle = ubb2.homing ? '#c77dff' : '#ffb84d';
+      ctx.beginPath(); ctx.arc(ubb2.x, ubb2.y, ubb2.homing ? 9 : 7, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#fff2cc';
       ctx.beginPath(); ctx.arc(ubb2.x, ubb2.y, 3, 0, Math.PI * 2); ctx.fill();
       ctx.restore();
@@ -1115,6 +1164,12 @@
       ctx.fillText('⚠ 必殺技警告 ⚠', W / 2, H / 2 - 16);
       ctx.font = '19px sans-serif';
       ctx.fillText('「' + specWarnBoss.name + '」の『' + specWarnBoss.skill + '』が来る！', W / 2, H / 2 + 28);
+    }
+    if (enemies.some(function(en){ return en.boss && en.doomWarn > 0; }) && Math.floor(frame / 8) % 2 === 0) {
+      ctx.fillStyle = 'rgba(120,0,0,0.45)';
+      ctx.fillRect(0, H / 2 - 108, W, 44);
+      ctx.fillStyle = '#ff6b6b'; ctx.font = 'bold 26px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('⚠ 回避不能攻撃 ⚠', W / 2, H / 2 - 86);
     }
     if (warnT > 0 && Math.floor(frame / 8) % 2 === 0) {
       ctx.fillStyle = 'rgba(140,12,12,0.55)';
