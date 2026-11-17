@@ -824,7 +824,7 @@
                   elHp.textContent = Math.max(0, hp);
                   flashT = 10; shake = 12; panicT = 60;
                   boom(70, py, 22, '#e5484d', 6);
-                  sfxExplosion();
+                  noiseBurst(0.5, 0.22); tone(130, 38, 0.5, 'sawtooth', 0.09);
                   addFloat(W / 2, 140, '回避不能攻撃！ 結界に8ダメージ', '#ff6b6b');
                   if (hp <= 0) { gameOver(); }
                 }
