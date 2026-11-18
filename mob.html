@@ -45,7 +45,8 @@
 上から来る敵の群れとぶつかると、数同士の戦いになります<br>
 敵の砦を壊せばステージクリア　下の陣地が壊されたら負けです<br>
 ボスが出ている間は砦にダメージが入りません　先にボスを倒してください<br>
-流れてくるアイテムを群れで取ると、分身や召喚の助けがあります</p>
+流れてくるアイテムを群れで取ると、分身や召喚や回復の助けがあります<br>
+端っこに拘束された魔剣と杖は、群れを当て続けると拘束が外れて、超強力な攻撃が出ます</p>
 
 <div id="startPanel">
 <p style="font-weight:bold">キャラクターを選んでください</p>
@@ -180,6 +181,7 @@ var announceT = 0, announceText = '', shakeT = 0, baseFlashT = 0;
 var poofSfxT = 0, baseSfxT = 0;
 var healT = 0, floats = [];
 var items = [], ally = null, cloneT = 0, itemT = 0, guardMsgT = 0, deployCycle = 0;
+var weapons = [], swordT = 0, staffT = 0, itemSeq = 0;
 
 function addPart(x, y, color, n){
   if (parts.length > 240) return;
@@ -197,7 +199,7 @@ function killBoss(){
 }
 function addUnit(x, y, mark){
   if (units.length < CAP){
-    units.push({ x: x, y: y, prevY: y, off: (Math.random() * 76 - 38), c: Math.random() < 0.5 ? 0 : 1, fightT: 0, gateMark: mark || 0, wob: Math.random() * 6.28 });
+    units.push({ x: x, hx: x, y: y, prevY: y, off: 0, c: Math.random() < 0.5 ? 0 : 1, fightT: 0, gateMark: mark || 0, wob: Math.random() * 6.28 });
   } else reserve++;
 }
 function startStage(idx){
@@ -211,6 +213,7 @@ function startStage(idx){
   boss = null; bossSpawned = false; bossWarned = false;
   healT = 0; floats = [];
   items = []; ally = null; cloneT = 0; itemT = 500; guardMsgT = 0;
+  weapons = []; swordT = 480; staffT = 1500; itemSeq = 0;
   phase = 'play';
   announceT = 110; announceText = 'ステージ ' + (idx + 1);
   $('startPanel').style.display = 'none';
@@ -289,9 +292,32 @@ cv.addEventListener('pointermove', function(e){ if (pointerOn) targetX = canvasX
 cv.addEventListener('pointerup', function(){ pointerOn = false; });
 cv.addEventListener('pointercancel', function(){ pointerOn = false; });
 
+/* ===== 拘束武器 ===== */
+function releaseWeapon(w){
+  var isSword = w.kind === 'sword';
+  announceT = 110;
+  announceText = isSword ? '⚔ 魔剣解放！' : '🪄 魔法杖解放！';
+  shakeT = 10;
+  tone(70, 30, 0.5, 'sawtooth', 0.16);
+  addPart(w.x, w.y, '#ffd873', 30);
+  for (var ri = enemies.length - 1; ri >= 0; ri--){
+    if (!enemies[ri].dead){ enemies[ri].dead = true; kills++; score += 10; }
+  }
+  if (boss && !boss.dead){
+    boss.hp -= isSword ? 200 : 120;
+    addPart(boss.x, boss.y, '#ffb3b3', 16);
+    if (boss.hp <= 0){ killBoss(); boss = null; }
+  }
+  if (!isSword){
+    baseHP = Math.min(100, baseHP + 15);
+    floats.push({ x: baseX, y: H - 170, text: '陣地 +15 回復', life: 80 });
+  }
+  if (isSword) swordT = 2700; else staffT = 2700;
+}
+
 /* ===== ゲート ===== */
 function makeGateCell(kind, val){
-  return { kind: kind, val: val, budget: (kind === 'add' || kind === 'sub') ? val : 0, parity: false };
+  return { kind: kind, val: val, budget: (kind === 'add' || kind === 'sub') ? val : 0, parity: false, hits: 0, maxVal: val };
 }
 function randomGatePair(){
   var goods = [ ['mul', 2], ['mul', 2], ['mul', 3], ['add', 20], ['add', 35], ['add', 50] ];
@@ -303,11 +329,21 @@ function randomGatePair(){
   if (r < 0.5) other = smalls[Math.floor(Math.random() * smalls.length)];
   else other = bads[Math.floor(Math.random() * bads.length)];
   var leftFirst = Math.random() < 0.5;
-  return {
+  var pair = {
     id: gateIdSeq++, y: -46, prevY: -46,
     left: makeGateCell(leftFirst ? g[0] : other[0], leftFirst ? g[1] : other[1]),
     right: makeGateCell(leftFirst ? other[0] : g[0], leftFirst ? other[1] : g[1])
   };
+  if (pair.left.kind === pair.right.kind && pair.left.val === pair.right.val){
+    var alts = [ ['add', 25], ['mul', 3], ['sub', 15], ['add', 40] ];
+    for (var ai = 0; ai < alts.length; ai++){
+      if (alts[ai][0] !== pair.left.kind || alts[ai][1] !== pair.left.val){
+        pair.right = makeGateCell(alts[ai][0], alts[ai][1]);
+        break;
+      }
+    }
+  }
+  return pair;
 }
 function gateLabel(cell){
   if (cell.kind === 'mul') return '×' + cell.val;
@@ -322,10 +358,23 @@ function applyGate(unit, cell, rowId){
   } else if (cell.kind === 'add'){
     if (cell.budget > 0){ cell.budget--; addUnit(unit.x + (Math.random() * 16 - 8), unit.y + 4, rowId); sfxGate(true); }
   } else if (cell.kind === 'sub'){
-    if (cell.budget > 0){ cell.budget--; unit.dead = true; addPart(unit.x, unit.y, '#e05858', 5); sfxGate(false); }
+    if (cell.budget > 0){
+      cell.budget--; unit.dead = true; addPart(unit.x, unit.y, '#e05858', 5); sfxGate(false);
+      if (cell.budget === 0){
+        cell.kind = 'add'; cell.val = cell.maxVal; cell.budget = cell.maxVal;
+        floats.push({ x: unit.x, y: unit.y - 12, text: '＋に変化！', life: 60 });
+        sfxGate(true);
+      }
+    }
   } else if (cell.kind === 'div'){
     cell.parity = !cell.parity;
     if (cell.parity){ unit.dead = true; addPart(unit.x, unit.y, '#e05858', 5); sfxGate(false); }
+    cell.hits++;
+    if (cell.hits >= 10){
+      cell.kind = 'mul'; cell.val = 2;
+      floats.push({ x: unit.x, y: unit.y - 12, text: '×に変化！', life: 60 });
+      sfxGate(true);
+    }
   }
 }
 
@@ -361,7 +410,8 @@ function step(){
   while (reserve > 0 && units.length < CAP && deploy < 3){
     reserve--; deploy++;
     var sxp = spawnPts[deployCycle % spawnPts.length]; deployCycle++;
-    units.push({ x: sxp + (Math.random() * 30 - 15), y: H - 128 + Math.random() * 8, prevY: H - 128, off: (Math.random() * 76 - 38), c: Math.random() < 0.5 ? 0 : 1, fightT: 0, gateMark: 0, wob: Math.random() * 6.28 });
+    var nx = sxp + (Math.random() * 30 - 15);
+    units.push({ x: nx, hx: nx, y: H - 128 + Math.random() * 8, prevY: H - 128, off: 0, c: Math.random() < 0.5 ? 0 : 1, fightT: 0, gateMark: 0, wob: Math.random() * 6.28 });
   }
   if (cloneT > 0) cloneT--;
   if (guardMsgT > 0) guardMsgT--;
@@ -418,9 +468,8 @@ function step(){
     u.prevY = u.y;
     if (u.fightT === 0){
       u.y -= CHARS[charKey].uSpeed;
-      var want = baseX + u.off;
-      u.x += Math.max(-1.1, Math.min(1.1, want - u.x)) + Math.sin(timeF * 0.1 + u.wob) * 0.25;
-      u.x = Math.max(30, Math.min(W - 30, u.x));
+      if (u.hx === undefined) u.hx = u.x;
+      u.x = u.hx + Math.sin(timeF * 0.1 + u.wob) * 1.5;
     }
   }
   // 敵の移動
@@ -547,11 +596,36 @@ function step(){
   if (boss && boss.dead) boss = null;
   for (var e3 = enemies.length - 1; e3 >= 0; e3--) if (enemies[e3].dead) enemies.splice(e3, 1);
 
+  // 拘束武器の出現
+  if (swordT > 0){ swordT--; if (swordT === 0) weapons.push({ kind: 'sword', x: 44, y: 330, need: 40, charge: 0 }); }
+  if (staffT > 0){ staffT--; if (staffT === 0) weapons.push({ kind: 'staff', x: W - 44, y: 430, need: 40, charge: 0 }); }
+  // 武器への当て込み
+  for (var wi2 = weapons.length - 1; wi2 >= 0; wi2--){
+    var wp = weapons[wi2];
+    for (var wu = 0; wu < units.length; wu++){
+      var wun = units[wu];
+      if (wun.dead || wun.fightT > 0) continue;
+      var wdx = wun.x - wp.x, wdy = wun.y - wp.y;
+      if (wdx * wdx + wdy * wdy < 26 * 26){
+        wun.dead = true;
+        wp.charge++;
+        addPart(wp.x, wp.y, '#ffd873', 3);
+        if (wp.charge >= wp.need){
+          releaseWeapon(wp);
+          weapons.splice(wi2, 1);
+          break;
+        }
+      }
+    }
+  }
+
   // アイテムの出現・落下・取得
   itemT++;
   if (itemT >= 1320){
     itemT = 0;
-    items.push({ x: 60 + Math.random() * (W - 120), y: -20, kind: Math.random() < 0.5 ? 'clone' : 'summon' });
+    var kindsCycle = ['clone', 'summon', 'heal', 'summon', 'clone'];
+    items.push({ x: 60 + Math.random() * (W - 120), y: -20, kind: kindsCycle[itemSeq % kindsCycle.length] });
+    itemSeq++;
   }
   for (var ii2 = items.length - 1; ii2 >= 0; ii2--){
     var it2 = items[ii2];
@@ -566,10 +640,18 @@ function step(){
       if (it2.kind === 'clone'){
         cloneT = 1200;
         floats.push({ x: baseX, y: H - 170, text: '分身の術！', life: 80 });
-      } else {
-        if (ally) ally.hp = Math.min(ally.maxHp, ally.hp + 60);
-        else ally = { x: baseX, y: H - 140, hp: 130, maxHp: 130, crushT: 0 };
-        floats.push({ x: baseX, y: H - 170, text: CHARS[charKey === 'r' ? 'l' : 'r'].name + '召喚！', life: 80 });
+      } else if (it2.kind === 'summon') {
+        if (ally){
+          ally.lv = Math.min(3, ally.lv + 1);
+          ally.hp = Math.min(ally.maxHp, ally.hp + 40);
+          floats.push({ x: ally.x, y: ally.y - 60, text: '巨大化！', life: 80 });
+        } else {
+          ally = { x: baseX, y: H - 140, hp: 130, maxHp: 130, crushT: 0, lv: 1 };
+          floats.push({ x: baseX, y: H - 170, text: CHARS[charKey === 'r' ? 'l' : 'r'].name + '召喚！', life: 80 });
+        }
+      } else if (it2.kind === 'heal') {
+        baseHP = Math.min(100, baseHP + 25);
+        floats.push({ x: baseX, y: H - 170, text: '陣地 +25 回復', life: 80 });
       }
       sfxGate(true);
       items.splice(ii2, 1);
@@ -579,16 +661,16 @@ function step(){
   // 召喚された相方の進軍
   if (ally){
     ally.y -= 0.85;
-    if (boss) ally.x += Math.max(-0.5, Math.min(0.5, boss.x - ally.x));
     ally.crushT++;
     if (ally.crushT >= 6){
       ally.crushT = 0;
       var crushed = 0;
-      for (var ae = 0; ae < enemies.length && crushed < 6; ae++){
+      for (var ae = 0; ae < enemies.length && crushed < 6 + 4 * (ally.lv - 1); ae++){
         var aen = enemies[ae];
         if (aen.dead) continue;
         var adx = aen.x - ally.x, ady = aen.y - ally.y;
-        if (adx * adx + ady * ady < 46 * 46){ aen.dead = true; kills++; score += 10; crushed++; addPart(aen.x, aen.y, '#ff9c9c', 4); }
+        var arad = 46 + 16 * (ally.lv - 1);
+        if (adx * adx + ady * ady < arad * arad){ aen.dead = true; kills++; score += 10; crushed++; addPart(aen.x, aen.y, '#ff9c9c', 4); }
       }
       ally.hp -= crushed;
       if (boss && !boss.dead){
@@ -721,20 +803,21 @@ function draw(){
   // アイテム
   for (var ii = 0; ii < items.length; ii++){
     var it = items[ii];
-    ctx.fillStyle = it.kind === 'clone' ? '#c9a227' : '#7a4fd0';
+    ctx.fillStyle = it.kind === 'clone' ? '#c9a227' : (it.kind === 'summon' ? '#7a4fd0' : '#57c84c');
     ctx.beginPath(); ctx.arc(it.x, it.y, 15, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.stroke();
     ctx.font = 'bold 15px sans-serif'; ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center';
-    ctx.fillText(it.kind === 'clone' ? '分' : '召', it.x, it.y + 5);
+    ctx.fillText(it.kind === 'clone' ? '分' : (it.kind === 'summon' ? '召' : '回'), it.x, it.y + 5);
     ctx.textAlign = 'left';
   }
   // 召喚された相方
   if (ally){
     var aimg = charKey === 'r' ? imgL : imgR;
-    if (aimg.width) ctx.drawImage(aimg, ally.x - 42, ally.y - 46, 84, 84);
-    ctx.fillStyle = '#0d0a18'; ctx.fillRect(ally.x - 34, ally.y - 58, 68, 8);
-    ctx.fillStyle = '#57c84c'; ctx.fillRect(ally.x - 34, ally.y - 58, 68 * Math.max(0, ally.hp / ally.maxHp), 8);
-    ctx.strokeStyle = '#f2e9d8'; ctx.lineWidth = 1; ctx.strokeRect(ally.x - 34, ally.y - 58, 68, 8);
+    var asz = 84 + 26 * (ally.lv - 1);
+    if (aimg.width) ctx.drawImage(aimg, ally.x - asz / 2, ally.y - asz / 2 - 4, asz, asz);
+    ctx.fillStyle = '#0d0a18'; ctx.fillRect(ally.x - 34, ally.y - asz / 2 - 16, 68, 8);
+    ctx.fillStyle = '#57c84c'; ctx.fillRect(ally.x - 34, ally.y - asz / 2 - 16, 68 * Math.max(0, ally.hp / ally.maxHp), 8);
+    ctx.strokeStyle = '#f2e9d8'; ctx.lineWidth = 1; ctx.strokeRect(ally.x - 34, ally.y - asz / 2 - 16, 68, 8);
   }
   // ボスのスラム予告
   if (boss && boss.slamWarn){
@@ -742,6 +825,26 @@ function draw(){
     ctx.beginPath(); ctx.arc(boss.slamWarn.x, boss.slamWarn.y, 58, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = 'rgba(255,60,60,0.9)'; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.arc(boss.slamWarn.x, boss.slamWarn.y, 58, 0, Math.PI * 2); ctx.stroke();
+  }
+  // 拘束武器
+  for (var wi3 = 0; wi3 < weapons.length; wi3++){
+    var wp3 = weapons[wi3];
+    var bob = Math.sin(timeF * 0.05 + wi3 * 2) * 3;
+    ctx.strokeStyle = 'rgba(255,216,115,0.5)'; ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.arc(wp3.x, wp3.y + bob, 26, 0, Math.PI * 2); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font = '34px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(wp3.kind === 'sword' ? '🗡️' : '🪄', wp3.x, wp3.y + bob + 12);
+    ctx.font = '17px sans-serif';
+    ctx.fillText('⛓', wp3.x + 16, wp3.y + bob - 12);
+    ctx.fillStyle = '#0d0a18';
+    ctx.beginPath(); ctx.arc(wp3.x, wp3.y + bob + 26, 11, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#ffd873'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(wp3.x, wp3.y + bob + 26, 11, 0, Math.PI * 2); ctx.stroke();
+    ctx.font = 'bold 12px sans-serif'; ctx.fillStyle = '#ffd873';
+    ctx.fillText(String(wp3.need - wp3.charge), wp3.x, wp3.y + bob + 30);
+    ctx.textAlign = 'left';
   }
   // パーティクル
   for (var pi = 0; pi < parts.length; pi++){
