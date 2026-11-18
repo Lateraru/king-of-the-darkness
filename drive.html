@@ -42,11 +42,11 @@
 <main>
 <div class="stage">
 <h1>🚛 車庫入れシミュレータ</h1>
-<p>車庫入れの練習と、トレーラーの動きを理解するためのシミュレータです<br>
-練習モードでは進む方向のガイド線と、トレーラーの折れ角が出ます</p>
+<p>車庫入れの練習と、トレーラーやフォークリフトの動きを理解するためのシミュレータです<br>
+練習モードでは進む方向のガイド線と、折れ角が出ます</p>
 
 <div>
-<button type="button" class="vbtn on" data-v="car">普通車</button><button type="button" class="vbtn" data-v="truck">大型トラック</button><button type="button" class="vbtn" data-v="bus">大型バス</button><button type="button" class="vbtn" data-v="school">教習トレーラー</button><button type="button" class="vbtn" data-v="fifth">フィフストレーラー</button>
+<button type="button" class="vbtn on" data-v="car">普通車</button><button type="button" class="vbtn" data-v="truck">大型トラック</button><button type="button" class="vbtn" data-v="bus">大型バス</button><button type="button" class="vbtn" data-v="school">教習トレーラー</button><button type="button" class="vbtn" data-v="fifth">フィフストレーラー</button><button type="button" class="vbtn" data-v="fork">フォークリフト</button><button type="button" class="vbtn" data-v="loader">大型特殊</button>
 </div>
 <div>
 <button type="button" class="mbtn on" data-m="practice">練習モード</button><button type="button" class="mbtn" data-m="exam">検定モード</button>
@@ -57,7 +57,7 @@
 <div class="status" id="status">車庫の枠の中に全体を入れて、止まれば成功です<br><span class="small">まずは前進で車庫の前まで進み、バックで入れるのが基本です</span></div>
 
 <div id="angleBox" style="display:none">
-<div class="small">トレーラーの折れ角：<b id="angleVal">0°</b>（折れすぎるとジャックナイフになります）</div>
+<div class="small"><span id="angleLabel">トレーラーの折れ角</span>：<b id="angleVal">0°</b><span id="angleNote">（折れすぎるとジャックナイフになります）</span></div>
 <div class="meter"><div id="angleBar"></div></div>
 </div>
 
@@ -76,7 +76,9 @@
 <button type="button" class="sbtn" id="btnReset" style="font-size:.95rem">↩ 最初の位置に戻す</button>
 </div>
 <p class="small">パソコンでは矢印キーでも操作できます（↑前進／↓バック／←→ハンドル）<br>
-検定モードはガイド線なしで、コーン2回接触かジャックナイフで失格です</p>
+検定モードはガイド線なしで、コーン2回接触かジャックナイフで失格です<br>
+フォークリフトは後ろの車輪で舵を切ります　ハンドルと反対に尻が振れるのが特徴です<br>
+大型特殊は教習でも使うホイールローダーで、車体の真ん中が折れて曲がります</p>
 <p class="small" id="bestLine"></p>
 
 <div id="overNav" style="display:none;text-align:center;margin:16px auto;padding:14px;border:1px solid #a06cd5;border-radius:12px;max-width:560px">
@@ -99,11 +101,13 @@
 <script>
 /* ===== 物理モデル（DOM非依存） ===== */
 var VEHICLES = {
-  car:    { label: '普通車', len: 46, wid: 21, rearOver: 10, wb: 30, maxSteer: 0.55, fwd: 62, rev: 40, bayW: 58, bayD: 88 },
-  truck:  { label: '大型トラック', len: 95, wid: 27, rearOver: 16, wb: 62, maxSteer: 0.45, fwd: 52, rev: 32, bayW: 66, bayD: 134 },
-  bus:    { label: '大型バス', len: 110, wid: 28, rearOver: 34, wb: 60, maxSteer: 0.50, fwd: 52, rev: 32, bayW: 66, bayD: 148 },
-  school: { label: '教習トレーラー', tLabel: 'トレーラー', tLen: 62, tWid: 25, rearOver: 10, wb: 40, hitchBack: 16, trFront: 14, trRear: 62, axleDist: 44, trWid: 24, maxSteer: 0.55, fwd: 48, rev: 28, bayW: 56, bayD: 108 },
-  fifth:  { label: 'フィフストレーラー', tLabel: '海上コンテナ', tLen: 62, tWid: 27, rearOver: 10, wb: 42, hitchBack: -5, trFront: 4, trRear: 128, axleDist: 104, trWid: 27, maxSteer: 0.50, fwd: 46, rev: 26, bayW: 60, bayD: 162 }
+  car:    { kind: 'rigid', label: '普通車', len: 46, wid: 21, rearOver: 10, wb: 30, maxSteer: 0.55, fwd: 62, rev: 40, bayW: 58, bayD: 88 },
+  truck:  { kind: 'rigid', label: '大型トラック', len: 95, wid: 27, rearOver: 16, wb: 62, maxSteer: 0.45, fwd: 52, rev: 32, bayW: 66, bayD: 134 },
+  bus:    { kind: 'rigid', label: '大型バス', len: 110, wid: 28, rearOver: 34, wb: 60, maxSteer: 0.50, fwd: 52, rev: 32, bayW: 66, bayD: 148 },
+  school: { kind: 'trailer', label: '教習トレーラー', tLabel: 'トレーラー', tLen: 62, tWid: 25, rearOver: 10, wb: 40, hitchBack: 16, trFront: 14, trRear: 62, axleDist: 44, trWid: 24, maxSteer: 0.55, fwd: 48, rev: 28, bayW: 56, bayD: 108 },
+  fifth:  { kind: 'trailer', label: 'フィフストレーラー', tLabel: '海上コンテナ', tLen: 62, tWid: 27, rearOver: 10, wb: 42, hitchBack: -5, trFront: 4, trRear: 128, axleDist: 104, trWid: 27, maxSteer: 0.50, fwd: 46, rev: 26, bayW: 60, bayD: 162 },
+  fork:   { kind: 'fork', label: 'フォークリフト', wb: 34, frontExt: 41, rearExt: 33, wid: 24, maxSteer: 0.55, fwd: 46, rev: 30, bayW: 54, bayD: 62 },
+  loader: { kind: 'loader', label: '大型特殊（ホイールローダー）', a: 26, b: 26, fFront: 34, fRear: 30, rFront: 30, rRear: 32, wid: 28, maxBend: 0.62, fwd: 44, rev: 26, bayW: 68, bayD: 150 }
 };
 function wrapAngle(a){ while (a > Math.PI) a -= Math.PI * 2; while (a < -Math.PI) a += Math.PI * 2; return a; }
 function stepRigid(s, spec, steer, v, dt){
@@ -124,14 +128,61 @@ function stepTrailer(s, spec, steer, v, dt){
   s.ax = h.x - spec.axleDist * ux;
   s.ay = h.y - spec.axleDist * uy;
 }
+function forkHeading(s){ return Math.atan2(s.fy - s.ry, s.fx - s.rx); }
+function stepFork(s, spec, steer, v, dt){
+  var th = forkHeading(s);
+  var dr = -steer; // 後輪の舵角（運転者のハンドルと逆向き）
+  var fx = s.fx + v * Math.cos(th) * dt;
+  var fy = s.fy + v * Math.sin(th) * dt;
+  var ux = Math.cos(th + dr), uy = Math.sin(th + dr);
+  var wx = fx - s.rx, wy = fy - s.ry;
+  var wu = wx * ux + wy * uy;
+  var disc = wu * wu - (wx * wx + wy * wy) + spec.wb * spec.wb;
+  var sq = Math.sqrt(Math.max(0, disc));
+  var t1 = wu - sq, t2 = wu + sq;
+  var t = Math.abs(t1 - v * dt) <= Math.abs(t2 - v * dt) ? t1 : t2;
+  s.rx += t * ux; s.ry += t * uy;
+  s.fx = fx; s.fy = fy;
+}
+function stepLoader(s, spec, steerNorm, dt, v){
+  var target = steerNorm * spec.maxBend;
+  var db = target - s.beta;
+  var maxStep = 1.4 * dt;
+  s.beta += Math.max(-maxStep, Math.min(maxStep, db));
+  var omega = v * Math.sin(s.beta / 2) / ((spec.a + spec.b) / 2);
+  s.thr += omega * dt;
+  var tm = s.thr + s.beta / 2;
+  s.px += v * Math.cos(tm) * dt;
+  s.py += v * Math.sin(tm) * dt;
+}
+function stepState(s, sp, steerNorm, v, dt){
+  if (sp.kind === 'rigid') stepRigid(s, sp, steerNorm * sp.maxSteer, v, dt);
+  else if (sp.kind === 'trailer') stepTrailer(s, sp, steerNorm * sp.maxSteer, v, dt);
+  else if (sp.kind === 'fork') stepFork(s, sp, steerNorm * sp.maxSteer, v, dt);
+  else if (sp.kind === 'loader') stepLoader(s, sp, steerNorm, dt, v);
+}
 function bodyCorners(cx, cy, th, front, rear, wid){
   var c = Math.cos(th), sn = Math.sin(th), hw = wid / 2;
   function P(a, b){ return { x: cx + a * c - b * sn, y: cy + a * sn + b * c }; }
   return [P(front, -hw), P(front, hw), P(-rear, hw), P(-rear, -hw)];
 }
-function rigidCorners(s, spec){ return bodyCorners(s.x, s.y, s.th, spec.len - spec.rearOver, spec.rearOver, spec.wid); }
-function tractorCorners(s, spec){ return bodyCorners(s.x, s.y, s.th, spec.tLen - spec.rearOver, spec.rearOver, spec.tWid); }
-function trailerCorners(s, spec){ var h = hitchPos(s, spec); return bodyCorners(h.x, h.y, s.phi, spec.trFront, spec.trRear, spec.trWid); }
+function cornersOf(s, sp){
+  if (sp.kind === 'rigid') return [bodyCorners(s.x, s.y, s.th, sp.len - sp.rearOver, sp.rearOver, sp.wid)];
+  if (sp.kind === 'trailer'){
+    var h = hitchPos(s, sp);
+    return [bodyCorners(s.x, s.y, s.th, sp.tLen - sp.rearOver, sp.rearOver, sp.tWid),
+            bodyCorners(h.x, h.y, s.phi, sp.trFront, sp.trRear, sp.trWid)];
+  }
+  if (sp.kind === 'fork'){
+    var th = forkHeading(s);
+    return [bodyCorners((s.fx + s.rx) / 2, (s.fy + s.ry) / 2, th, sp.frontExt, sp.rearExt, sp.wid)];
+  }
+  var thf = s.thr + s.beta;
+  var afx = s.px + sp.a * Math.cos(thf), afy = s.py + sp.a * Math.sin(thf);
+  var arx = s.px - sp.b * Math.cos(s.thr), ary = s.py - sp.b * Math.sin(s.thr);
+  return [bodyCorners(afx, afy, thf, sp.fFront, sp.fRear, sp.wid),
+          bodyCorners(arx, ary, s.thr, sp.rFront, sp.rRear, sp.wid)];
+}
 function articulationDeg(s){ return Math.abs(wrapAngle(s.th - s.phi)) * 180 / Math.PI; }
 </script>
 
@@ -151,32 +202,69 @@ var CONES = [ {x:290,y:290}, {x:710,y:290}, {x:240,y:460}, {x:760,y:460}, {x:500
 var vehKey = 'car', mode = 'practice';
 var S = null, v = 0, steerVal = 0;
 var pressF = false, pressB = false, keyF = false, keyB = false;
-var coneHits = 0, coneCool = {}, started = 0, elapsed = 0, finished = false, failed = false;
+var coneHits = 0, coneCool = {}, started = 0, finished = false, failed = false;
+var pallet = null;
 
 function spec(){ return VEHICLES[vehKey]; }
-function isTrailer(){ return vehKey === 'school' || vehKey === 'fifth'; }
+function kind(){ return spec().kind; }
 function bayRect(){ var sp = spec(); return { x: 500 - sp.bayW / 2, y: 22, w: sp.bayW, h: sp.bayD }; }
 function spawn(){
   v = 0; steerVal = 0; $('steer').value = 0;
-  coneHits = 0; coneCool = {}; started = 0; elapsed = 0; finished = false; failed = false;
+  coneHits = 0; coneCool = {}; started = 0; finished = false; failed = false;
   $('overNav').style.display = 'none';
-  if (isTrailer()){
+  pallet = null;
+  var k = kind();
+  if (k === 'trailer'){
     S = { x: 500, y: 428, th: -Math.PI / 2, ax: 500, ay: 502, phi: -Math.PI / 2 };
+    var sp = spec(), h = hitchPos(S, sp);
+    S.ax = h.x - sp.axleDist * Math.cos(S.phi);
+    S.ay = h.y - sp.axleDist * Math.sin(S.phi);
+  } else if (k === 'fork'){
+    S = { fx: 500, fy: 500, rx: 500, ry: 534 };
+    pallet = { x: 648, y: 428, th: -Math.PI / 2, carried: false };
+  } else if (k === 'loader'){
+    S = { px: 500, py: 472, thr: -Math.PI / 2, beta: 0 };
   } else {
     S = { x: 500, y: 520, th: -Math.PI / 2 };
   }
-  $('angleBox').style.display = isTrailer() ? 'block' : 'none';
-  setStatus('車庫の枠の中に全体を入れて、止まれば成功です<br><span class="small">まずは前進で車庫の前まで進み、バックで入れるのが基本です</span>');
+  var showAngle = k === 'trailer' || k === 'loader';
+  $('angleBox').style.display = showAngle ? 'block' : 'none';
+  if (k === 'trailer'){ $('angleLabel').textContent = 'トレーラーの折れ角'; $('angleNote').textContent = '（折れすぎるとジャックナイフになります）'; }
+  if (k === 'loader'){ $('angleLabel').textContent = '中折れ角'; $('angleNote').textContent = '（ハンドルで車体の折れ具合を変えます）'; }
+  if (k === 'fork') setStatus('パレットの後ろに回り、ゆっくり近づいてフォークを差してください<br><span class="small">持ち上げたら、パレットごと車庫へ運んで止まれば成功です　後輪操舵なので尻の振れに注意です</span>');
+  else setStatus('車庫の枠の中に全体を入れて、止まれば成功です<br><span class="small">まずは前進で車庫の前まで進み、バックで入れるのが基本です</span>');
   showBest();
 }
 function setStatus(html){ $('status').innerHTML = html; }
-function relevantCorners(){
-  if (isTrailer()) return trailerCorners(S, spec());
-  return rigidCorners(S, spec());
+function palletCorners(){
+  return bodyCorners(pallet.x, pallet.y, pallet.th, 15, 15, 30);
 }
-function allBodies(){
-  if (isTrailer()) return [tractorCorners(S, spec()), trailerCorners(S, spec())];
-  return [rigidCorners(S, spec())];
+function updatePallet(){
+  if (!pallet) return;
+  var sp = spec();
+  if (!pallet.carried){
+    var th = forkHeading(S);
+    var mx = (S.fx + S.rx) / 2, my = (S.fy + S.ry) / 2;
+    var tx = mx + (sp.frontExt + 15) * Math.cos(th), ty = my + (sp.frontExt + 15) * Math.sin(th);
+    if (Math.hypot(pallet.x - tx, pallet.y - ty) < 18 && Math.abs(v) <= 14 && Math.abs(wrapAngle(th - pallet.th)) < 0.6){
+      pallet.carried = true;
+      setStatus('<span class="ok">パレットを持ち上げました</span><br><span class="small">そのまま車庫まで運んでください</span>');
+    }
+  }
+  if (pallet.carried){
+    var th2 = forkHeading(S);
+    var mx2 = (S.fx + S.rx) / 2, my2 = (S.fy + S.ry) / 2;
+    pallet.x = mx2 + (sp.frontExt + 15) * Math.cos(th2);
+    pallet.y = my2 + (sp.frontExt + 15) * Math.sin(th2);
+    pallet.th = th2;
+  }
+}
+function judgeCorners(){
+  if (kind() === 'fork') return pallet && pallet.carried ? palletCorners() : null;
+  var cs = cornersOf(S, spec());
+  if (kind() === 'trailer') return cs[1];
+  if (kind() === 'loader') return cs[0].concat(cs[1]);
+  return cs[0];
 }
 function samplePoints(corners){
   var pts = [];
@@ -189,50 +277,49 @@ function samplePoints(corners){
 }
 function stepOnce(dt){
   var sp = spec();
-  var steer = steerVal / 100 * sp.maxSteer;
   var target = (pressF || keyF) ? sp.fwd : (pressB || keyB) ? -sp.rev : 0;
   var accel = target === 0 ? 150 : 80;
   if (v < target) v = Math.min(target, v + accel * dt);
   if (v > target) v = Math.max(target, v - accel * dt);
-  if (v === 0) return;
-  var prev = JSON.parse(JSON.stringify(S));
-  if (isTrailer()) stepTrailer(S, sp, steer, v, dt); else stepRigid(S, sp, steer, v, dt);
-  var bodies = allBodies();
-  for (var bi = 0; bi < bodies.length; bi++){
-    var cs = bodies[bi];
-    for (var ci = 0; ci < 4; ci++){
-      if (cs[ci].x < 4 || cs[ci].x > WORLD_W - 4 || cs[ci].y < 4 || cs[ci].y > WORLD_H - 4){ S = prev; v = 0; return; }
+  if (v !== 0){
+    var prev = JSON.parse(JSON.stringify(S));
+    stepState(S, sp, steerVal / 100, v, dt);
+    var bodies = cornersOf(S, sp), out = false;
+    bodies.forEach(function(cs){ cs.forEach(function(p){ if (p.x < 4 || p.x > WORLD_W - 4 || p.y < 4 || p.y > WORLD_H - 4) out = true; }); });
+    if (out){ S = prev; v = 0; }
+    else {
+      if (!started) started = performance.now();
+      updatePallet();
+      var now = performance.now();
+      var pts = [];
+      bodies.forEach(function(b){ pts = pts.concat(samplePoints(b)); });
+      CONES.forEach(function(cn, idx){
+        if (coneCool[idx] && now - coneCool[idx] < 1200) return;
+        for (var i = 0; i < pts.length; i++){
+          if (Math.hypot(pts[i].x - cn.x, pts[i].y - cn.y) < 12){
+            coneCool[idx] = now; coneHits++;
+            if (mode === 'exam' && coneHits >= 2) fail('コーンに2回当たってしまいました');
+            else setStatus('<span class="warn">コーンに当たりました（' + coneHits + '回目）</span><br><span class="small">練習ではそのまま続けられます</span>');
+            break;
+          }
+        }
+      });
+      if (mode === 'exam' && kind() === 'trailer' && articulationDeg(S) >= 80) fail('ジャックナイフになってしまいました');
     }
   }
-  if (!started) started = performance.now();
-  // コーン接触
-  var now = performance.now();
-  CONES.forEach(function(cn, idx){
-    if (coneCool[idx] && now - coneCool[idx] < 1200) return;
-    var pts = [];
-    bodies.forEach(function(b){ pts = pts.concat(samplePoints(b)); });
-    for (var i = 0; i < pts.length; i++){
-      if (Math.hypot(pts[i].x - cn.x, pts[i].y - cn.y) < 12){
-        coneCool[idx] = now; coneHits++;
-        if (mode === 'exam' && coneHits >= 2){ fail('コーンに2回当たってしまいました'); }
-        else setStatus('<span class="warn">コーンに当たりました（' + coneHits + '回目）</span><br><span class="small">練習ではそのまま続けられます</span>');
-        break;
-      }
-    }
-  });
-  // ジャックナイフ（検定）
-  if (mode === 'exam' && isTrailer() && articulationDeg(S) >= 80){ fail('ジャックナイフになってしまいました'); }
-  // 成功判定
   if (!finished && !failed && Math.abs(v) < 0.6 && !pressF && !pressB && !keyF && !keyB && started){
-    var bay = bayRect(), rc = relevantCorners(), inside = true;
-    for (var i = 0; i < 4; i++){ if (rc[i].x < bay.x + 1 || rc[i].x > bay.x + bay.w - 1 || rc[i].y < bay.y + 1 || rc[i].y > bay.y + bay.h - 1) inside = false; }
-    if (inside) succeed();
+    var bay = bayRect(), rc = judgeCorners();
+    if (rc){
+      var inside = true;
+      for (var i = 0; i < rc.length; i++){ if (rc[i].x < bay.x + 1 || rc[i].x > bay.x + bay.w - 1 || rc[i].y < bay.y + 1 || rc[i].y > bay.y + bay.h - 1) inside = false; }
+      if (inside) succeed();
+    }
   }
 }
 function succeed(){
   finished = true;
-  elapsed = (performance.now() - started) / 1000;
-  var msg = '<span class="ok">🎉 車庫入れ成功です！</span><br>' + spec().label + 'を ' + elapsed.toFixed(1) + ' 秒で入れました　コーン接触 ' + coneHits + ' 回';
+  var elapsed = (performance.now() - started) / 1000;
+  var msg = '<span class="ok">🎉 ' + (kind() === 'fork' ? 'パレットを車庫に入れました！' : '車庫入れ成功です！') + '</span><br>' + spec().label + 'を ' + elapsed.toFixed(1) + ' 秒で入れました　コーン接触 ' + coneHits + ' 回';
   if (mode === 'exam'){
     try {
       var bests = JSON.parse(localStorage.getItem('maouDriveBest') || '{}');
@@ -258,15 +345,20 @@ function showBest(){
 function guidePath(){
   var sp = spec();
   var sim = JSON.parse(JSON.stringify(S));
-  var steer = steerVal / 100 * sp.maxSteer;
   var spd = (pressB || keyB || v < -0.5) ? -sp.rev * 0.85 : (pressF || keyF || v > 0.5) ? sp.fwd * 0.85 : -sp.rev * 0.85;
   var pts = [];
   for (var i = 0; i < 55; i++){
-    if (isTrailer()) stepTrailer(sim, sp, steer, spd, 0.12); else stepRigid(sim, sp, steer, spd, 0.12);
+    stepState(sim, sp, steerVal / 100, spd, 0.12);
     if (i % 3 === 0){
-      var cs = isTrailer() ? trailerCorners(sim, sp) : rigidCorners(sim, sp);
-      pts.push(cs[2]); pts.push(cs[3]);
-      pts.push({ x: (cs[2].x + cs[3].x) / 2, y: (cs[2].y + cs[3].y) / 2 });
+      var cs = cornersOf(sim, sp);
+      var rear = kind() === 'trailer' ? cs[1] : cs[cs.length - 1];
+      pts.push(rear[2]); pts.push(rear[3]);
+      pts.push({ x: (rear[2].x + rear[3].x) / 2, y: (rear[2].y + rear[3].y) / 2 });
+      if (kind() === 'fork' && pallet && pallet.carried){
+        var th = forkHeading(sim);
+        var mx = (sim.fx + sim.rx) / 2, my = (sim.fy + sim.ry) / 2;
+        pts.push({ x: mx + (sp.frontExt + 15) * Math.cos(th), y: my + (sp.frontExt + 15) * Math.sin(th) });
+      }
     }
   }
   return pts;
@@ -282,6 +374,7 @@ function drawBody(corners, fill, line){
 }
 function draw(){
   ctx.clearRect(0, 0, WORLD_W, WORLD_H);
+  var sp = spec(), k = kind();
   var bay = bayRect();
   ctx.strokeStyle = '#f2f2f2'; ctx.lineWidth = 3;
   ctx.strokeRect(bay.x, bay.y, bay.w, bay.h);
@@ -297,49 +390,80 @@ function draw(){
     ctx.fillStyle = '#fff'; ctx.fillRect(cn.x - 9, cn.y - 2, 18, 4);
   });
   if (mode === 'practice' && !finished && !failed){
-    var gp = guidePath();
     ctx.fillStyle = 'rgba(139,232,155,.85)';
-    gp.forEach(function(p){ ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fill(); });
+    guidePath().forEach(function(p){ ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fill(); });
   }
-  var sp = spec();
-  var steer = steerVal / 100 * sp.maxSteer;
-  if (isTrailer()){
-    var tc = trailerCorners(S, sp);
-    drawBody(tc, '#8f9bb0', '#c8d2e0');
-    ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.font = 'bold 14px sans-serif';
-    var h = hitchPos(S, sp);
-    ctx.fillText(sp.tLabel || 'トレーラー', (tc[0].x + tc[2].x) / 2, (tc[0].y + tc[2].y) / 2);
-    var rc = tractorCorners(S, sp);
-    drawBody(rc, '#b03a3a', '#e88');
+  if (pallet){
+    var pc = palletCorners();
+    drawBody(pc, pallet.carried ? '#c98d4b' : '#a06a35', '#e8c07a');
+    ctx.strokeStyle = 'rgba(0,0,0,.4)'; ctx.lineWidth = 2;
+    ctx.strokeRect(pallet.x - 9, pallet.y - 9, 18, 18);
+  }
+  var steer = steerVal / 100 * (sp.maxSteer || 0);
+  var bodies = cornersOf(S, sp);
+  if (k === 'rigid'){
+    drawBody(bodies[0], vehKey === 'car' ? '#7ec8e3' : vehKey === 'bus' ? '#5eb56e' : '#4a6fa5', '#dff2fb');
     var fx = S.x + sp.wb * Math.cos(S.th), fy = S.y + sp.wb * Math.sin(S.th);
-    drawWheel(fx - Math.sin(S.th) * sp.tWid / 2, fy + Math.cos(S.th) * sp.tWid / 2, S.th, steer);
-    drawWheel(fx + Math.sin(S.th) * sp.tWid / 2, fy - Math.cos(S.th) * sp.tWid / 2, S.th, steer);
+    drawWheel(fx - Math.sin(S.th) * sp.wid / 2, fy + Math.cos(S.th) * sp.wid / 2, S.th, steer);
+    drawWheel(fx + Math.sin(S.th) * sp.wid / 2, fy - Math.cos(S.th) * sp.wid / 2, S.th, steer);
+    drawWheel(S.x - Math.sin(S.th) * sp.wid / 2, S.y + Math.cos(S.th) * sp.wid / 2, S.th, 0);
+    drawWheel(S.x + Math.sin(S.th) * sp.wid / 2, S.y - Math.cos(S.th) * sp.wid / 2, S.th, 0);
+  } else if (k === 'trailer'){
+    drawBody(bodies[1], '#8f9bb0', '#c8d2e0');
+    ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.font = 'bold 14px sans-serif';
+    ctx.fillText(sp.tLabel || 'トレーラー', (bodies[1][0].x + bodies[1][2].x) / 2, (bodies[1][0].y + bodies[1][2].y) / 2);
+    drawBody(bodies[0], '#b03a3a', '#e88');
+    var fx2 = S.x + sp.wb * Math.cos(S.th), fy2 = S.y + sp.wb * Math.sin(S.th);
+    drawWheel(fx2 - Math.sin(S.th) * sp.tWid / 2, fy2 + Math.cos(S.th) * sp.tWid / 2, S.th, steer);
+    drawWheel(fx2 + Math.sin(S.th) * sp.tWid / 2, fy2 - Math.cos(S.th) * sp.tWid / 2, S.th, steer);
     drawWheel(S.x - Math.sin(S.th) * sp.tWid / 2, S.y + Math.cos(S.th) * sp.tWid / 2, S.th, 0);
     drawWheel(S.x + Math.sin(S.th) * sp.tWid / 2, S.y - Math.cos(S.th) * sp.tWid / 2, S.th, 0);
     var tax = S.ax - Math.sin(S.phi) * sp.trWid / 2, tay = S.ay + Math.cos(S.phi) * sp.trWid / 2;
     var tbx = S.ax + Math.sin(S.phi) * sp.trWid / 2, tby = S.ay - Math.cos(S.phi) * sp.trWid / 2;
     drawWheel(tax, tay, S.phi, 0); drawWheel(tbx, tby, S.phi, 0);
+    var h = hitchPos(S, sp);
     ctx.strokeStyle = '#ffd34d'; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.moveTo(S.x, S.y); ctx.lineTo(h.x, h.y); ctx.stroke();
-  } else {
-    var cs = rigidCorners(S, sp);
-    drawBody(cs, vehKey === 'car' ? '#7ec8e3' : '#4a6fa5', '#dff2fb');
-    var fx2 = S.x + sp.wb * Math.cos(S.th), fy2 = S.y + sp.wb * Math.sin(S.th);
-    drawWheel(fx2 - Math.sin(S.th) * sp.wid / 2, fy2 + Math.cos(S.th) * sp.wid / 2, S.th, steer);
-    drawWheel(fx2 + Math.sin(S.th) * sp.wid / 2, fy2 - Math.cos(S.th) * sp.wid / 2, S.th, steer);
-    drawWheel(S.x - Math.sin(S.th) * sp.wid / 2, S.y + Math.cos(S.th) * sp.wid / 2, S.th, 0);
-    drawWheel(S.x + Math.sin(S.th) * sp.wid / 2, S.y - Math.cos(S.th) * sp.wid / 2, S.th, 0);
-  }
-  if (isTrailer()){
     var deg = articulationDeg(S);
     $('angleVal').textContent = deg.toFixed(0) + '°';
     var bar = $('angleBar');
     bar.style.width = Math.min(100, deg / 80 * 100) + '%';
     bar.style.background = deg >= 65 ? '#ff5040' : deg >= 40 ? '#e8b34b' : '#57c46a';
-    if (deg >= 65 && !finished && !failed) setStatus('<span class="warn">⚠ 折れ角が大きすぎます　このままバックするとジャックナイフになります</span><br><span class="small">一度前進して折れを戻すのがコツです</span>');
-  }
-  if (mode === 'exam' && started && !finished && !failed){
-    $('status').dataset.t = '1';
+    if (deg >= 65 && !finished && !failed && v < 0) setStatus('<span class="warn">⚠ 折れ角が大きすぎます　このままバックするとジャックナイフになります</span><br><span class="small">一度前進して折れを戻すのがコツです</span>');
+  } else if (k === 'fork'){
+    drawBody(bodies[0], '#e8b34b', '#ffe1a0');
+    var th = forkHeading(S);
+    drawWheel(S.fx - Math.sin(th) * sp.wid / 2, S.fy + Math.cos(th) * sp.wid / 2, th, 0);
+    drawWheel(S.fx + Math.sin(th) * sp.wid / 2, S.fy - Math.cos(th) * sp.wid / 2, th, 0);
+    drawWheel(S.rx - Math.sin(th) * sp.wid / 2, S.ry + Math.cos(th) * sp.wid / 2, th, -steer);
+    drawWheel(S.rx + Math.sin(th) * sp.wid / 2, S.ry - Math.cos(th) * sp.wid / 2, th, -steer);
+    var mx = (S.fx + S.rx) / 2, my = (S.fy + S.ry) / 2;
+    ctx.strokeStyle = '#ddd'; ctx.lineWidth = 3;
+    [-7, 7].forEach(function(off){
+      var bx = mx + (sp.frontExt - 16) * Math.cos(th) - off * Math.sin(th);
+      var by = my + (sp.frontExt - 16) * Math.sin(th) + off * Math.cos(th);
+      ctx.beginPath(); ctx.moveTo(bx, by);
+      ctx.lineTo(bx + 16 * Math.cos(th), by + 16 * Math.sin(th)); ctx.stroke();
+    });
+  } else if (k === 'loader'){
+    drawBody(bodies[1], '#c9932b', '#e8c07a');
+    drawBody(bodies[0], '#e8b34b', '#ffe1a0');
+    var thf = S.thr + S.beta;
+    var afx = S.px + sp.a * Math.cos(thf), afy = S.py + sp.a * Math.sin(thf);
+    var arx = S.px - sp.b * Math.cos(S.thr), ary = S.py - sp.b * Math.sin(S.thr);
+    drawWheel(afx - Math.sin(thf) * sp.wid / 2, afy + Math.cos(thf) * sp.wid / 2, thf, 0);
+    drawWheel(afx + Math.sin(thf) * sp.wid / 2, afy - Math.cos(thf) * sp.wid / 2, thf, 0);
+    drawWheel(arx - Math.sin(S.thr) * sp.wid / 2, ary + Math.cos(S.thr) * sp.wid / 2, S.thr, 0);
+    drawWheel(arx + Math.sin(S.thr) * sp.wid / 2, ary - Math.cos(S.thr) * sp.wid / 2, S.thr, 0);
+    ctx.fillStyle = '#8a6420';
+    ctx.beginPath(); ctx.arc(S.px, S.py, 6, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,.4)'; ctx.font = 'bold 13px sans-serif';
+    ctx.fillText('バケット', afx + (sp.fFront - 6) * Math.cos(thf), afy + (sp.fFront - 6) * Math.sin(thf));
+    var deg2 = Math.abs(S.beta) * 180 / Math.PI;
+    $('angleVal').textContent = deg2.toFixed(0) + '°';
+    var bar2 = $('angleBar');
+    bar2.style.width = Math.min(100, deg2 / 36 * 100) + '%';
+    bar2.style.background = '#57c46a';
   }
 }
 var lastT = 0;
@@ -371,7 +495,9 @@ setInterval(function(){
 }, 40);
 function showSteer(){
   steerVal = Number($('steer').value);
-  var deg = Math.round(Math.abs(steerVal) / 100 * spec().maxSteer * 180 / Math.PI);
+  var sp = spec();
+  var maxDeg = sp.kind === 'loader' ? sp.maxBend * 180 / Math.PI : sp.maxSteer * 180 / Math.PI;
+  var deg = Math.round(Math.abs(steerVal) / 100 * maxDeg);
   $('steerVal').textContent = steerVal === 0 ? 'まっすぐ' : (steerVal < 0 ? '左 ' : '右 ') + deg + '°';
 }
 $('steer').addEventListener('input', showSteer);
