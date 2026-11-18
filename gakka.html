@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>学科問題集（一種・二種） | 便利情報 | 魔王らてらる・魔王らて子 公式ファンサイト</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .stage{max-width:760px;margin:0 auto;text-align:center}
+  .sbtn2{padding:10px 18px;border-radius:10px;border:2px solid #3a3358;background:#241d3f;color:#eee;cursor:pointer;font-size:1rem;margin:3px}
+  .sbtn2.on{border-color:#e8b34b;background:#3d2a5e;color:#fff;font-weight:bold}
+  .oxbtn{font-size:2rem;width:110px;height:110px;border-radius:50%;border:3px solid var(--purple);background:#3d2a5e;color:#fff;cursor:pointer;margin:10px}
+  .oxbtn:active{background:#5a4390}
+  .oxbtn:disabled{opacity:.45;cursor:default}
+  .qbox{border:1px solid #3a3358;border-radius:12px;padding:18px;margin:14px auto;max-width:620px;background:#1d1832;line-height:1.8}
+  .exp{border:1px solid #57c46a;border-radius:12px;padding:14px;margin:12px auto;max-width:620px;line-height:1.8;text-align:left}
+  .exp.ng{border-color:#ff7b72}
+  .small{font-size:.85rem;opacity:.85}
+  .ok{color:#8be89b;font-weight:bold}
+  .warn{color:#ff7b72;font-weight:bold}
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="inner">
+    <a class="logo" href="index.html">魔王<span>らてらる</span> × 魔王<span style="color:#a06cd5">らて子</span></a>
+    <nav class="main">
+      <a href="index.html">ホーム</a>
+      <a href="index.html#news">お知らせ</a>
+      <a href="board.html">ファン掲示板</a>
+      <a href="chat.html">魔力SIチャット</a>
+      <a href="games.html">ミニゲーム</a>
+      <a href="secret.html">秘密基地</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="stage">
+<h1>📝 学科問題集（一種・二種）</h1>
+<p>自動車教習所の学科試験に向けた、○×式の練習問題です<br>
+1回10問で、答えるたびに解説が出ます</p>
+<p class="small">これは学習用のオリジナル問題です　実際の試験問題ではありません<br>
+最新の法令と教本でも必ず確認してください</p>
+
+<div>
+<button type="button" class="sbtn2 on" data-s="first">一種用</button><button type="button" class="sbtn2" data-s="second">二種用</button>
+</div>
+
+<div id="startBox">
+<p id="setDesc">普通免許などの一種免許に向けた問題です<br>標識・速度・追い越し・駐停車などの基本が中心です</p>
+<button type="button" class="sbtn2" id="btnStart" style="font-size:1.1rem;padding:14px 28px">▶ 10問をはじめる</button>
+<p class="small" id="bestLine"></p>
+</div>
+
+<div id="quizBox" style="display:none">
+<p class="small"><span id="prog"></span>　スコア：<span id="scoreNow">0</span></p>
+<div class="qbox"><div id="qText" style="font-size:1.05rem"></div></div>
+<div>
+<button type="button" class="oxbtn" id="btnMaru">○</button><button type="button" class="oxbtn" id="btnBatsu">×</button>
+</div>
+<div class="exp" id="expBox" style="display:none">
+<div id="expHead" style="font-weight:bold;text-align:center"></div>
+<div id="expText"></div>
+<div style="text-align:center;margin-top:10px"><button type="button" class="sbtn2" id="btnNext">次へ ▶</button></div>
+</div>
+</div>
+
+<div id="resultBox" style="display:none">
+<div class="qbox">
+<div id="resultText" style="font-size:1.1rem"></div>
+</div>
+<button type="button" class="sbtn2" id="btnRetry" style="font-size:1.05rem;padding:12px 24px">🔁 もう一度10問</button>
+</div>
+
+<p class="small" style="margin-top:20px">実技の感覚づかみには、車庫入れシミュレータもどうぞ<br>
+<a href="drive.html" style="color:#c9a227;font-weight:bold">🚛 車庫入れシミュレータへ</a></p>
+
+<div style="text-align:center;margin:22px 0 6px"><a href="index.html" style="color:#c9a227;font-weight:bold">トップページに戻る</a></div>
+</div>
+</main>
+
+<script>
+var BANK = {
+first: [
+["青信号は「進め」という命令ではなく、「進むことができる」という意味である", true, "青は「進め」ではなく「進むことができる」です　安全が確認できないときは進んではいけません"],
+["一般道路での普通自動車の法定最高速度は、時速50キロである", false, "標識がなければ、一般道は時速60キロ、原動機付自転車は時速30キロが法定最高速度です"],
+["原動機付自転車の法定最高速度は、時速50キロである", false, "原動機付自転車の法定最高速度は時速30キロです"],
+["横断歩道とその手前30メートル以内は、追い越しも追い抜きも禁止されている", true, "横断歩道と自転車横断帯、およびその手前30メートル以内は追い越しも追い抜きも禁止です"],
+["踏切とその手前30メートル以内は、追い越しが禁止されている", true, "踏切・トンネル（車両通行帯がある場合を除く）・交差点と、その手前30メートル以内は追い越し禁止です"],
+["交差点とその側端から5メートル以内は、駐車も停車もできない", true, "交差点とその側端から5メートル以内は駐停車禁止です　横断歩道・自転車横断帯も同じく5メートル以内は駐停車禁止です"],
+["消火栓から5メートル以内は、駐車が禁止されている", true, "消火栓・消防用防火水槽の側端などから5メートル以内は駐車禁止です"],
+["酒気帯び運転になるのは、呼気1リットル中のアルコール濃度が0.15ミリグラム以上の場合である", true, "0.15ミリグラム以上が酒気帯び運転です　酒酔い運転は濃度に関係なく状態で判断されます　どちらも絶対に禁止です"],
+["普通免許を取ってから1年間は、初心者マークを車の前だけにつければよい", false, "初心者マークは、免許取得後1年間、車の前と後ろの見やすい場所につける義務があります"],
+["6歳未満の幼児を乗せるときは、チャイルドシートを使わなければならない", true, "6歳未満の幼児にはチャイルドシートの使用が義務づけられています"],
+["高速自動車国道の本線車道では、最低速度が時速30キロと決められている", false, "高速道路の本線車道の最低速度は時速50キロです（故障などやむを得ない場合を除く）"],
+["対向車とすれ違うときは、前照灯を上向きのままにしなければならない", false, "すれ違うときや前を走る車に近づいたときは、前照灯を下向きにするなど減光します"],
+["横断歩道を渡ろうとしている歩行者がいるときは、手前で一時停止して歩行者を通さなければならない", true, "横断歩道では歩行者が優先です　渡ろうとしている歩行者がいたら一時停止して通します"],
+["原動機付自転車は、標識のある交差点で二段階右折をしなければならない", true, "原動機付自転車は、二段階右折の標識がある交差点と、車線が3以上ある道路の交差点で二段階右折をします"],
+["免許の点数が15点以上になると、免許取り消しの対象になる（前歴がない場合）", true, "前歴がない場合、累積点数が15点以上で免許取り消しの対象になります"],
+["一時停止の標識がある場所では、徐行すれば止まらなくてよい", false, "一時停止の標識がある場所では、停止線の直前で必ず一時停止しなければなりません"],
+["夜間に道路で駐停車するときは、灯火をつけなくてよい", false, "夜間の駐停車では、灯火をつけて他の車から見えるようにする決まりがあります"],
+["積載物の長さは、車の長さの1.2倍まで認められている", true, "積載物の長さは車の長さの1.2倍、幅は車の幅の1.2倍、高さは地面から3.8メートルまでが上限です"],
+["雨の日は、晴れの日より車間距離を長くとる必要がある", true, "雨や雪の日は停止距離が長くなるので、車間距離も長く保ちます"],
+["遮断機も警報機もない踏切では、必ず一時停止して安全を確認しなければならない", true, "踏切では一時停止して左右の安全確認をするのが基本です（信号機がある踏切では信号に従います）"],
+["高速道路で故障して停車したときは、停止表示器材を置かなくてよい", false, "高速道路でやむを得ず停車するときは、停止表示器材を置き、非常点滅表示灯をつけます"],
+["左折するときは、あらかじめ道路の左側端に寄り、交差点の側端に沿って徐行する", true, "左折は左側端に寄って側端に沿い、右折は中央に寄って交差点の中心のすぐ内側を、徐行して曲がります"],
+["右折車は、直進してくる対向車がいても、先に曲がることができる", false, "右折車は、直進や左折をする対向車の進行を妨げてはいけません　対向車が優先です"],
+["バス停留所の標示板から10メートル以内は、運行時間中は駐停車できない", true, "バス停の標示板から10メートル以内は、バスの運行時間中は駐停車禁止です"],
+["車を運転中は、スマートフォンを手に持って通話してもよい", false, "運転中にスマホなどを手に持って使うことは禁止されています　注視も違反になります"],
+["仮免許で路上練習をするときは、免許を取って3年以上の人などを隣に乗せなければならない", true, "仮免許の路上練習では、指導者として資格のある同乗者が必要です　仮免許練習中標識もつけます"],
+["雪道では、晴れた乾いた道より停止距離が短くなる", false, "雪道や凍結した道では停止距離が何倍にも長くなります　速度を落として早めのブレーキが大切です"],
+["疲れているときでも、短い距離なら運転してもよい", false, "体調が悪いときや、正常な運転ができないおそれがあるときは運転してはいけません"],
+["二輪車に乗るときは、ヘルメットのあごひもまで正しく着用しなければならない", true, "ヘルメットは頭に合ったものを選び、あごひもを正しく締めて着用します"],
+["交差点で緊急自動車が近づいてきたときは、交差点を避けて道路の左側に寄り、一時停止する", true, "緊急自動車が近づいたら、交差点では交差点を避けて左側に寄り一時停止します　交差点以外では左側に寄ります"]
+],
+second: [
+["旅客自動車を旅客運送のために運転するには、第二種免許が必要である", true, "バスやタクシーなど、旅客運送のために旅客自動車を運転するには第二種免許が必要です"],
+["普通第二種免許を受けるには、21歳以上で、普通免許などを3年以上持っている必要がある", true, "第二種免許は21歳以上で、普通・準中型・中型・大型などの免許を3年以上持っていることが条件です"],
+["第二種免許の視力は、両眼で0.8以上、片眼でそれぞれ0.5以上が必要である", true, "第二種の視力基準は両眼0.8以上・片眼0.5以上です　一種（両眼0.7以上・片眼0.3以上）より厳しくなっています"],
+["第二種免許では、深視力の検査で三桿法の平均誤差が2センチ以内でなければならない", true, "第二種では深視力の検査があり、三桿法による平均誤差が2センチ以内と決められています"],
+["バスの運転者は、扉を閉めないまま発車してもよい", false, "扉を閉め、乗客の安全を確認してから発車します　開けたままの発車は重大な事故につながります"],
+["旅客自動車の運転者は、乗客が安全に乗り降りできるように確認する義務がある", true, "乗降の安全確認は旅客自動車の運転者の大切な義務です"],
+["タクシーの運転者は、正当な理由がなくても乗車を断ることができる", false, "正当な理由なく乗車を拒むことは、道路運送法で禁止されています"],
+["事業用自動車は、運行を始める前に1日1回の日常点検を行う決まりがある", true, "事業用自動車は1日1回、運行の開始前に日常点検を行い、異常があれば整備してから運行します"],
+["大型バスなどの旅客自動車には、消火器などの非常用具を備える決まりがある", true, "旅客自動車には消火器や非常信号用具などの備え付けが決められています　場所と使い方の確認も大切です"],
+["乗車定員を超えて乗客を乗せても、短い距離なら認められる", false, "距離に関係なく、乗車定員を超えて乗せることはできません"],
+["高速道路を走るバスでは、乗客はシートベルトを着用しなくてよい", false, "高速道路では乗客もシートベルト着用が必要です　運転者は発車前に着用を案内します"],
+["応急救護で、倒れている人の反応がない場合は、胸骨圧迫などの心肺蘇生を行う", true, "反応がなく呼吸も異常な場合は、胸骨圧迫を中心とした心肺蘇生を行い、AEDと救急要請につなげます"],
+["AEDは、使う人が手順を判断して操作しなければならない", false, "AEDは電源を入れると音声で手順を案内してくれます　電気ショックが必要かどうかは機械が判断します"],
+["車いすの利用者が乗り降りするときは、安全を確認しながら介助する", true, "乗降の介助では、車両を完全に止め、周囲の安全を確認してから行います"],
+["非常口や通路を、乗客の荷物でふさいではならない", true, "非常口と通路は緊急時の命綱です　荷物でふさがないよう確認します"],
+["大型貨物自動車の高速自動車国道での最高速度は、時速90キロである", true, "大型貨物の高速道路での最高速度は時速90キロです（2024年改正）　バスなどの大型乗用は時速100キロです"],
+["バス（大型乗用自動車）の高速自動車国道での最高速度は、時速100キロである", true, "大型乗用自動車（バス）の最高速度は時速100キロです"],
+["第二種免許があれば、けん引第二種がなくても旅客自動車でトレーラーを引いて旅客運送ができる", false, "旅客運送のために被けん引車を引くには、けん引第二種免許が別に必要です"],
+["乗客を乗せているときは、発進や停止の素早さを優先してよい", false, "立っている乗客もいます　発進・停止・カーブはなめらかに、車内事故を防ぎます"],
+["遺失物（忘れ物）を見つけたときは、営業所などに届け出る決まりがある", true, "忘れ物は営業所に届けるなど、決められた手続きで扱います"],
+["旅客自動車の運転者は、走行中に乗降用の扉を開けてはならない", true, "走行中の扉の開放は転落事故につながります　絶対に開けてはいけません"],
+["二種の学科試験には、応急救護処置に関する問題も含まれる", true, "第二種の試験では、旅客扱いや応急救護処置など、一種より広い範囲が出題されます"],
+["事業用自動車の運転者は、飲酒量が少なければ酒気帯びのまま乗務してもよい", false, "量に関係なく、酒気帯びでの乗務は絶対に禁止です　事業者による乗務前の確認もあります"],
+["大型第二種免許を受けるには、21歳以上であることが必要である", true, "大型第二種も21歳以上で、普通免許などを3年以上持っていることが条件です"],
+["バスの非常口は、荷物を置いてふさいでもよい", false, "非常口は常に使える状態にしておかなければなりません"],
+["乗客が降りるときは、後方から来る自転車などにも注意を促すとよい", true, "降車時はドア側の後方確認が大切です　自転車やバイクの巻き込みに注意します"],
+["路線バスなどの乗車定員には、立席の人数は含まれない", false, "立席がある車両では、座席と立席を合わせた人数が乗車定員になります"],
+["運転者は乗務前の点検で異常を見つけても、自分で直せなければそのまま運行してよい", false, "異常のある車両で運行してはいけません　報告して整備や車両の交換を行います"],
+["高齢の乗客が乗り降りするときは、完全に乗り終わるまで発車してはならない", true, "乗客が完全に乗り降りし、安全が確認できるまで発車しません"],
+["旅客自動車の運転中に眠気を感じたら、無理に運転を続けてもよい", false, "眠気を感じたら安全な場所に停車して休憩します　乗客の命を預かる運転では特に厳禁です"]
+]
+};
+var DESCS = {
+  first: "普通免許などの一種免許に向けた問題です<br>標識・速度・追い越し・駐停車などの基本が中心です",
+  second: "バスやタクシーの二種免許に向けた問題です<br>旅客扱い・応急救護・事業用自動車の決まりが中心です"
+};
+function $(id){ return document.getElementById(id); }
+var setKey = 'first', quiz = [], qi = 0, score = 0, answered = false;
+function showBest(){
+  try {
+    var bests = JSON.parse(localStorage.getItem('maouGakkaBest') || '{}');
+    $('bestLine').textContent = bests[setKey] != null ? 'ベスト：10問中 ' + bests[setKey] + ' 問正解' : '';
+  } catch (e) { $('bestLine').textContent = ''; }
+}
+document.querySelectorAll('.sbtn2[data-s]').forEach(function(b){
+  b.addEventListener('click', function(){
+    document.querySelectorAll('.sbtn2[data-s]').forEach(function(x){ x.classList.remove('on'); });
+    b.classList.add('on'); setKey = b.dataset.s;
+    $('setDesc').innerHTML = DESCS[setKey];
+    $('startBox').style.display = 'block';
+    $('quizBox').style.display = 'none';
+    $('resultBox').style.display = 'none';
+    showBest();
+  });
+});
+function startQuiz(){
+  var bank = BANK[setKey].slice();
+  for (var i = bank.length - 1; i > 0; i--){
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = bank[i]; bank[i] = bank[j]; bank[j] = tmp;
+  }
+  quiz = bank.slice(0, 10);
+  qi = 0; score = 0;
+  $('startBox').style.display = 'none';
+  $('resultBox').style.display = 'none';
+  $('quizBox').style.display = 'block';
+  showQuestion();
+}
+function showQuestion(){
+  answered = false;
+  $('prog').textContent = '第 ' + (qi + 1) + ' 問 / 10';
+  $('scoreNow').textContent = score;
+  $('qText').textContent = quiz[qi][0];
+  $('expBox').style.display = 'none';
+  $('btnMaru').disabled = false;
+  $('btnBatsu').disabled = false;
+}
+function answer(val){
+  if (answered) return;
+  answered = true;
+  var correct = quiz[qi][1] === val;
+  if (correct) score++;
+  $('scoreNow').textContent = score;
+  $('btnMaru').disabled = true;
+  $('btnBatsu').disabled = true;
+  var box = $('expBox');
+  box.className = correct ? 'exp' : 'exp ng';
+  $('expHead').innerHTML = correct ? '<span class="ok">⭕ 正解です</span>' : '<span class="warn">❌ 不正解です　正解は「' + (quiz[qi][1] ? '○' : '×') + '」</span>';
+  $('expText').innerHTML = '<b>💡 一言アドバイス</b><br>' + quiz[qi][2];
+  $('btnNext').textContent = qi >= 9 ? '結果を見る ▶' : '次へ ▶';
+  box.style.display = 'block';
+}
+$('btnStart').addEventListener('click', startQuiz);
+$('btnRetry').addEventListener('click', startQuiz);
+$('btnMaru').addEventListener('click', function(){ answer(true); });
+$('btnBatsu').addEventListener('click', function(){ answer(false); });
+$('btnNext').addEventListener('click', function(){
+  qi++;
+  if (qi >= 10){
+    $('quizBox').style.display = 'none';
+    var grade = score >= 10 ? '満点です！　免許証級の理解です' : score >= 9 ? '合格圏内です　本試験でもこの調子で' : score >= 7 ? 'あと少し　解説を読み直すと伸びます' : score >= 5 ? '基礎を固め直すと一気に伸びます' : 'まずは教本の基本から復習しましょう';
+    $('resultText').innerHTML = (setKey === 'first' ? '一種用' : '二種用') + '　10問中 <b>' + score + ' 問</b> 正解<br>' + grade + '<br><span class="small">本試験の合格ラインは9割が目安です</span>';
+    $('resultBox').style.display = 'block';
+    try {
+      var bests = JSON.parse(localStorage.getItem('maouGakkaBest') || '{}');
+      if (bests[setKey] == null || score > bests[setKey]){ bests[setKey] = score; localStorage.setItem('maouGakkaBest', JSON.stringify(bests)); }
+    } catch (e) {}
+    showBest();
+  } else showQuestion();
+});
+showBest();
+</script>
+</body>
+</html>
