@@ -8,8 +8,8 @@
 <style>
   .stage{max-width:760px;margin:0 auto;text-align:center}
   canvas{width:100%;height:auto;background:#23232e;border:1px solid #3a3358;border-radius:10px;touch-action:none}
-  .vbtn,.mbtn{padding:9px 14px;border-radius:10px;border:2px solid #3a3358;background:#241d3f;color:#eee;cursor:pointer;font-size:.95rem;margin:3px}
-  .vbtn.on,.mbtn.on{border-color:#e8b34b;background:#3d2a5e;color:#fff;font-weight:bold}
+  .vbtn,.mbtn,.cbtn{padding:9px 14px;border-radius:10px;border:2px solid #3a3358;background:#241d3f;color:#eee;cursor:pointer;font-size:.95rem;margin:3px}
+  .vbtn.on,.mbtn.on,.cbtn.on{border-color:#e8b34b;background:#3d2a5e;color:#fff;font-weight:bold}
   .pedal{font-size:1.15rem;padding:16px 26px;border-radius:12px;border:2px solid var(--purple);background:#3d2a5e;color:#fff;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:none}
   .pedal:active{background:#5a4390}
   .steer{display:flex;align-items:center;gap:8px;justify-content:center;margin:8px 0}
@@ -43,22 +43,28 @@
 <div class="stage">
 <h1>🚛 車庫入れシミュレータ</h1>
 <p>車庫入れの練習と、トレーラーやフォークリフトの動きを理解するためのシミュレータです<br>
-練習モードでは進む方向のガイド線と、折れ角が出ます</p>
+練習モードでは進む方向のガイド線と、車体が通る範囲（内輪差・外輪差）と、折れ角が出ます<br>
+コースは車庫入れ・縦列駐車・S字クランクから選べます</p>
 <p><b>これは車庫入れの練習用シミュレータです</b><br>
 実際の運転や教習の代わりにはなりません<br>
 車両ごとの動きの違いを理解して、バックで入れる感覚をつかむために使えます</p>
 
 <div>
-<button type="button" class="vbtn on" data-v="car">普通車</button><button type="button" class="vbtn" data-v="truck">大型トラック</button><button type="button" class="vbtn" data-v="bus">大型バス</button><button type="button" class="vbtn" data-v="school">教習トレーラー</button><button type="button" class="vbtn" data-v="fifth">フィフストレーラー</button><button type="button" class="vbtn" data-v="fork">フォークリフト</button><button type="button" class="vbtn" data-v="loader">大型特殊 教習用</button><button type="button" class="vbtn" data-v="tank">大型特殊 戦車</button>
+<button type="button" class="vbtn on" data-v="car">普通車</button><button type="button" class="vbtn" data-v="truck2">準中型トラック</button><button type="button" class="vbtn" data-v="truck">大型トラック</button><button type="button" class="vbtn" data-v="bus">大型バス</button><button type="button" class="vbtn" data-v="school">教習トレーラー</button><button type="button" class="vbtn" data-v="fifth">フィフストレーラー</button><button type="button" class="vbtn" data-v="fork">フォークリフト</button><button type="button" class="vbtn" data-v="loader">大型特殊 教習用</button><button type="button" class="vbtn" data-v="tank">大型特殊 戦車</button>
+</div>
+<div>
+<button type="button" class="cbtn on" data-c="garage">車庫入れ</button><button type="button" class="cbtn" data-c="parallel">縦列駐車</button><button type="button" class="cbtn" data-c="scurve">S字・クランク</button>
 </div>
 <div>
 <button type="button" class="mbtn on" data-m="practice">練習モード</button><button type="button" class="mbtn" data-m="exam">検定モード</button>
 </div>
+<div class="small" style="margin:4px 0"><label><input type="checkbox" id="bandChk" checked> 通過範囲（内輪差・外輪差）を表示（練習モード）</label></div>
 
 <canvas id="cv" width="1000" height="620"></canvas>
 
 <div class="status" id="status">車庫の枠の中に全体を入れて、止まれば成功です<br><span class="small">まずは前進で車庫の前まで進み、バックで入れるのが基本です</span></div>
 
+<div class="small" id="runInfo"></div>
 <div id="angleBox" style="display:none">
 <div class="small"><span id="angleLabel">トレーラーの折れ角</span>：<b id="angleVal">0°</b><span id="angleNote">（折れすぎるとジャックナイフになります）</span></div>
 <div class="meter"><div id="angleBar"></div></div>
@@ -83,6 +89,8 @@
 </div>
 <p class="small">パソコンでは矢印キーでも操作できます（↑前進／↓バック／←→ハンドル）<br>
 検定モードはガイド線なしで、コーン2回接触かジャックナイフで失格です<br>
+縦列駐車とS字・クランクは、普通車・準中型トラック・大型トラック・大型バス用です<br>
+切り返しの回数と採点は、成功した時に出ます<br>
 フォークリフトは後ろの車輪で舵を切ります　ハンドルと反対に尻が振れるのが特徴です<br>
 大型特殊（教習用）はホイールローダーで、車体の真ん中が折れて曲がります<br>
 戦車は左右の履帯の速度差で曲がり、止まったままその場で回ることもできます</p>
@@ -109,6 +117,7 @@
 /* ===== 物理モデル（DOM非依存） ===== */
 var VEHICLES = {
   car:    { kind: 'rigid', label: '普通車', len: 46, wid: 21, rearOver: 10, wb: 30, maxSteer: 0.55, fwd: 62, rev: 40, bayW: 58, bayD: 88 },
+  truck2: { kind: 'rigid', label: '準中型トラック', len: 58, wid: 24, rearOver: 13, wb: 40, maxSteer: 0.52, fwd: 56, rev: 34, bayW: 60, bayD: 96 },
   truck:  { kind: 'rigid', label: '大型トラック', len: 95, wid: 27, rearOver: 16, wb: 62, maxSteer: 0.45, fwd: 52, rev: 32, bayW: 66, bayD: 134 },
   bus:    { kind: 'rigid', label: '大型バス', len: 110, wid: 28, rearOver: 34, wb: 60, maxSteer: 0.50, fwd: 52, rev: 32, bayW: 66, bayD: 148 },
   school: { kind: 'trailer', label: '教習トレーラー', tLabel: 'トレーラー', tLen: 62, tWid: 25, rearOver: 10, wb: 40, hitchBack: 16, trFront: 14, trRear: 62, axleDist: 44, trWid: 24, maxSteer: 0.55, fwd: 48, rev: 28, bayW: 56, bayD: 108 },
@@ -224,15 +233,51 @@ var S = null, v = 0, steerVal = 0;
 var pressF = false, pressB = false, keyF = false, keyB = false;
 var coneHits = 0, coneCool = {}, started = 0, finished = false, failed = false;
 var pallet = null;
+var course = 'garage', OBS = [], parkedCars = [], goal = null, bandPolys = [];
+var switches = 0, lastDir = 0;
 
 function spec(){ return VEHICLES[vehKey]; }
 function kind(){ return spec().kind; }
 function bayRect(){ var sp = spec(); return { x: 500 - sp.bayW / 2, y: 22, w: sp.bayW, h: sp.bayD }; }
+function goalRect(){ return course === 'garage' ? bayRect() : goal; }
+function scurveCones(){
+  var pts = [];
+  for (var y = 175; y <= 505; y += 42){
+    var cx = 500 + 130 * Math.sin((580 - y) * 0.011);
+    pts.push({ x: cx - 54, y: y });
+    pts.push({ x: cx + 54, y: y });
+  }
+  return pts;
+}
+function buildCourse(){
+  parkedCars = [];
+  if (course === 'parallel'){
+    var sp = spec();
+    var slotLen = sp.len + 40, slotW = sp.wid + 16;
+    var sx = 580 - slotLen / 2, sy = 452 - slotW;
+    goal = { x: sx, y: sy, w: slotLen, h: slotW };
+    var cy = sy + slotW / 2;
+    parkedCars = [ { x: sx - 60, y: cy - 12, w: 52, h: 24 }, { x: sx + slotLen + 8, y: cy - 12, w: 52, h: 24 } ];
+    OBS = [];
+    parkedCars.forEach(function(r){
+      samplePoints(bodyCorners(r.x + r.w / 2, r.y + r.h / 2, 0, r.w / 2, r.w / 2, r.h)).forEach(function(p){ OBS.push(p); });
+    });
+  } else if (course === 'scurve'){
+    goal = { x: 327, y: 22, w: 140, h: 150 };
+    OBS = scurveCones();
+  } else {
+    goal = null;
+    OBS = CONES.slice();
+  }
+}
 function spawn(){
   v = 0; steerVal = 0; $('steer').value = 0;
   coneHits = 0; coneCool = {}; started = 0; finished = false; failed = false;
   $('overNav').style.display = 'none';
   pallet = null;
+  buildCourse();
+  switches = 0; lastDir = 0;
+  $('runInfo').textContent = '';
   var k = kind();
   if (k === 'trailer'){
     S = { x: 500, y: 428, th: -Math.PI / 2, ax: 500, ay: 502, phi: -Math.PI / 2 };
@@ -247,7 +292,9 @@ function spawn(){
   } else if (k === 'tank'){
     S = { x: 500, y: 520, th: -Math.PI / 2 };
   } else {
-    S = { x: 500, y: 520, th: -Math.PI / 2 };
+    if (course === 'parallel') S = { x: 250, y: 548, th: 0 };
+    else if (course === 'scurve') S = { x: 500, y: 548, th: -Math.PI / 2 };
+    else S = { x: 500, y: 520, th: -Math.PI / 2 };
   }
   var showAngle = k === 'trailer' || k === 'loader';
   $('angleBox').style.display = showAngle ? 'block' : 'none';
@@ -256,6 +303,8 @@ function spawn(){
   $('liftRow').style.display = k === 'fork' ? 'block' : 'none';
   $('btnLift').textContent = 'フォークを上げる';
   if (k === 'fork') setStatus('パレットの後ろからまっすぐ近づき、フォークを差してください<br><span class="small">パレットが光ったら差さった合図です　「フォークを上げる」ボタンで持ち上げます<br>持ち上げたら車庫へ運び、入れたら「フォークを下ろす」で置けます</span>');
+  else if (course === 'parallel') setStatus('駐車枠の中に全体を入れて、止まれば成功です<br><span class="small">前進で枠を通り過ぎてから、バックで斜めに入れて、まっすぐに戻すのが基本です　停車中の車に当たると接触扱いです</span>');
+  else if (course === 'scurve') setStatus('コーンの間を通って、上のゴール枠に入れて止まれば成功です<br><span class="small">前進だけのコースです　内輪差で内側のコーンに寄りやすいので、外側いっぱいから回るのがコツです</span>');
   else setStatus('車庫の枠の中に全体を入れて、止まれば成功です<br><span class="small">まずは前進で車庫の前まで進み、バックで入れるのが基本です</span>');
   showBest();
 }
@@ -308,6 +357,8 @@ function stepOnce(dt){
   var accel = target === 0 ? 150 : 80;
   if (v < target) v = Math.min(target, v + accel * dt);
   if (v > target) v = Math.max(target, v - accel * dt);
+  var dirNow = v > 2 ? 1 : v < -2 ? -1 : 0;
+  if (dirNow !== 0){ if (lastDir !== 0 && dirNow !== lastDir) switches++; lastDir = dirNow; }
   var wantPivot = kind() === 'tank' && v === 0 && steerVal !== 0;
   if (v !== 0 || wantPivot){
     var prev = JSON.parse(JSON.stringify(S));
@@ -321,12 +372,12 @@ function stepOnce(dt){
       var now = performance.now();
       var pts = [];
       bodies.forEach(function(b){ pts = pts.concat(samplePoints(b)); });
-      CONES.forEach(function(cn, idx){
+      OBS.forEach(function(cn, idx){
         if (coneCool[idx] && now - coneCool[idx] < 1200) return;
         for (var i = 0; i < pts.length; i++){
           if (Math.hypot(pts[i].x - cn.x, pts[i].y - cn.y) < 12){
             coneCool[idx] = now; coneHits++;
-            if (mode === 'exam' && coneHits >= 2) fail('コーンに2回当たってしまいました');
+            if (mode === 'exam' && coneHits >= 2) fail(course === 'parallel' ? '停車中の車やコーンに2回当たってしまいました' : 'コーンに2回当たってしまいました');
             else setStatus('<span class="warn">コーンに当たりました（' + coneHits + '回目）</span><br><span class="small">練習ではそのまま続けられます</span>');
             break;
           }
@@ -341,8 +392,9 @@ function stepOnce(dt){
     else if (fp.d < 52 && fp.a >= 0.7) setStatus('<span class="warn">⚠ 角度が合っていません</span><br><span class="small">この角度ではフォークが差さりません　一度下がって、パレットの真後ろからまっすぐ入り直してください</span>');
     else if (fp.d < 52) setStatus('あと少しでフォークが差さります<br><span class="small">ゆっくりまっすぐ近づいてください</span>');
   }
+  if (started && !finished && !failed) $('runInfo').textContent = '切り返し ' + switches + ' 回　接触 ' + coneHits + ' 回　' + ((performance.now() - started) / 1000).toFixed(0) + ' 秒';
   if (!finished && !failed && Math.abs(v) < 0.6 && !pressF && !pressB && !keyF && !keyB && started){
-    var bay = bayRect(), rc = judgeCorners();
+    var bay = goalRect(), rc = judgeCorners();
     if (rc){
       var inside = true;
       for (var i = 0; i < rc.length; i++){ if (rc[i].x < bay.x + 1 || rc[i].x > bay.x + bay.w - 1 || rc[i].y < bay.y + 1 || rc[i].y > bay.y + bay.h - 1) inside = false; }
@@ -353,11 +405,18 @@ function stepOnce(dt){
 function succeed(){
   finished = true;
   var elapsed = (performance.now() - started) / 1000;
-  var msg = '<span class="ok">🎉 ' + (kind() === 'fork' ? 'パレットを車庫に入れました！' : '車庫入れ成功です！') + '</span><br>' + spec().label + 'を ' + elapsed.toFixed(1) + ' 秒で入れました　コーン接触 ' + coneHits + ' 回';
+  var score = Math.max(0, 100 - switches * 5 - coneHits * 10 - Math.max(0, Math.floor(elapsed) - 45));
+  var grade = score >= 90 ? '優' : score >= 75 ? '良' : score >= 60 ? '可' : '練習あるのみ';
+  var what = kind() === 'fork' ? 'パレットを車庫に入れました！' : course === 'parallel' ? '縦列駐車成功です！' : course === 'scurve' ? 'ゴールしました！' : '車庫入れ成功です！';
+  var msg = '<span class="ok">🎉 ' + what + '</span><br>' + spec().label + 'を ' + elapsed.toFixed(1) + ' 秒で入れました　切り返し ' + switches + ' 回　接触 ' + coneHits + ' 回<br>採点：<b>' + score + ' 点（' + grade + '）</b>';
+  $('runInfo').textContent = '';
   if (mode === 'exam'){
     try {
+      var bkey = course === 'garage' ? vehKey : vehKey + '_' + course;
       var bests = JSON.parse(localStorage.getItem('maouDriveBest') || '{}');
-      if (!bests[vehKey] || elapsed < bests[vehKey]){ bests[vehKey] = Math.round(elapsed * 10) / 10; localStorage.setItem('maouDriveBest', JSON.stringify(bests)); msg += '<br>🎉 検定ベストを更新しました'; }
+      if (!bests[bkey] || elapsed < bests[bkey]){ bests[bkey] = Math.round(elapsed * 10) / 10; msg += '<br>🎉 検定ベストを更新しました'; }
+      if (!bests[bkey + '_s'] || score > bests[bkey + '_s']){ bests[bkey + '_s'] = score; }
+      localStorage.setItem('maouDriveBest', JSON.stringify(bests));
     } catch (e) {}
   }
   setStatus(msg);
@@ -373,7 +432,9 @@ function fail(reason){
 function showBest(){
   try {
     var bests = JSON.parse(localStorage.getItem('maouDriveBest') || '{}');
-    $('bestLine').textContent = bests[vehKey] ? '検定ベスト（' + spec().label + '）：' + bests[vehKey] + ' 秒' : '';
+    var bkey = course === 'garage' ? vehKey : vehKey + '_' + course;
+    var cname = course === 'parallel' ? '・縦列' : course === 'scurve' ? '・S字' : '';
+    $('bestLine').textContent = bests[bkey] ? '検定ベスト（' + spec().label + cname + '）：' + bests[bkey] + ' 秒' + (bests[bkey + '_s'] ? '　最高 ' + bests[bkey + '_s'] + ' 点' : '') : '';
   } catch (e) { $('bestLine').textContent = ''; }
 }
 function guidePath(){
@@ -381,10 +442,17 @@ function guidePath(){
   var sim = JSON.parse(JSON.stringify(S));
   var spd = (pressB || keyB || v < -0.5) ? -sp.rev * 0.85 : (pressF || keyF || v > 0.5) ? sp.fwd * 0.85 : -sp.rev * 0.85;
   var pts = [];
+  bandPolys = [];
   for (var i = 0; i < 55; i++){
     stepState(sim, sp, steerVal / 100, spd, 0.12);
     if (i % 3 === 0){
       var cs = cornersOf(sim, sp);
+      cs.forEach(function(b){ bandPolys.push(b); });
+      if (kind() === 'fork' && pallet && pallet.carried){
+        var th9 = forkHeading(sim);
+        var mx9 = (sim.fx + sim.rx) / 2, my9 = (sim.fy + sim.ry) / 2;
+        bandPolys.push(bodyCorners(mx9 + (sp.frontExt + 15) * Math.cos(th9), my9 + (sp.frontExt + 15) * Math.sin(th9), th9, 15, 15, 30));
+      }
       var rear = kind() === 'trailer' ? cs[1] : kind() === 'tank' ? cs[0] : cs[cs.length - 1];
       pts.push(rear[2]); pts.push(rear[3]);
       pts.push({ x: (rear[2].x + rear[3].x) / 2, y: (rear[2].y + rear[3].y) / 2 });
@@ -409,23 +477,58 @@ function drawBody(corners, fill, line){
 function draw(){
   ctx.clearRect(0, 0, WORLD_W, WORLD_H);
   var sp = spec(), k = kind();
-  var bay = bayRect();
-  ctx.strokeStyle = '#f2f2f2'; ctx.lineWidth = 3;
-  ctx.strokeRect(bay.x, bay.y, bay.w, bay.h);
-  ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.font = 'bold 17px sans-serif'; ctx.textAlign = 'center';
-  ctx.fillText('車庫', bay.x + bay.w / 2, bay.y + bay.h + 24);
-  ctx.strokeStyle = 'rgba(255,255,255,.25)'; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(500, 600); ctx.lineTo(500, bay.y + bay.h + 34); ctx.stroke();
-  var now = performance.now();
-  CONES.forEach(function(cn, idx){
-    var hit = coneCool[idx] && now - coneCool[idx] < 600;
-    ctx.fillStyle = hit ? '#ff5040' : '#ff8c1a';
-    ctx.beginPath(); ctx.arc(cn.x, cn.y, 9, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#fff'; ctx.fillRect(cn.x - 9, cn.y - 2, 18, 4);
-  });
+  ctx.textAlign = 'center';
+  if (course === 'parallel'){
+    ctx.fillStyle = 'rgba(255,255,255,.05)';
+    ctx.fillRect(20, 452, WORLD_W - 40, 160);
+    ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 2; ctx.setLineDash([16, 14]);
+    ctx.beginPath(); ctx.moveTo(30, 548); ctx.lineTo(970, 548); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.strokeStyle = '#f2f2f2'; ctx.lineWidth = 3;
+    ctx.strokeRect(goal.x, goal.y, goal.w, goal.h);
+    ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.font = 'bold 16px sans-serif';
+    ctx.fillText('駐車枠', goal.x + goal.w / 2, goal.y - 8);
+    parkedCars.forEach(function(r){
+      ctx.fillStyle = '#6a7180'; ctx.fillRect(r.x, r.y, r.w, r.h);
+      ctx.strokeStyle = '#aab2c0'; ctx.lineWidth = 2; ctx.strokeRect(r.x, r.y, r.w, r.h);
+      ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.font = 'bold 11px sans-serif';
+      ctx.fillText('停車中', r.x + r.w / 2, r.y + r.h / 2 + 4);
+    });
+  } else if (course === 'scurve'){
+    ctx.strokeStyle = '#8be89b'; ctx.lineWidth = 3;
+    ctx.strokeRect(goal.x, goal.y, goal.w, goal.h);
+    ctx.fillStyle = 'rgba(139,232,155,.85)'; ctx.font = 'bold 17px sans-serif';
+    ctx.fillText('ゴール', goal.x + goal.w / 2, goal.y + goal.h + 24);
+  } else {
+    var bay = bayRect();
+    ctx.strokeStyle = '#f2f2f2'; ctx.lineWidth = 3;
+    ctx.strokeRect(bay.x, bay.y, bay.w, bay.h);
+    ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.font = 'bold 17px sans-serif';
+    ctx.fillText('車庫', bay.x + bay.w / 2, bay.y + bay.h + 24);
+    ctx.strokeStyle = 'rgba(255,255,255,.25)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(500, 600); ctx.lineTo(500, bay.y + bay.h + 34); ctx.stroke();
+  }
+  if (course !== 'parallel'){
+    var now = performance.now();
+    OBS.forEach(function(cn, idx){
+      var hit = coneCool[idx] && now - coneCool[idx] < 600;
+      ctx.fillStyle = hit ? '#ff5040' : '#ff8c1a';
+      ctx.beginPath(); ctx.arc(cn.x, cn.y, 9, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.fillRect(cn.x - 9, cn.y - 2, 18, 4);
+    });
+  }
   if (mode === 'practice' && !finished && !failed){
+    var gpts = guidePath();
+    if ($('bandChk').checked){
+      ctx.fillStyle = 'rgba(126,200,227,.06)';
+      bandPolys.forEach(function(poly){
+        ctx.beginPath();
+        poly.forEach(function(p, i){ if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); });
+        ctx.closePath(); ctx.fill();
+      });
+    }
     ctx.fillStyle = 'rgba(139,232,155,.85)';
-    guidePath().forEach(function(p){ ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fill(); });
+    gpts.forEach(function(p){ ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fill(); });
   }
   if (pallet){
     var pc = palletCorners();
@@ -443,7 +546,7 @@ function draw(){
   var steer = steerVal / 100 * (sp.maxSteer || 0);
   var bodies = cornersOf(S, sp);
   if (k === 'rigid'){
-    drawBody(bodies[0], vehKey === 'car' ? '#7ec8e3' : vehKey === 'bus' ? '#5eb56e' : '#4a6fa5', '#dff2fb');
+    drawBody(bodies[0], vehKey === 'car' ? '#7ec8e3' : vehKey === 'bus' ? '#5eb56e' : vehKey === 'truck2' ? '#d98e4a' : '#4a6fa5', '#dff2fb');
     var fx = S.x + sp.wb * Math.cos(S.th), fy = S.y + sp.wb * Math.sin(S.th);
     drawWheel(fx - Math.sin(S.th) * sp.wid / 2, fy + Math.cos(S.th) * sp.wid / 2, S.th, steer);
     drawWheel(fx + Math.sin(S.th) * sp.wid / 2, fy - Math.cos(S.th) * sp.wid / 2, S.th, steer);
@@ -593,13 +696,33 @@ $('btnReset').addEventListener('click', spawn);
 document.querySelectorAll('.vbtn').forEach(function(b){
   b.addEventListener('click', function(){
     document.querySelectorAll('.vbtn').forEach(function(x){ x.classList.remove('on'); });
-    b.classList.add('on'); vehKey = b.dataset.v; spawn();
+    b.classList.add('on'); vehKey = b.dataset.v;
+    var courseReset = false;
+    if (course !== 'garage' && kind() !== 'rigid'){
+      course = 'garage'; courseReset = true;
+      document.querySelectorAll('.cbtn').forEach(function(x){ x.classList.toggle('on', x.dataset.c === 'garage'); });
+    }
+    spawn();
+    if (courseReset) setStatus('この車両は車庫入れコース用です<br><span class="small">コースを車庫入れに戻しました　縦列駐車とS字・クランクは普通車・トラック・バス用です</span>');
   });
 });
 document.querySelectorAll('.mbtn').forEach(function(b){
   b.addEventListener('click', function(){
     document.querySelectorAll('.mbtn').forEach(function(x){ x.classList.remove('on'); });
     b.classList.add('on'); mode = b.dataset.m; spawn();
+  });
+});
+document.querySelectorAll('.cbtn').forEach(function(b){
+  b.addEventListener('click', function(){
+    document.querySelectorAll('.cbtn').forEach(function(x){ x.classList.remove('on'); });
+    b.classList.add('on'); course = b.dataset.c;
+    var vehReset = false;
+    if (course !== 'garage' && kind() !== 'rigid'){
+      vehKey = 'car'; vehReset = true;
+      document.querySelectorAll('.vbtn').forEach(function(x){ x.classList.toggle('on', x.dataset.v === 'car'); });
+    }
+    spawn();
+    if (vehReset) setStatus('このコースは普通車・トラック・バス用です<br><span class="small">車両を普通車に切り替えました</span>');
   });
 });
 spawn();
