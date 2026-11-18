@@ -109,7 +109,7 @@ var VEHICLES = {
   truck:  { kind: 'rigid', label: '大型トラック', len: 95, wid: 27, rearOver: 16, wb: 62, maxSteer: 0.45, fwd: 52, rev: 32, bayW: 66, bayD: 134 },
   bus:    { kind: 'rigid', label: '大型バス', len: 110, wid: 28, rearOver: 34, wb: 60, maxSteer: 0.50, fwd: 52, rev: 32, bayW: 66, bayD: 148 },
   school: { kind: 'trailer', label: '教習トレーラー', tLabel: 'トレーラー', tLen: 62, tWid: 25, rearOver: 10, wb: 40, hitchBack: 16, trFront: 14, trRear: 62, axleDist: 44, trWid: 24, maxSteer: 0.55, fwd: 48, rev: 28, bayW: 56, bayD: 108 },
-  fifth:  { kind: 'trailer', label: 'フィフストレーラー', tLabel: '海上コンテナ', tLen: 62, tWid: 27, rearOver: 10, wb: 42, hitchBack: -5, trFront: 4, trRear: 128, axleDist: 104, trWid: 27, maxSteer: 0.50, fwd: 46, rev: 26, bayW: 60, bayD: 162 },
+  fifth:  { kind: 'trailer', label: 'フィフストレーラー', tLabel: '海上コンテナ', tLen: 50, tWid: 27, rearOver: 8, wb: 34, hitchBack: -5, trFront: 4, trRear: 128, axleDist: 104, trWid: 27, maxSteer: 0.50, fwd: 46, rev: 26, bayW: 60, bayD: 162 },
   fork:   { kind: 'fork', label: 'フォークリフト', wb: 34, frontExt: 41, rearExt: 33, wid: 24, maxSteer: 0.55, fwd: 46, rev: 30, bayW: 54, bayD: 62 },
   loader: { kind: 'loader', label: '大型特殊 教習用（ホイールローダー）', a: 26, b: 26, fFront: 34, fRear: 30, rFront: 30, rRear: 32, wid: 28, maxBend: 0.62, fwd: 44, rev: 26, bayW: 68, bayD: 150 },
   tank:   { kind: 'tank', label: '大型特殊 戦車', hullFront: 32, hullRear: 30, gunFront: 54, wid: 37, trackW: 30, maxDiff: 14, pivotRate: 0.9, fwd: 40, rev: 26, bayW: 72, bayD: 118 }
@@ -215,7 +215,7 @@ function shareSite(){
 
 var cv = $('cv'), ctx = cv.getContext('2d');
 var WORLD_W = 1000, WORLD_H = 620;
-var CONES = [ {x:290,y:290}, {x:710,y:290}, {x:240,y:460}, {x:760,y:460}, {x:500,y:350} ];
+var CONES = [ {x:290,y:290}, {x:710,y:290}, {x:240,y:460}, {x:760,y:460}, {x:350,y:390} ];
 var vehKey = 'car', mode = 'practice';
 var S = null, v = 0, steerVal = 0;
 var pressF = false, pressB = false, keyF = false, keyB = false;
