@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>車庫入れシミュレータ | 便利情報 | 魔王らてらる・魔王らて子 公式ファンサイト</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .stage{max-width:760px;margin:0 auto;text-align:center}
+  canvas{width:100%;height:auto;background:#23232e;border:1px solid #3a3358;border-radius:10px;touch-action:none}
+  .vbtn,.mbtn,.cbtn{padding:9px 14px;border-radius:10px;border:2px solid #3a3358;background:#241d3f;color:#eee;cursor:pointer;font-size:.95rem;margin:3px}
+  .vbtn.on,.mbtn.on,.cbtn.on{border-color:#e8b34b;background:#3d2a5e;color:#fff;font-weight:bold}
+  .pedal{font-size:1.15rem;padding:16px 26px;border-radius:12px;border:2px solid var(--purple);background:#3d2a5e;color:#fff;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:none}
+  .pedal:active{background:#5a4390}
+  .steer{display:flex;align-items:center;gap:8px;justify-content:center;margin:8px 0}
+  .steer input[type=range]{flex:1;max-width:340px}
+  .sbtn{font-size:1.2rem;padding:10px 18px;border-radius:10px;border:2px solid #3a3358;background:#241d3f;color:#eee;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:none}
+  .meter{height:12px;background:#17142a;border-radius:6px;overflow:hidden;max-width:340px;margin:4px auto}
+  .meter > div{height:100%;background:#57c46a;width:0%}
+  .status{min-height:2.6em;line-height:1.7;margin:8px 0}
+  .warn{color:#ff7b72;font-weight:bold}
+  .ok{color:#8be89b;font-weight:bold}
+  .small{font-size:.85rem;opacity:.85}
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="inner">
+    <a class="logo" href="index.html">魔王<span>らてらる</span> × 魔王<span style="color:#a06cd5">らて子</span></a>
+    <nav class="main">
+      <a href="index.html">ホーム</a>
+      <a href="index.html#news">お知らせ</a>
+      <a href="board.html">ファン掲示板</a>
+      <a href="chat.html">魔力SIチャット</a>
+      <a href="games.html">ミニゲーム</a>
+      <a href="secret.html">秘密基地</a>
+    </nav>
+  </div>
+</header>
+
+<style>
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.chips a{background:#241f35;border:1px solid #3a3355;color:#f2e9d8;border-radius:999px;padding:7px 13px;text-decoration:none;font-size:.92rem}
+.sec{margin:22px 0}
+.sec h2{border-left:5px solid #a06cd5;padding-left:9px}
+.song{display:flex;justify-content:space-between;gap:10px;padding:8px 10px;border-bottom:1px solid #2c2742}
+.song b{font-weight:bold}
+.song span{color:#bdb4d4;text-align:right}
+#kSearch{width:100%;box-sizing:border-box;padding:11px;border-radius:10px;border:1px solid #3a3355;background:#1b1729;color:#f2e9d8;font-size:1rem}
+</style>
+<main>
+<div class="stage">
+<h1>🎤 カラオケ定番曲ガイド</h1>
+<p>カラオケで長く歌われ続けている定番曲を、全110曲集めました<br>
+ランキングではなく、時代を超えて歌われる曲の紹介です<br>
+年代・季節・場面から探せます</p>
+<input id="kSearch" type="text" placeholder="曲名や歌手名でさがす">
+<div class="chips"><a href="#teiban">みんなの定番</a><a href="#y90">90年代</a><a href="#y00">2000年代</a><a href="#y10">2010年代</a><a href="#y20">2020年代</a><a href="#season">季節の曲</a><a href="#male">男性ボーカルの人気曲</a><a href="#female">女性ボーカルの人気曲</a><a href="#drive">ドライブで歌いたい</a><a href="#broken">失恋ソング</a><a href="#love">恋愛ソング</a></div>
+<div class="sec" id="teiban"><h2>⭐ みんなの定番</h2><div class="card"><div class="song"><b>世界に一つだけの花</b><span>SMAP</span></div><div class="song"><b>栄光の架橋</b><span>ゆず</span></div><div class="song"><b>ハナミズキ</b><span>一青窈</span></div><div class="song"><b>小さな恋のうた</b><span>MONGOL800</span></div><div class="song"><b>チェリー</b><span>スピッツ</span></div><div class="song"><b>残酷な天使のテーゼ</b><span>高橋洋子</span></div><div class="song"><b>糸</b><span>中島みゆき</span></div><div class="song"><b>キセキ</b><span>GReeeeN</span></div><div class="song"><b>Lemon</b><span>米津玄師</span></div><div class="song"><b>マリーゴールド</b><span>あいみょん</span></div><div class="song"><b>Pretender</b><span>Official髭男dism</span></div><div class="song"><b>紅</b><span>X JAPAN</span></div></div></div>
+<div class="sec" id="y90"><h2>📼 90年代</h2><div class="card"><div class="song"><b>浪漫飛行</b><span>米米CLUB</span></div><div class="song"><b>愛は勝つ</b><span>KAN</span></div><div class="song"><b>TRUE LOVE</b><span>藤井フミヤ</span></div><div class="song"><b>TOMORROW</b><span>岡本真夜</span></div><div class="song"><b>愛が生まれた日</b><span>藤谷美和子・大内義昭</span></div><div class="song"><b>WOW WAR TONIGHT</b><span>H Jungle with t</span></div><div class="song"><b>M</b><span>プリンセス プリンセス</span></div><div class="song"><b>壊れかけのRadio</b><span>徳永英明</span></div><div class="song"><b>LA・LA・LA LOVE SONG</b><span>久保田利伸</span></div><div class="song"><b>今すぐKiss Me</b><span>LINDBERG</span></div></div></div>
+<div class="sec" id="y00"><h2>💿 2000年代</h2><div class="card"><div class="song"><b>粉雪</b><span>レミオロメン</span></div><div class="song"><b>雪の華</b><span>中島美嘉</span></div><div class="song"><b>瞳をとじて</b><span>平井堅</span></div><div class="song"><b>secret base ～君がくれたもの～</b><span>ZONE</span></div><div class="song"><b>Jupiter</b><span>平原綾香</span></div><div class="song"><b>さくらんぼ</b><span>大塚愛</span></div><div class="song"><b>花</b><span>ORANGE RANGE</span></div><div class="song"><b>天体観測</b><span>BUMP OF CHICKEN</span></div><div class="song"><b>島人ぬ宝</b><span>BEGIN</span></div><div class="song"><b>青いベンチ</b><span>サスケ</span></div></div></div>
+<div class="sec" id="y10"><h2>📱 2010年代</h2><div class="card"><div class="song"><b>前前前世</b><span>RADWIMPS</span></div><div class="song"><b>ひまわりの約束</b><span>秦基博</span></div><div class="song"><b>R.Y.U.S.E.I.</b><span>三代目 J Soul Brothers</span></div><div class="song"><b>Hero</b><span>安室奈美恵</span></div><div class="song"><b>高嶺の花子さん</b><span>back number</span></div><div class="song"><b>恋</b><span>星野源</span></div><div class="song"><b>打上花火</b><span>DAOKO×米津玄師</span></div><div class="song"><b>U.S.A.</b><span>DA PUMP</span></div><div class="song"><b>パプリカ</b><span>Foorin</span></div><div class="song"><b>サイレントマジョリティー</b><span>欅坂46</span></div></div></div>
+<div class="sec" id="y20"><h2>🎧 2020年代</h2><div class="card"><div class="song"><b>ドライフラワー</b><span>優里</span></div><div class="song"><b>夜に駆ける</b><span>YOASOBI</span></div><div class="song"><b>アイドル</b><span>YOASOBI</span></div><div class="song"><b>新時代</b><span>Ado</span></div><div class="song"><b>炎</b><span>LiSA</span></div><div class="song"><b>虹</b><span>菅田将暉</span></div><div class="song"><b>裸の心</b><span>あいみょん</span></div><div class="song"><b>廻廻奇譚</b><span>Eve</span></div><div class="song"><b>シンデレラボーイ</b><span>Saucy Dog</span></div><div class="song"><b>水平線</b><span>back number</span></div></div></div>
+<div class="sec" id="season"><h2>🌸 季節の曲</h2><div class="card"><div class="song"><b>桜坂</b><span>福山雅治</span></div><div class="song"><b>さくら（独唱）</b><span>森山直太朗</span></div><div class="song"><b>春よ、来い</b><span>松任谷由実</span></div><div class="song"><b>桜</b><span>コブクロ</span></div><div class="song"><b>夏祭り</b><span>Whiteberry</span></div><div class="song"><b>あー夏休み</b><span>TUBE</span></div><div class="song"><b>少年時代</b><span>井上陽水</span></div><div class="song"><b>青と夏</b><span>Mrs. GREEN APPLE</span></div><div class="song"><b>秋桜</b><span>山口百恵</span></div><div class="song"><b>楓</b><span>スピッツ</span></div><div class="song"><b>秋の気配</b><span>オフコース</span></div><div class="song"><b>白い恋人達</b><span>桑田佳祐</span></div><div class="song"><b>冬がはじまるよ</b><span>槇原敬之</span></div><div class="song"><b>ゲレンデがとけるほど恋したい</b><span>広瀬香美</span></div><div class="song"><b>クリスマス・イブ</b><span>山下達郎</span></div><div class="song"><b>恋人がサンタクロース</b><span>松任谷由実</span></div><div class="song"><b>いつかのメリークリスマス</b><span>B'z</span></div><div class="song"><b>クリスマスソング</b><span>back number</span></div></div></div>
+<div class="sec" id="male"><h2>🎙 男性ボーカルの人気曲</h2><div class="card"><div class="song"><b>海の声</b><span>浦島太郎（桐谷健太）</span></div><div class="song"><b>奏（かなで）</b><span>スキマスイッチ</span></div><div class="song"><b>千の風になって</b><span>秋川雅史</span></div><div class="song"><b>女々しくて</b><span>ゴールデンボンバー</span></div><div class="song"><b>366日</b><span>HY</span></div><div class="song"><b>虹</b><span>福山雅治</span></div><div class="song"><b>さよならエレジー</b><span>菅田将暉</span></div><div class="song"><b>イエスタデイ</b><span>Official髭男dism</span></div></div></div>
+<div class="sec" id="female"><h2>🎙 女性ボーカルの人気曲</h2><div class="card"><div class="song"><b>Story</b><span>AI</span></div><div class="song"><b>プラネタリウム</b><span>大塚愛</span></div><div class="song"><b>会いたくて 会いたくて</b><span>西野カナ</span></div><div class="song"><b>カブトムシ</b><span>aiko</span></div><div class="song"><b>丸の内サディスティック</b><span>椎名林檎</span></div><div class="song"><b>駅</b><span>竹内まりや</span></div><div class="song"><b>ありがとう</b><span>いきものがかり</span></div><div class="song"><b>愛をこめて花束を</b><span>Superfly</span></div></div></div>
+<div class="sec" id="drive"><h2>🚗 ドライブで歌いたい</h2><div class="card"><div class="song"><b>ultra soul</b><span>B'z</span></div><div class="song"><b>ロード</b><span>THE虎舞竜</span></div><div class="song"><b>Get Wild</b><span>TM NETWORK</span></div><div class="song"><b>innocent world</b><span>Mr.Children</span></div><div class="song"><b>君がいるだけで</b><span>米米CLUB</span></div><div class="song"><b>め組のひと</b><span>ラッツ&スター</span></div><div class="song"><b>夏色</b><span>ゆず</span></div><div class="song"><b>負けないで</b><span>ZARD</span></div></div></div>
+<div class="sec" id="broken"><h2>💔 失恋ソング</h2><div class="card"><div class="song"><b>最後の雨</b><span>中西保志</span></div><div class="song"><b>もう恋なんてしない</b><span>槇原敬之</span></div><div class="song"><b>シングルベッド</b><span>シャ乱Q</span></div><div class="song"><b>恋におちて</b><span>小林明子</span></div><div class="song"><b>木綿のハンカチーフ</b><span>太田裕美</span></div><div class="song"><b>ラヴ・イズ・オーヴァー</b><span>欧陽菲菲</span></div><div class="song"><b>さよなら</b><span>オフコース</span></div><div class="song"><b>異邦人</b><span>久保田早紀</span></div></div></div>
+<div class="sec" id="love"><h2>💗 恋愛ソング</h2><div class="card"><div class="song"><b>ラブ・ストーリーは突然に</b><span>小田和正</span></div><div class="song"><b>愛唄</b><span>GReeeeN</span></div><div class="song"><b>世界はそれを愛と呼ぶんだぜ</b><span>サンボマスター</span></div><div class="song"><b>恋音と雨空</b><span>AAA</span></div><div class="song"><b>キスだけで</b><span>菅田将暉 feat. あいみょん</span></div><div class="song"><b>恋するフォーチュンクッキー</b><span>AKB48</span></div><div class="song"><b>幸せ</b><span>back number</span></div><div class="song"><b>カタオモイ</b><span>Aimer</span></div></div></div>
+
+<div class="card">
+<p class="small">曲名と歌手名は、一般的な表記で載せています<br>
+歌えるかどうかは、カラオケの機種やお店で確認してください</p>
+</div>
+
+<div class="card">
+<h2>📣 シェア</h2>
+<button type="button" onclick="shareSite()">📣 このサイトを知り合いに教える</button>
+</div>
+
+<div style="text-align:center;margin:22px 0 6px"><a href="index.html" style="color:#c9a227;font-weight:bold">トップページに戻る</a></div>
+</div>
+</main>
+
+<script>
+function shareSite(){
+  var url = 'https://king-of-the-darkness.trailer-project.com/';
+  var text = '魔王らてらる・魔王らて子の公式ファンサイト　ミニゲームと画像便利ツールがあります';
+  if (navigator.share) { navigator.share({ title: document.title, text: text, url: url }).catch(function(){}); }
+  else { window.open('https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(url), '_blank'); }
+}
+document.getElementById('kSearch').addEventListener('input', function(){
+  var q = this.value.trim().toLowerCase();
+  document.querySelectorAll('.sec').forEach(function(sec){
+    var any = false;
+    sec.querySelectorAll('.song').forEach(function(s){
+      var hit = !q || s.textContent.toLowerCase().indexOf(q) >= 0;
+      s.style.display = hit ? '' : 'none';
+      if (hit) any = true;
+    });
+    sec.style.display = any ? '' : 'none';
+  });
+});
+</script>
+</body>
+</html>
