@@ -53,7 +53,7 @@
 <span class="small">魔剣の斬撃はリーチが長め<br>必殺技：魔力弾（飛び道具）</span>
 </button>
 <button type="button" class="charBtn" data-c="lateko" style="flex:1;min-width:150px;background:#241f35;border:2px solid #a06cd5;border-radius:14px;padding:12px;color:#f2e9d8;cursor:pointer">
-<img id="thumbL" alt="魔王らて子" style="width:110px;height:110px;object-fit:contain"><br>
+<img id="thumbL" alt="魔王らて子" style="width:96px;height:96px;object-fit:contain"><br>
 <b style="font-size:1.15rem">魔王らて子</b><br>
 <span class="small">杖の一撃は重い<br>必殺技：高速回転アタック（突進）</span>
 </button>
@@ -71,9 +71,11 @@
 <button type="button" class="tbtn" data-press="light">弱</button>
 <button type="button" class="tbtn" data-press="heavy">強</button>
 <button type="button" class="tbtn" data-press="special">必殺</button>
+<button type="button" class="tbtn" id="btnSuper" data-press="super" style="border-color:#e5383b;opacity:.55">超必殺</button>
 <button type="button" class="tbtn" data-hold="guard">ガード</button>
 </div>
-<p class="small">キー操作：←→で移動　↑でジャンプ　Jが弱攻撃　Kが強攻撃　Lが必殺技　↓かSを押している間ガード<br>
+<p class="small">キー操作：←→で移動　↑でジャンプ　Jが弱攻撃　Kが強攻撃　Lが必殺技　Hが超必殺技　↓かSを押している間ガード<br>
+超必殺技は、体力が30%以下になったら1回だけ使えます（大きく光ったらチャンスです）<br>
 ガード中はダメージを少しだけ受けます　必殺技は少し待つとまた使えます</p>
 
 <div id="resultPanel" class="card" style="display:none">
@@ -123,14 +125,16 @@ var cv = $('cv'), ctx = cv.getContext('2d');
 var W = 900, H = 520, GROUND = 452, MINX = 66, MAXX = 834;
 
 var CH = {
-  rateraru: { name: '魔王らてらる', speed: 3.4, heavyRange: 100, accent: '#e5383b', special: 'shot', specialName: '魔力弾' },
-  lateko: { name: '魔王らて子', speed: 3.15, heavyRange: 88, accent: '#a06cd5', special: 'spin', specialName: '高速回転アタック' }
+  rateraru: { name: '魔王らてらる', speed: 3.4, heavyRange: 100, accent: '#e5383b', special: 'shot', specialName: '魔力弾', superName: '超魔力弾' },
+  lateko: { name: '魔王らて子', speed: 3.15, heavyRange: 88, accent: '#a06cd5', special: 'spin', specialName: '高速回転アタック', superName: '超高速回転アタック' }
 };
 var ATK = {
   light: { su: 6, ac: 5, rc: 11, dmg: 5, range: 84, push: 3, stun: 12 },
   heavy: { su: 14, ac: 6, rc: 21, dmg: 11, range: 0, push: 7, stun: 19 },
   shot: { su: 12, ac: 1, rc: 15, dmg: 8, range: 0, push: 4, stun: 14 },
-  spinHit: { dmg: 9, push: 6, stun: 15 }
+  spinHit: { dmg: 9, push: 6, stun: 15 },
+  superShot: { dmg: 26, push: 10, stun: 22 },
+  superSpin: { dmg: 26, push: 12, stun: 22 }
 };
 var STAGES = [
   { label: '第1戦', variant: 'normal', hp: 100, dmgMul: 1.0, ai: { react: 17, blockP: 0.12, aggro: 0.45 } },
@@ -199,8 +203,33 @@ function mkFighter(charKey, x, variant, hpMul, dmgMul){
     x: x, y: GROUND, vx: 0, vy: 0, face: x < W / 2 ? 1 : -1,
     hp: Math.round(100 * hpMul), maxHp: Math.round(100 * hpMul), dmgMul: dmgMul,
     state: 'idle', t: 0, atk: null, atkHit: false, stun: 0, blockStun: 0, cd: 0,
-    guarding: false, spinA: 0, scale: variant === 'boss' ? 1.3 : 1, hitFlash: 0
+    guarding: false, spinA: 0, scale: variant === 'boss' ? 1.3 : 1, hitFlash: 0,
+    superUsed: false, spinCfg: null, recT: 14
   };
+}
+var visCache = {};
+function visInfo(img, key){
+  if (visCache[key]) return visCache[key];
+  var info = null;
+  try {
+    var c = document.createElement('canvas');
+    c.width = img.width; c.height = img.height;
+    var g = c.getContext('2d');
+    g.drawImage(img, 0, 0);
+    var data = g.getImageData(0, 0, c.width, c.height).data;
+    var top = -1, bottom = -1;
+    for (var y = 0; y < c.height; y++){
+      var rowHas = false;
+      for (var x = 0; x < c.width; x++){
+        if (data[(y * c.width + x) * 4 + 3] > 200){ rowHas = true; break; }
+      }
+      if (rowHas){ if (top < 0) top = y; bottom = y; }
+    }
+    if (top >= 0) info = { top: top, bottom: bottom, h: bottom - top + 1 };
+  } catch (e) {}
+  if (!info) info = { top: 0, bottom: img.height - 1, h: img.height };
+  visCache[key] = info;
+  return info;
 }
 function fighterImg(f){
   if (f.variant === 'normal') return f.baseImg;
@@ -213,6 +242,8 @@ var phase = 'select', phaseT = 0, roundNum = 1, pWins = 0, eWins = 0;
 var timerF = 3600, hitstopT = 0, shakeT = 0, timeF = 0;
 var projectiles = [], sparks = [];
 var roundWinner = null;
+var bannerT = 0, bannerText = '';
+function superReady(f){ return f && !f.superUsed && f.hp <= Math.ceil(f.maxHp * 0.3); }
 
 function resetRound(){
   var st = STAGES[stageIdx];
@@ -221,7 +252,7 @@ function resetRound(){
   if (!E) E = mkFighter(eKey, 650, st.variant, st.hp / 100, st.dmgMul);
   P.x = 250; P.y = GROUND; P.vx = 0; P.vy = 0; P.face = 1; P.hp = P.maxHp; P.state = 'idle'; P.t = 0; P.atk = null; P.stun = 0; P.blockStun = 0; P.cd = 0; P.guarding = false; P.hitFlash = 0;
   E.x = 650; E.y = GROUND; E.vx = 0; E.vy = 0; E.face = -1; E.hp = E.maxHp; E.state = 'idle'; E.t = 0; E.atk = null; E.stun = 0; E.blockStun = 0; E.cd = 0; E.guarding = false; E.hitFlash = 0;
-  projectiles = []; sparks = []; hitstopT = 0; timerF = 3600; roundWinner = null;
+  projectiles = []; sparks = []; hitstopT = 0; timerF = 3600; roundWinner = null; bannerT = 0;
   phase = 'announce'; phaseT = 0;
   $('stageLine').textContent = st.label + '　対 ' + E.dispName;
 }
@@ -267,7 +298,7 @@ function showBest(){
 
 /* ===== 入力 ===== */
 var IN = { left: false, right: false, guard: false };
-var pressQ = { jump: false, light: false, heavy: false, special: false };
+var pressQ = { jump: false, light: false, heavy: false, special: false, super: false };
 document.querySelectorAll('.charBtn').forEach(function(b){
   b.addEventListener('click', function(){ ac(); playerKey = b.dataset.c; startMatch(0); });
 });
@@ -278,7 +309,7 @@ $('btnReselect').addEventListener('click', function(){
   $('selectPanel').style.display = 'block'; $('resultPanel').style.display = 'none'; $('overNav').style.display = 'none'; $('stageLine').textContent = '';
 });
 var KEYMAP = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowDown: 'guard', KeyS: 'guard' };
-var PRESSMAP = { ArrowUp: 'jump', KeyW: 'jump', KeyJ: 'light', KeyK: 'heavy', KeyL: 'special' };
+var PRESSMAP = { ArrowUp: 'jump', KeyW: 'jump', KeyJ: 'light', KeyK: 'heavy', KeyL: 'special', KeyH: 'super' };
 window.addEventListener('keydown', function(e){
   if (KEYMAP[e.code]) { IN[KEYMAP[e.code]] = true; e.preventDefault(); }
   if (PRESSMAP[e.code]) { pressQ[PRESSMAP[e.code]] = true; e.preventDefault(); }
@@ -295,14 +326,16 @@ document.querySelectorAll('.tbtn').forEach(function(b){
 });
 
 /* ===== AI ===== */
-var aiT = 0, aiMove = 0, aiMoveDir = 0, aiGuardT = 0, aiPress = { jump: false, light: false, heavy: false, special: false };
+var aiT = 0, aiMove = 0, aiMoveDir = 0, aiGuardT = 0, aiPress = { jump: false, light: false, heavy: false, special: false, super: false };
 function aiThink(){
   var st = STAGES[stageIdx], ai = st.ai;
-  aiPress.jump = aiPress.light = aiPress.heavy = aiPress.special = false;
+  aiPress.jump = aiPress.light = aiPress.heavy = aiPress.special = aiPress.super = false;
   var dist = Math.abs(P.x - E.x), dir = P.x > E.x ? 1 : -1;
   var pAtk = (P.state === 'attack' || P.state === 'spin');
   var shotNear = projectiles.some(function(pr){ return pr.owner === P && Math.abs(pr.x - E.x) < 150; });
-  if ((pAtk && dist < 150 && Math.random() < ai.blockP + 0.25) || (shotNear && Math.random() < 0.55)){
+  if (superReady(E) && dist > 110 && Math.random() < 0.55){
+    aiPress.super = true; aiMove = 0;
+  } else if ((pAtk && dist < 150 && Math.random() < ai.blockP + 0.25) || (shotNear && Math.random() < 0.55)){
     aiGuardT = 16 + Math.floor(Math.random() * 10);
     aiMove = 0;
   } else if (dist > 250){
@@ -322,8 +355,8 @@ function aiThink(){
   aiT = ai.react + Math.floor(Math.random() * 8);
 }
 function aiInput(){
-  var inp = { left: false, right: false, guard: false, jump: aiPress.jump, light: aiPress.light, heavy: aiPress.heavy, special: aiPress.special };
-  aiPress.jump = aiPress.light = aiPress.heavy = aiPress.special = false;
+  var inp = { left: false, right: false, guard: false, jump: aiPress.jump, light: aiPress.light, heavy: aiPress.heavy, special: aiPress.special, super: aiPress.super };
+  aiPress.jump = aiPress.light = aiPress.heavy = aiPress.special = aiPress.super = false;
   if (aiGuardT > 0){ inp.guard = true; aiGuardT--; }
   else if (aiMove > 0){ if (aiMoveDir < 0) inp.left = true; else inp.right = true; aiMove--; }
   return inp;
@@ -332,11 +365,18 @@ function aiInput(){
 /* ===== 戦闘 ===== */
 function startAttack(f, kind){
   if (f.state !== 'idle' || f.y < GROUND) return;
+  if (kind === 'super'){
+    if (!superReady(f)) return;
+    f.superUsed = true;
+    f.state = 'superCharge'; f.t = 0;
+    tone(180, 720, 0.5, 'sawtooth', 0.07);
+    return;
+  }
   if (kind === 'special'){
     if (f.cd > 0) return;
     f.cd = 55;
     if (f.ch.special === 'shot'){ f.state = 'attack'; f.atk = 'shot'; f.t = 0; f.atkHit = false; }
-    else { f.state = 'spin'; f.t = 0; f.atkHit = false; sfxSpin(); }
+    else { f.state = 'spin'; f.t = 0; f.atkHit = false; f.spinCfg = { speed: 9, dur: 16, dmg: ATK.spinHit.dmg, push: ATK.spinHit.push, stun: ATK.spinHit.stun, rec: 14 }; sfxSpin(); }
     return;
   }
   f.state = 'attack'; f.atk = kind; f.t = 0; f.atkHit = false;
@@ -357,8 +397,12 @@ function applyHit(att, def, dmg, push, stun, heavy){
     addSparks(def.x - att.face * 30, midY, '#cfd6ff', 6);
     sfxBlock();
   } else {
-    def.hp -= dmg; def.stun = stun; def.state = 'hit'; def.t = 0;
-    def.vx = att.face * push; def.hitFlash = 6;
+    def.hp -= dmg;
+    if (def.state !== 'superCharge'){
+      def.stun = stun; def.state = 'hit'; def.t = 0;
+      def.vx = att.face * push;
+    }
+    def.hitFlash = 6;
     addSparks(def.x - att.face * 26, midY, att.ch.accent, heavy ? 16 : 10);
     hitstopT = heavy ? 5 : 3;
     if (heavy){ shakeT = 8; sfxHeavy(); } else sfxHit();
@@ -393,12 +437,30 @@ function controlFighter(f, opp, inp){
     clampX(f);
     return;
   }
+  if (f.state === 'superCharge'){
+    f.t++;
+    if (f.t % 4 === 0) addSparks(f.x + (Math.random() - 0.5) * 60, f.y - Math.random() * 30, f.ch.accent, 2);
+    if (f.t >= 35){
+      bannerT = 55; bannerText = f.dispName + '　超必殺！　' + f.ch.superName;
+      if (f.ch.special === 'shot'){
+        projectiles.push({ x: f.x + f.face * 50, y: f.y - 100 * f.scale, vx: f.face * 6.5, owner: f, color: f.ch.accent, r: 22, dmg: ATK.superShot.dmg, push: ATK.superShot.push, stun: ATK.superShot.stun, sup: true });
+        sfxShot(); noiseBurst(0.25, 0.16); shakeT = 6;
+        f.state = 'recover'; f.t = 0; f.recT = 18;
+      } else {
+        f.spinCfg = { speed: 13, dur: 26, dmg: ATK.superSpin.dmg, push: ATK.superSpin.push, stun: ATK.superSpin.stun, rec: 20 };
+        f.state = 'spin'; f.t = 0; f.atkHit = false;
+        sfxSpin();
+      }
+    }
+    applyGravity(f); clampX(f);
+    return;
+  }
   if (f.state === 'attack'){
     f.t++;
     var d = ATK[f.atk];
     if (f.t === d.su) sfxSwing();
     if (f.atk === 'shot' && f.t === d.su){
-      projectiles.push({ x: f.x + f.face * 44, y: f.y - 100 * f.scale, vx: f.face * 7.5, owner: f, color: f.ch.accent });
+      projectiles.push({ x: f.x + f.face * 44, y: f.y - 100 * f.scale, vx: f.face * 7.5, owner: f, color: f.ch.accent, r: 11, dmg: ATK.shot.dmg, push: ATK.shot.push, stun: ATK.shot.stun, sup: false });
       sfxShot();
     }
     if (f.atk !== 'shot' && f.t >= d.su && f.t < d.su + d.ac && !f.atkHit) meleeCheck(f, opp);
@@ -407,22 +469,23 @@ function controlFighter(f, opp, inp){
     return;
   }
   if (f.state === 'spin'){
-    f.t++; f.spinA += 0.55;
-    f.x += f.face * 9;
+    var sc = f.spinCfg || { speed: 9, dur: 16, dmg: ATK.spinHit.dmg, push: ATK.spinHit.push, stun: ATK.spinHit.stun, rec: 14 };
+    f.t++; f.spinA += sc.speed >= 13 ? 0.8 : 0.55;
+    f.x += f.face * sc.speed;
     if (!f.atkHit){
       var dx = (opp.x - f.x) * f.face;
       if (dx > -30 && dx < 78 && opp.y > f.y - 130){
-        applyHit(f, opp, ATK.spinHit.dmg, ATK.spinHit.push, ATK.spinHit.stun, false);
+        applyHit(f, opp, sc.dmg, sc.push, sc.stun, sc.dmg >= 20);
         f.atkHit = true;
       }
     }
-    if (f.t >= 16){ f.state = 'recover'; f.t = 0; }
+    if (f.t >= sc.dur){ f.state = 'recover'; f.t = 0; f.recT = sc.rec; }
     applyGravity(f); clampX(f);
     return;
   }
   if (f.state === 'recover'){
     f.t++;
-    if (f.t >= 14) f.state = 'idle';
+    if (f.t >= (f.recT || 14)) f.state = 'idle';
     applyGravity(f); clampX(f);
     return;
   }
@@ -437,6 +500,7 @@ function controlFighter(f, opp, inp){
   if (inp.light) startAttack(f, 'light');
   else if (inp.heavy) startAttack(f, 'heavy');
   else if (inp.special) startAttack(f, 'special');
+  else if (inp.super) startAttack(f, 'super');
   applyGravity(f); clampX(f);
 }
 function applyGravity(f){
@@ -448,6 +512,7 @@ function applyGravity(f){
 function clampX(f){ f.x = Math.max(MINX, Math.min(MAXX, f.x)); }
 function stepFight(){
   timeF++;
+  if (bannerT > 0) bannerT--;
   if (shakeT > 0) shakeT--;
   for (var i = sparks.length - 1; i >= 0; i--){
     var s = sparks[i]; s.x += s.vx; s.y += s.vy; s.vy += 0.25; s.life--;
@@ -481,8 +546,8 @@ function stepFight(){
   }
   aiT--;
   if (aiT <= 0) aiThink();
-  var pInp = { left: IN.left, right: IN.right, guard: IN.guard, jump: pressQ.jump, light: pressQ.light, heavy: pressQ.heavy, special: pressQ.special };
-  pressQ.jump = pressQ.light = pressQ.heavy = pressQ.special = false;
+  var pInp = { left: IN.left, right: IN.right, guard: IN.guard, jump: pressQ.jump, light: pressQ.light, heavy: pressQ.heavy, special: pressQ.special, super: pressQ.super };
+  pressQ.jump = pressQ.light = pressQ.heavy = pressQ.special = pressQ.super = false;
   var eInp = aiInput();
   controlFighter(P, E, pInp);
   controlFighter(E, P, eInp);
@@ -497,9 +562,9 @@ function stepFight(){
     var pr = projectiles[j];
     pr.x += pr.vx;
     var target = pr.owner === P ? E : P;
-    var hit = Math.abs(pr.x - target.x) < 40 && target.y > GROUND - 150;
+    var hit = Math.abs(pr.x - target.x) < 32 + (pr.r || 11) && target.y > GROUND - 150;
     if (hit){
-      applyHit(pr.owner, target, ATK.shot.dmg, ATK.shot.push, ATK.shot.stun, false);
+      applyHit(pr.owner, target, pr.dmg, pr.push, pr.stun, !!pr.sup);
       projectiles.splice(j, 1);
       continue;
     }
@@ -533,8 +598,12 @@ function drawBG(){
 }
 function drawFighter(f){
   var img = fighterImg(f);
-  var h = 200 * f.scale;
-  var w = img && img.width ? h * (img.width / img.height) : h * 0.8;
+  if (!img || !img.width) return;
+  var vi = visInfo(img, f.key + f.variant);
+  var targetVis = 176 * f.scale;
+  var h = targetVis * img.height / vi.h;
+  var w = h * (img.width / img.height);
+  var bottomPad = (img.height - 1 - vi.bottom) / img.height * h;
   var bob = (f.state === 'idle' && f.y >= GROUND) ? Math.sin(timeF * 0.09 + f.x) * 3 : 0;
   var lunge = 0;
   if (f.state === 'attack' && f.atk && f.atk !== 'shot'){
@@ -542,7 +611,7 @@ function drawFighter(f){
     if (f.t >= d.su - 2 && f.t < d.su + d.ac + 4) lunge = f.face * (f.atk === 'heavy' ? 16 : 10);
   }
   ctx.fillStyle = 'rgba(0,0,0,0.35)';
-  ctx.beginPath(); ctx.ellipse(f.x, GROUND + 8, w * 0.34, 9, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(f.x, GROUND + 8, w * 0.3, 9, 0, 0, Math.PI * 2); ctx.fill();
   ctx.save();
   ctx.translate(f.x + lunge, f.y + bob);
   if (f.state === 'ko'){
@@ -550,22 +619,28 @@ function drawFighter(f){
     ctx.rotate(-f.face * (Math.PI / 2) * p * 0.9);
     ctx.translate(0, -10 * p);
   } else if (f.state === 'spin'){
-    ctx.translate(0, -h / 2); ctx.rotate(f.spinA); ctx.translate(0, h / 2);
+    ctx.translate(0, -targetVis / 2); ctx.rotate(f.spinA); ctx.translate(0, targetVis / 2);
   }
   if (f.hitFlash > 0 && f.t % 4 < 2) ctx.globalAlpha = 0.55;
-  if (img && img.width) ctx.drawImage(img, -w / 2, -h, w, h);
+  ctx.drawImage(img, -w / 2, -h + bottomPad, w, h);
   ctx.restore();
   if (f.state === 'ko'){
     ctx.font = '20px sans-serif';
-    ctx.fillText('💫', f.x - 30 + Math.sin(timeF * 0.15) * 16, f.y - h - 6);
-    ctx.fillText('💫', f.x + 16 + Math.cos(timeF * 0.15) * 16, f.y - h + 4);
+    ctx.fillText('💫', f.x - 30 + Math.sin(timeF * 0.15) * 16, f.y - targetVis - 6);
+    ctx.fillText('💫', f.x + 16 + Math.cos(timeF * 0.15) * 16, f.y - targetVis + 4);
   }
   if (f.variant === 'boss' && f.state !== 'ko'){
-    ctx.font = '34px sans-serif'; ctx.fillText('👑', f.x - 17, f.y - h - 12 + bob);
+    ctx.font = '34px sans-serif'; ctx.fillText('👑', f.x - 17, f.y - targetVis - 12 + bob);
+  }
+  if (f.state === 'superCharge'){
+    ctx.strokeStyle = f.ch.accent; ctx.lineWidth = 3;
+    ctx.globalAlpha = 0.5 + 0.4 * Math.sin(timeF * 0.4);
+    ctx.beginPath(); ctx.arc(f.x, f.y - targetVis / 2, targetVis * 0.62, 0, Math.PI * 2); ctx.stroke();
+    ctx.globalAlpha = 1;
   }
   if (f.guarding || f.blockStun > 0){
     ctx.strokeStyle = f.ch.accent; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(f.x + f.face * 44, f.y - 95 * f.scale, 40, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(f.x + f.face * 44, f.y - targetVis * 0.55, 40, 0, Math.PI * 2); ctx.stroke();
   }
   if (f.state === 'attack' && f.atk && f.atk !== 'shot'){
     var d2 = ATK[f.atk];
@@ -602,6 +677,10 @@ function drawHUD(){
   ctx.fillText(String(Math.ceil(timerF / 60)), W / 2, 52);
   ctx.font = '13px sans-serif'; ctx.fillStyle = '#bdb4d4';
   ctx.fillText(P.ch.specialName + (P.cd <= 0 ? ' OK' : ' あと' + Math.ceil(P.cd / 60) + '秒'), 118, 86);
+  if (superReady(P)){ ctx.font = 'bold 15px sans-serif'; ctx.fillStyle = '#ff6b6b'; ctx.fillText('超必殺 OK！', 30, 108); }
+  else if (P.superUsed){ ctx.font = '13px sans-serif'; ctx.fillStyle = '#8d84a8'; ctx.fillText('超必殺 使用済み', 30, 108); }
+  else { ctx.font = '13px sans-serif'; ctx.fillStyle = '#8d84a8'; ctx.fillText('超必殺は体力30%以下で解放', 30, 108); }
+  if (superReady(E)){ ctx.font = 'bold 15px sans-serif'; ctx.fillStyle = '#ff6b6b'; ctx.textAlign = 'right'; ctx.fillText('超必殺 OK', 870, 108); ctx.textAlign = 'left'; }
   ctx.textAlign = 'left';
 }
 function draw(){
@@ -620,7 +699,7 @@ function draw(){
     var pr = projectiles[i];
     ctx.fillStyle = pr.color;
     ctx.shadowColor = pr.color; ctx.shadowBlur = 16;
-    ctx.beginPath(); ctx.arc(pr.x, pr.y, 11, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(pr.x, pr.y, pr.r || 11, 0, Math.PI * 2); ctx.fill();
     ctx.shadowBlur = 0;
   }
   for (var j = 0; j < sparks.length; j++){
@@ -638,8 +717,20 @@ function draw(){
     ctx.font = 'bold 72px sans-serif'; ctx.fillStyle = '#e5383b';
     ctx.fillText(roundWinner === 'draw' ? 'DRAW' : 'K.O.!', W / 2, 220);
   }
+  if (bannerT > 0 && phase === 'fight'){
+    ctx.font = 'bold 40px sans-serif'; ctx.fillStyle = '#ffd873';
+    ctx.fillText(bannerText, W / 2, 160);
+  }
   ctx.textAlign = 'left';
   ctx.restore();
+}
+var lastSuperUi = null;
+function updateSuperBtn(){
+  var ready = !!(P && phase === 'fight' && superReady(P));
+  if (ready === lastSuperUi) return;
+  lastSuperUi = ready;
+  var b = $('btnSuper');
+  if (b){ b.style.opacity = ready ? '1' : '.55'; b.style.boxShadow = ready ? '0 0 14px #e5383b' : 'none'; }
 }
 var lastMs = 0, accMs = 0;
 function loop(ms){
@@ -651,6 +742,7 @@ function loop(ms){
   var steps = 0;
   while (accMs >= 1000 / 60 && steps < 3){ stepFight(); accMs -= 1000 / 60; steps++; }
   draw();
+  updateSuperBtn();
 }
 requestAnimationFrame(loop);
 showBest();
