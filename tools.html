@@ -259,22 +259,22 @@ SNSへの投稿などにどうぞ</p>
 
 
 <div class="card">
-<h2>🧩 画像コラージュ</h2>
-<p class="small">複数の画像を1枚に並べます（最大6枚まで）</p>
+<h2>🧩 画像を1枚にまとめる</h2>
+<p class="small">複数の画像を1枚にまとめて、データ整理に使えます<br>資料やスクリーンショットを並べて、1枚で保存するのに便利です（最大9枚まで・切り抜かずにそのまま並べます）</p>
 <input type="file" id="coFiles" accept="image/*" multiple>
 <div class="row">
 並べ方：
 <select id="coMode">
 <option value="row">横一列</option>
 <option value="col">縦一列</option>
-<option value="grid">グリッド（正方形）</option>
+<option value="grid">グリッド（全体を表示）</option>
 </select>
 </div>
 <div class="row">間隔：<input type="range" id="coGap" min="0" max="40" value="8"> <span id="coGapVal">8</span>px
 背景色：<input type="color" id="coBg" value="#11101c"></div>
-<div class="row"><button id="coRun" disabled>コラージュを作る</button> <span class="small" id="coMsg"></span></div>
-<img class="preview" id="coOut" style="display:none" alt="コラージュ結果">
-<a class="dl" id="coDl" style="display:none" download="collage.png">コラージュをダウンロード</a>
+<div class="row"><button id="coRun" disabled>1枚にまとめる</button> <span class="small" id="coMsg"></span></div>
+<img class="preview" id="coOut" style="display:none" alt="まとめ画像">
+<a class="dl" id="coDl" style="display:none" download="matome.png">まとめ画像をダウンロード</a>
 </div>
 
 <div class="card">
@@ -984,7 +984,7 @@ $('shareCopy').addEventListener('click', function(){
 /* ---------- コラージュ ---------- */
 var coList = [];
 $('coFiles').addEventListener('change', function(){
-  coList = Array.prototype.slice.call(this.files || []).slice(0, 6);
+  coList = Array.prototype.slice.call(this.files || []).slice(0, 9);
   $('coRun').disabled = coList.length < 2;
   $('coMsg').textContent = coList.length ? coList.length + '枚選ばれています' : '';
 });
@@ -1037,12 +1037,9 @@ $('coRun').addEventListener('click', function(){
       imgs.forEach(function(im, i){
         var cx = gap + (i % cols) * (cell + gap);
         var cy = gap + Math.floor(i / cols) * (cell + gap);
-        var s = Math.max(cell / im.naturalWidth, cell / im.naturalHeight);
+        var s = Math.min(cell / im.naturalWidth, cell / im.naturalHeight);
         var w = im.naturalWidth * s, h = im.naturalHeight * s;
-        ctx.save();
-        ctx.beginPath(); ctx.rect(cx, cy, cell, cell); ctx.clip();
         ctx.drawImage(im, cx + (cell - w) / 2, cy + (cell - h) / 2, w, h);
-        ctx.restore();
       });
     }
     c.toBlob(function(b){
