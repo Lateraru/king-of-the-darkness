@@ -44,6 +44,9 @@
 <h1>🚛 車庫入れシミュレータ</h1>
 <p>車庫入れの練習と、トレーラーやフォークリフトの動きを理解するためのシミュレータです<br>
 練習モードでは進む方向のガイド線と、折れ角が出ます</p>
+<p><b>これは車庫入れの練習用シミュレータです</b><br>
+実際の運転や教習の代わりにはなりません<br>
+車両ごとの動きの違いを理解して、バックで入れる感覚をつかむために使えます</p>
 
 <div>
 <button type="button" class="vbtn on" data-v="car">普通車</button><button type="button" class="vbtn" data-v="truck">大型トラック</button><button type="button" class="vbtn" data-v="bus">大型バス</button><button type="button" class="vbtn" data-v="school">教習トレーラー</button><button type="button" class="vbtn" data-v="fifth">フィフストレーラー</button><button type="button" class="vbtn" data-v="fork">フォークリフト</button><button type="button" class="vbtn" data-v="loader">大型特殊 教習用</button><button type="button" class="vbtn" data-v="tank">大型特殊 戦車</button>
@@ -239,20 +242,6 @@ function spawn(){
   } else if (k === 'fork'){
     S = { fx: 500, fy: 500, rx: 500, ry: 534 };
     pallet = { x: 648, y: 428, th: -Math.PI / 2, carried: false };
-  } else if (k === 'tank'){
-    drawBody(bodies[1], '#3d4a1e', '#3d4a1e');
-    drawBody(bodies[0], '#4a5d23', '#7a8c4a');
-    ctx.strokeStyle = '#22281a'; ctx.lineWidth = 9;
-    [-1, 1].forEach(function(side){
-      var ox = -Math.sin(S.th) * side * (sp.wid / 2 - 5), oy = Math.cos(S.th) * side * (sp.wid / 2 - 5);
-      ctx.beginPath();
-      ctx.moveTo(S.x - sp.hullRear * Math.cos(S.th) + ox, S.y - sp.hullRear * Math.sin(S.th) + oy);
-      ctx.lineTo(S.x + sp.hullFront * Math.cos(S.th) + ox, S.y + sp.hullFront * Math.sin(S.th) + oy);
-      ctx.stroke();
-    });
-    ctx.fillStyle = '#55682a';
-    ctx.beginPath(); ctx.arc(S.x, S.y, 13, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = '#7a8c4a'; ctx.lineWidth = 2; ctx.stroke();
   } else if (k === 'loader'){
     S = { px: 500, py: 472, thr: -Math.PI / 2, beta: 0 };
   } else if (k === 'tank'){
@@ -497,6 +486,20 @@ function draw(){
       ctx.beginPath(); ctx.moveTo(bx, by);
       ctx.lineTo(bx + 16 * Math.cos(th), by + 16 * Math.sin(th)); ctx.stroke();
     });
+  } else if (k === 'tank'){
+    drawBody(bodies[1], '#3d4a1e', '#3d4a1e');
+    drawBody(bodies[0], '#4a5d23', '#7a8c4a');
+    ctx.strokeStyle = '#22281a'; ctx.lineWidth = 9;
+    [-1, 1].forEach(function(side){
+      var ox = -Math.sin(S.th) * side * (sp.wid / 2 - 5), oy = Math.cos(S.th) * side * (sp.wid / 2 - 5);
+      ctx.beginPath();
+      ctx.moveTo(S.x - sp.hullRear * Math.cos(S.th) + ox, S.y - sp.hullRear * Math.sin(S.th) + oy);
+      ctx.lineTo(S.x + sp.hullFront * Math.cos(S.th) + ox, S.y + sp.hullFront * Math.sin(S.th) + oy);
+      ctx.stroke();
+    });
+    ctx.fillStyle = '#55682a';
+    ctx.beginPath(); ctx.arc(S.x, S.y, 13, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#7a8c4a'; ctx.lineWidth = 2; ctx.stroke();
   } else if (k === 'loader'){
     drawBody(bodies[1], '#c9932b', '#e8c07a');
     drawBody(bodies[0], '#e8b34b', '#ffe1a0');
