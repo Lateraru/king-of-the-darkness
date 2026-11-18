@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>車庫入れシミュレータ | 便利情報 | 魔王らてらる・魔王らて子 公式ファンサイト</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .stage{max-width:760px;margin:0 auto;text-align:center}
+  canvas{width:100%;height:auto;background:#23232e;border:1px solid #3a3358;border-radius:10px;touch-action:none}
+  .vbtn,.mbtn{padding:9px 14px;border-radius:10px;border:2px solid #3a3358;background:#241d3f;color:#eee;cursor:pointer;font-size:.95rem;margin:3px}
+  .vbtn.on,.mbtn.on{border-color:#e8b34b;background:#3d2a5e;color:#fff;font-weight:bold}
+  .pedal{font-size:1.15rem;padding:16px 26px;border-radius:12px;border:2px solid var(--purple);background:#3d2a5e;color:#fff;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:none}
+  .pedal:active{background:#5a4390}
+  .steer{display:flex;align-items:center;gap:8px;justify-content:center;margin:8px 0}
+  .steer input[type=range]{flex:1;max-width:340px}
+  .sbtn{font-size:1.2rem;padding:10px 18px;border-radius:10px;border:2px solid #3a3358;background:#241d3f;color:#eee;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:none}
+  .meter{height:12px;background:#17142a;border-radius:6px;overflow:hidden;max-width:340px;margin:4px auto}
+  .meter > div{height:100%;background:#57c46a;width:0%}
+  .status{min-height:2.6em;line-height:1.7;margin:8px 0}
+  .warn{color:#ff7b72;font-weight:bold}
+  .ok{color:#8be89b;font-weight:bold}
+  .small{font-size:.85rem;opacity:.85}
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="inner">
+    <a class="logo" href="index.html">魔王<span>らてらる</span> × 魔王<span style="color:#a06cd5">らて子</span></a>
+    <nav class="main">
+      <a href="index.html">ホーム</a>
+      <a href="index.html#news">お知らせ</a>
+      <a href="board.html">ファン掲示板</a>
+      <a href="chat.html">魔力SIチャット</a>
+      <a href="games.html">ミニゲーム</a>
+      <a href="secret.html">秘密基地</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="stage">
+<h1>🚛 車庫入れシミュレータ</h1>
+<p>車庫入れの練習と、トレーラーの動きを理解するためのシミュレータです<br>
+練習モードでは進む方向のガイド線と、トレーラーの折れ角が出ます</p>
+
+<div>
+<button type="button" class="vbtn on" data-v="car">普通車</button><button type="button" class="vbtn" data-v="truck">大型トラック</button><button type="button" class="vbtn" data-v="bus">大型バス</button><button type="button" class="vbtn" data-v="school">教習トレーラー</button><button type="button" class="vbtn" data-v="fifth">フィフストレーラー</button>
+</div>
+<div>
+<button type="button" class="mbtn on" data-m="practice">練習モード</button><button type="button" class="mbtn" data-m="exam">検定モード</button>
+</div>
+
+<canvas id="cv" width="1000" height="620"></canvas>
+
+<div class="status" id="status">車庫の枠の中に全体を入れて、止まれば成功です<br><span class="small">まずは前進で車庫の前まで進み、バックで入れるのが基本です</span></div>
+
+<div id="angleBox" style="display:none">
+<div class="small">トレーラーの折れ角：<b id="angleVal">0°</b>（折れすぎるとジャックナイフになります）</div>
+<div class="meter"><div id="angleBar"></div></div>
+</div>
+
+<div class="steer">
+<button type="button" class="sbtn" id="steerL">◀</button>
+<input type="range" id="steer" min="-100" max="100" value="0" step="1">
+<button type="button" class="sbtn" id="steerR">▶</button>
+</div>
+<div class="small">ハンドル：<b id="steerVal">まっすぐ</b>　<button type="button" class="sbtn" id="steerC" style="font-size:.85rem;padding:6px 12px">まっすぐに戻す</button></div>
+
+<div style="display:flex;gap:10px;justify-content:center;margin-top:12px">
+<button type="button" class="pedal" id="btnFwd">前進</button>
+<button type="button" class="pedal" id="btnBack">バック</button>
+</div>
+<div style="margin-top:12px">
+<button type="button" class="sbtn" id="btnReset" style="font-size:.95rem">↩ 最初の位置に戻す</button>
+</div>
+<p class="small">パソコンでは矢印キーでも操作できます（↑前進／↓バック／←→ハンドル）<br>
+検定モードはガイド線なしで、コーン2回接触かジャックナイフで失格です</p>
+<p class="small" id="bestLine"></p>
+
+<div id="overNav" style="display:none;text-align:center;margin:16px auto;padding:14px;border:1px solid #a06cd5;border-radius:12px;max-width:560px">
+<p style="margin:4px 0;font-weight:bold">おつかれさまでした</p>
+<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px">
+<button type="button" onclick="location.reload()">🔁 また遊ぶ</button>
+<a href="info.html"><button type="button">🧭 便利情報を見る</button></a>
+<a href="index.html"><button type="button">🏰 トップへ戻る</button></a>
+<a href="https://youtu.be/YL26sVq0rjE" target="_blank" rel="noopener"><button type="button">🎵 404あたし未検出</button></a>
+<a href="https://youtu.be/6c3PI1Vy3Nc" target="_blank" rel="noopener"><button type="button">🎧 らてらるのヒーリング動画</button></a>
+<a href="https://store.line.me/stickershop/author/6590694/ja" target="_blank" rel="noopener"><button type="button">🛒 魔王さん制作のLINEスタンプを買う</button></a>
+<button type="button" onclick="shareSite()">📣 このサイトを知り合いに教える</button>
+</div>
+</div>
+
+<div style="text-align:center;margin:22px 0 6px"><a href="index.html" style="color:#c9a227;font-weight:bold">トップページに戻る</a></div>
+</div>
+</main>
+
+<script>
+/* ===== 物理モデル（DOM非依存） ===== */
+var VEHICLES = {
+  car:    { label: '普通車', len: 46, wid: 21, rearOver: 10, wb: 30, maxSteer: 0.55, fwd: 62, rev: 40, bayW: 58, bayD: 88 },
+  truck:  { label: '大型トラック', len: 95, wid: 27, rearOver: 16, wb: 62, maxSteer: 0.45, fwd: 52, rev: 32, bayW: 66, bayD: 134 },
+  bus:    { label: '大型バス', len: 110, wid: 28, rearOver: 34, wb: 60, maxSteer: 0.50, fwd: 52, rev: 32, bayW: 66, bayD: 148 },
+  school: { label: '教習トレーラー', tLabel: 'トレーラー', tLen: 62, tWid: 25, rearOver: 10, wb: 40, hitchBack: 16, trFront: 14, trRear: 62, axleDist: 44, trWid: 24, maxSteer: 0.55, fwd: 48, rev: 28, bayW: 56, bayD: 108 },
+  fifth:  { label: 'フィフストレーラー', tLabel: '海上コンテナ', tLen: 62, tWid: 27, rearOver: 10, wb: 42, hitchBack: -5, trFront: 4, trRear: 128, axleDist: 104, trWid: 27, maxSteer: 0.50, fwd: 46, rev: 26, bayW: 60, bayD: 162 }
+};
+function wrapAngle(a){ while (a > Math.PI) a -= Math.PI * 2; while (a < -Math.PI) a += Math.PI * 2; return a; }
+function stepRigid(s, spec, steer, v, dt){
+  s.th += (v / spec.wb) * Math.tan(steer) * dt;
+  s.x += v * Math.cos(s.th) * dt;
+  s.y += v * Math.sin(s.th) * dt;
+}
+function hitchPos(s, spec){
+  return { x: s.x - spec.hitchBack * Math.cos(s.th), y: s.y - spec.hitchBack * Math.sin(s.th) };
+}
+function stepTrailer(s, spec, steer, v, dt){
+  stepRigid(s, spec, steer, v, dt);
+  var h = hitchPos(s, spec);
+  var dx = h.x - s.ax, dy = h.y - s.ay;
+  var d = Math.hypot(dx, dy) || 1;
+  var ux = dx / d, uy = dy / d;
+  s.phi = Math.atan2(uy, ux);
+  s.ax = h.x - spec.axleDist * ux;
+  s.ay = h.y - spec.axleDist * uy;
+}
+function bodyCorners(cx, cy, th, front, rear, wid){
+  var c = Math.cos(th), sn = Math.sin(th), hw = wid / 2;
+  function P(a, b){ return { x: cx + a * c - b * sn, y: cy + a * sn + b * c }; }
+  return [P(front, -hw), P(front, hw), P(-rear, hw), P(-rear, -hw)];
+}
+function rigidCorners(s, spec){ return bodyCorners(s.x, s.y, s.th, spec.len - spec.rearOver, spec.rearOver, spec.wid); }
+function tractorCorners(s, spec){ return bodyCorners(s.x, s.y, s.th, spec.tLen - spec.rearOver, spec.rearOver, spec.tWid); }
+function trailerCorners(s, spec){ var h = hitchPos(s, spec); return bodyCorners(h.x, h.y, s.phi, spec.trFront, spec.trRear, spec.trWid); }
+function articulationDeg(s){ return Math.abs(wrapAngle(s.th - s.phi)) * 180 / Math.PI; }
+</script>
+
+<script>
+function $(id){ return document.getElementById(id); }
+function showOverNav(){ var n = $('overNav'); if (n) n.style.display = 'block'; }
+function shareSite(){
+  var url = 'https://king-of-the-darkness.trailer-project.com/';
+  var text = '魔王らてらる・魔王らて子の公式ファンサイト　ミニゲームと画像便利ツールがあります';
+  if (navigator.share) { navigator.share({ title: document.title, text: text, url: url }).catch(function(){}); }
+  else { window.open('https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(url), '_blank'); }
+}
+
+var cv = $('cv'), ctx = cv.getContext('2d');
+var WORLD_W = 1000, WORLD_H = 620;
+var CONES = [ {x:290,y:290}, {x:710,y:290}, {x:240,y:460}, {x:760,y:460}, {x:500,y:350} ];
+var vehKey = 'car', mode = 'practice';
+var S = null, v = 0, steerVal = 0;
+var pressF = false, pressB = false, keyF = false, keyB = false;
+var coneHits = 0, coneCool = {}, started = 0, elapsed = 0, finished = false, failed = false;
+
+function spec(){ return VEHICLES[vehKey]; }
+function isTrailer(){ return vehKey === 'school' || vehKey === 'fifth'; }
+function bayRect(){ var sp = spec(); return { x: 500 - sp.bayW / 2, y: 22, w: sp.bayW, h: sp.bayD }; }
+function spawn(){
+  v = 0; steerVal = 0; $('steer').value = 0;
+  coneHits = 0; coneCool = {}; started = 0; elapsed = 0; finished = false; failed = false;
+  $('overNav').style.display = 'none';
+  if (isTrailer()){
+    S = { x: 500, y: 428, th: -Math.PI / 2, ax: 500, ay: 502, phi: -Math.PI / 2 };
+  } else {
+    S = { x: 500, y: 520, th: -Math.PI / 2 };
+  }
+  $('angleBox').style.display = isTrailer() ? 'block' : 'none';
+  setStatus('車庫の枠の中に全体を入れて、止まれば成功です<br><span class="small">まずは前進で車庫の前まで進み、バックで入れるのが基本です</span>');
+  showBest();
+}
+function setStatus(html){ $('status').innerHTML = html; }
+function relevantCorners(){
+  if (isTrailer()) return trailerCorners(S, spec());
+  return rigidCorners(S, spec());
+}
+function allBodies(){
+  if (isTrailer()) return [tractorCorners(S, spec()), trailerCorners(S, spec())];
+  return [rigidCorners(S, spec())];
+}
+function samplePoints(corners){
+  var pts = [];
+  for (var i = 0; i < 4; i++){
+    var a = corners[i], b = corners[(i + 1) % 4];
+    pts.push(a);
+    pts.push({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+  }
+  return pts;
+}
+function stepOnce(dt){
+  var sp = spec();
+  var steer = steerVal / 100 * sp.maxSteer;
+  var target = (pressF || keyF) ? sp.fwd : (pressB || keyB) ? -sp.rev : 0;
+  var accel = target === 0 ? 150 : 80;
+  if (v < target) v = Math.min(target, v + accel * dt);
+  if (v > target) v = Math.max(target, v - accel * dt);
+  if (v === 0) return;
+  var prev = JSON.parse(JSON.stringify(S));
+  if (isTrailer()) stepTrailer(S, sp, steer, v, dt); else stepRigid(S, sp, steer, v, dt);
+  var bodies = allBodies();
+  for (var bi = 0; bi < bodies.length; bi++){
+    var cs = bodies[bi];
+    for (var ci = 0; ci < 4; ci++){
+      if (cs[ci].x < 4 || cs[ci].x > WORLD_W - 4 || cs[ci].y < 4 || cs[ci].y > WORLD_H - 4){ S = prev; v = 0; return; }
+    }
+  }
+  if (!started) started = performance.now();
+  // コーン接触
+  var now = performance.now();
+  CONES.forEach(function(cn, idx){
+    if (coneCool[idx] && now - coneCool[idx] < 1200) return;
+    var pts = [];
+    bodies.forEach(function(b){ pts = pts.concat(samplePoints(b)); });
+    for (var i = 0; i < pts.length; i++){
+      if (Math.hypot(pts[i].x - cn.x, pts[i].y - cn.y) < 12){
+        coneCool[idx] = now; coneHits++;
+        if (mode === 'exam' && coneHits >= 2){ fail('コーンに2回当たってしまいました'); }
+        else setStatus('<span class="warn">コーンに当たりました（' + coneHits + '回目）</span><br><span class="small">練習ではそのまま続けられます</span>');
+        break;
+      }
+    }
+  });
+  // ジャックナイフ（検定）
+  if (mode === 'exam' && isTrailer() && articulationDeg(S) >= 80){ fail('ジャックナイフになってしまいました'); }
+  // 成功判定
+  if (!finished && !failed && Math.abs(v) < 0.6 && !pressF && !pressB && !keyF && !keyB && started){
+    var bay = bayRect(), rc = relevantCorners(), inside = true;
+    for (var i = 0; i < 4; i++){ if (rc[i].x < bay.x + 1 || rc[i].x > bay.x + bay.w - 1 || rc[i].y < bay.y + 1 || rc[i].y > bay.y + bay.h - 1) inside = false; }
+    if (inside) succeed();
+  }
+}
+function succeed(){
+  finished = true;
+  elapsed = (performance.now() - started) / 1000;
+  var msg = '<span class="ok">🎉 車庫入れ成功です！</span><br>' + spec().label + 'を ' + elapsed.toFixed(1) + ' 秒で入れました　コーン接触 ' + coneHits + ' 回';
+  if (mode === 'exam'){
+    try {
+      var bests = JSON.parse(localStorage.getItem('maouDriveBest') || '{}');
+      if (!bests[vehKey] || elapsed < bests[vehKey]){ bests[vehKey] = Math.round(elapsed * 10) / 10; localStorage.setItem('maouDriveBest', JSON.stringify(bests)); msg += '<br>🎉 検定ベストを更新しました'; }
+    } catch (e) {}
+  }
+  setStatus(msg);
+  showBest();
+  showOverNav();
+}
+function fail(reason){
+  if (finished || failed) return;
+  failed = true; v = 0;
+  setStatus('<span class="warn">検定失格：' + reason + '</span><br><span class="small">「最初の位置に戻す」でもう一度挑戦できます</span>');
+  showOverNav();
+}
+function showBest(){
+  try {
+    var bests = JSON.parse(localStorage.getItem('maouDriveBest') || '{}');
+    $('bestLine').textContent = bests[vehKey] ? '検定ベスト（' + spec().label + '）：' + bests[vehKey] + ' 秒' : '';
+  } catch (e) { $('bestLine').textContent = ''; }
+}
+function guidePath(){
+  var sp = spec();
+  var sim = JSON.parse(JSON.stringify(S));
+  var steer = steerVal / 100 * sp.maxSteer;
+  var spd = (pressB || keyB || v < -0.5) ? -sp.rev * 0.85 : (pressF || keyF || v > 0.5) ? sp.fwd * 0.85 : -sp.rev * 0.85;
+  var pts = [];
+  for (var i = 0; i < 55; i++){
+    if (isTrailer()) stepTrailer(sim, sp, steer, spd, 0.12); else stepRigid(sim, sp, steer, spd, 0.12);
+    if (i % 3 === 0){
+      var cs = isTrailer() ? trailerCorners(sim, sp) : rigidCorners(sim, sp);
+      pts.push(cs[2]); pts.push(cs[3]);
+      pts.push({ x: (cs[2].x + cs[3].x) / 2, y: (cs[2].y + cs[3].y) / 2 });
+    }
+  }
+  return pts;
+}
+function drawWheel(x, y, ang, steerAng){
+  ctx.save(); ctx.translate(x, y); ctx.rotate(ang + (steerAng || 0));
+  ctx.fillStyle = '#111'; ctx.fillRect(-6, -3, 12, 6); ctx.restore();
+}
+function drawBody(corners, fill, line){
+  ctx.beginPath();
+  corners.forEach(function(p, i){ if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); });
+  ctx.closePath(); ctx.fillStyle = fill; ctx.fill(); ctx.strokeStyle = line; ctx.lineWidth = 2; ctx.stroke();
+}
+function draw(){
+  ctx.clearRect(0, 0, WORLD_W, WORLD_H);
+  var bay = bayRect();
+  ctx.strokeStyle = '#f2f2f2'; ctx.lineWidth = 3;
+  ctx.strokeRect(bay.x, bay.y, bay.w, bay.h);
+  ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.font = 'bold 17px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('車庫', bay.x + bay.w / 2, bay.y + bay.h + 24);
+  ctx.strokeStyle = 'rgba(255,255,255,.25)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(500, 600); ctx.lineTo(500, bay.y + bay.h + 34); ctx.stroke();
+  var now = performance.now();
+  CONES.forEach(function(cn, idx){
+    var hit = coneCool[idx] && now - coneCool[idx] < 600;
+    ctx.fillStyle = hit ? '#ff5040' : '#ff8c1a';
+    ctx.beginPath(); ctx.arc(cn.x, cn.y, 9, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.fillRect(cn.x - 9, cn.y - 2, 18, 4);
+  });
+  if (mode === 'practice' && !finished && !failed){
+    var gp = guidePath();
+    ctx.fillStyle = 'rgba(139,232,155,.85)';
+    gp.forEach(function(p){ ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fill(); });
+  }
+  var sp = spec();
+  var steer = steerVal / 100 * sp.maxSteer;
+  if (isTrailer()){
+    var tc = trailerCorners(S, sp);
+    drawBody(tc, '#8f9bb0', '#c8d2e0');
+    ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.font = 'bold 14px sans-serif';
+    var h = hitchPos(S, sp);
+    ctx.fillText(sp.tLabel || 'トレーラー', (tc[0].x + tc[2].x) / 2, (tc[0].y + tc[2].y) / 2);
+    var rc = tractorCorners(S, sp);
+    drawBody(rc, '#b03a3a', '#e88');
+    var fx = S.x + sp.wb * Math.cos(S.th), fy = S.y + sp.wb * Math.sin(S.th);
+    drawWheel(fx - Math.sin(S.th) * sp.tWid / 2, fy + Math.cos(S.th) * sp.tWid / 2, S.th, steer);
+    drawWheel(fx + Math.sin(S.th) * sp.tWid / 2, fy - Math.cos(S.th) * sp.tWid / 2, S.th, steer);
+    drawWheel(S.x - Math.sin(S.th) * sp.tWid / 2, S.y + Math.cos(S.th) * sp.tWid / 2, S.th, 0);
+    drawWheel(S.x + Math.sin(S.th) * sp.tWid / 2, S.y - Math.cos(S.th) * sp.tWid / 2, S.th, 0);
+    var tax = S.ax - Math.sin(S.phi) * sp.trWid / 2, tay = S.ay + Math.cos(S.phi) * sp.trWid / 2;
+    var tbx = S.ax + Math.sin(S.phi) * sp.trWid / 2, tby = S.ay - Math.cos(S.phi) * sp.trWid / 2;
+    drawWheel(tax, tay, S.phi, 0); drawWheel(tbx, tby, S.phi, 0);
+    ctx.strokeStyle = '#ffd34d'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(S.x, S.y); ctx.lineTo(h.x, h.y); ctx.stroke();
+  } else {
+    var cs = rigidCorners(S, sp);
+    drawBody(cs, vehKey === 'car' ? '#7ec8e3' : '#4a6fa5', '#dff2fb');
+    var fx2 = S.x + sp.wb * Math.cos(S.th), fy2 = S.y + sp.wb * Math.sin(S.th);
+    drawWheel(fx2 - Math.sin(S.th) * sp.wid / 2, fy2 + Math.cos(S.th) * sp.wid / 2, S.th, steer);
+    drawWheel(fx2 + Math.sin(S.th) * sp.wid / 2, fy2 - Math.cos(S.th) * sp.wid / 2, S.th, steer);
+    drawWheel(S.x - Math.sin(S.th) * sp.wid / 2, S.y + Math.cos(S.th) * sp.wid / 2, S.th, 0);
+    drawWheel(S.x + Math.sin(S.th) * sp.wid / 2, S.y - Math.cos(S.th) * sp.wid / 2, S.th, 0);
+  }
+  if (isTrailer()){
+    var deg = articulationDeg(S);
+    $('angleVal').textContent = deg.toFixed(0) + '°';
+    var bar = $('angleBar');
+    bar.style.width = Math.min(100, deg / 80 * 100) + '%';
+    bar.style.background = deg >= 65 ? '#ff5040' : deg >= 40 ? '#e8b34b' : '#57c46a';
+    if (deg >= 65 && !finished && !failed) setStatus('<span class="warn">⚠ 折れ角が大きすぎます　このままバックするとジャックナイフになります</span><br><span class="small">一度前進して折れを戻すのがコツです</span>');
+  }
+  if (mode === 'exam' && started && !finished && !failed){
+    $('status').dataset.t = '1';
+  }
+}
+var lastT = 0;
+function loop(ts){
+  var dt = Math.min(0.033, (ts - lastT) / 1000 || 0.016);
+  lastT = ts;
+  if (!finished && !failed) stepOnce(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+function bindHold(el, set){
+  function on(e){ e.preventDefault(); set(true); }
+  function off(){ set(false); }
+  el.addEventListener('pointerdown', on);
+  el.addEventListener('pointerup', off);
+  el.addEventListener('pointerleave', off);
+  el.addEventListener('pointercancel', off);
+}
+bindHold($('btnFwd'), function(b){ pressF = b; });
+bindHold($('btnBack'), function(b){ pressB = b; });
+var steerHold = 0;
+bindHold($('steerL'), function(b){ steerHold = b ? -1 : 0; });
+bindHold($('steerR'), function(b){ steerHold = b ? 1 : 0; });
+setInterval(function(){
+  if (steerHold !== 0){
+    steerVal = Math.max(-100, Math.min(100, steerVal + steerHold * 4));
+    $('steer').value = steerVal; showSteer();
+  }
+}, 40);
+function showSteer(){
+  steerVal = Number($('steer').value);
+  var deg = Math.round(Math.abs(steerVal) / 100 * spec().maxSteer * 180 / Math.PI);
+  $('steerVal').textContent = steerVal === 0 ? 'まっすぐ' : (steerVal < 0 ? '左 ' : '右 ') + deg + '°';
+}
+$('steer').addEventListener('input', showSteer);
+$('steerC').addEventListener('click', function(){ $('steer').value = 0; showSteer(); });
+document.addEventListener('keydown', function(e){
+  if (e.key === 'ArrowUp'){ keyF = true; e.preventDefault(); }
+  if (e.key === 'ArrowDown'){ keyB = true; e.preventDefault(); }
+  if (e.key === 'ArrowLeft'){ steerVal = Math.max(-100, steerVal - 6); $('steer').value = steerVal; showSteer(); e.preventDefault(); }
+  if (e.key === 'ArrowRight'){ steerVal = Math.min(100, steerVal + 6); $('steer').value = steerVal; showSteer(); e.preventDefault(); }
+});
+document.addEventListener('keyup', function(e){
+  if (e.key === 'ArrowUp') keyF = false;
+  if (e.key === 'ArrowDown') keyB = false;
+});
+$('btnReset').addEventListener('click', spawn);
+document.querySelectorAll('.vbtn').forEach(function(b){
+  b.addEventListener('click', function(){
+    document.querySelectorAll('.vbtn').forEach(function(x){ x.classList.remove('on'); });
+    b.classList.add('on'); vehKey = b.dataset.v; spawn();
+  });
+});
+document.querySelectorAll('.mbtn').forEach(function(b){
+  b.addEventListener('click', function(){
+    document.querySelectorAll('.mbtn').forEach(function(x){ x.classList.remove('on'); });
+    b.classList.add('on'); mode = b.dataset.m; spawn();
+  });
+});
+spawn();
+showSteer();
+requestAnimationFrame(loop);
+</script>
+
+<script>
+/* 人気カウンター: デプロイ時に STATS_BASE へ接続先を設定（それまでは何もしません） */
+(function(){
+  var STATS_BASE = '';
+  if (!STATS_BASE) return;
+  try {
+    var slug = 'drive';
+    var today = new Date().toLocaleDateString('sv-SE');
+    var seen = {};
+    try { seen = JSON.parse(localStorage.getItem('maouHitV1') || '{}'); } catch (e) {}
+    if (seen[slug] === today) return;
+    seen[slug] = today;
+    try { localStorage.setItem('maouHitV1', JSON.stringify(seen)); } catch (e) {}
+    fetch(STATS_BASE + '/api/hit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ game: slug }), keepalive: true }).catch(function(){});
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>
