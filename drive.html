@@ -72,6 +72,9 @@
 <button type="button" class="pedal" id="btnFwd">前進</button>
 <button type="button" class="pedal" id="btnBack">バック</button>
 </div>
+<div id="liftRow" style="display:none;margin-top:12px">
+<button type="button" class="pedal" id="btnLift">フォークを上げる</button>
+</div>
 <div style="margin-top:12px">
 <button type="button" class="sbtn" id="btnReset" style="font-size:.95rem">↩ 最初の位置に戻す</button>
 </div>
@@ -261,7 +264,9 @@ function spawn(){
   $('angleBox').style.display = showAngle ? 'block' : 'none';
   if (k === 'trailer'){ $('angleLabel').textContent = 'トレーラーの折れ角'; $('angleNote').textContent = '（折れすぎるとジャックナイフになります）'; }
   if (k === 'loader'){ $('angleLabel').textContent = '中折れ角'; $('angleNote').textContent = '（ハンドルで車体の折れ具合を変えます）'; }
-  if (k === 'fork') setStatus('パレットの後ろに回り、ゆっくり近づいてフォークを差してください<br><span class="small">持ち上げたら、パレットごと車庫へ運んで止まれば成功です　後輪操舵なので尻の振れに注意です</span>');
+  $('liftRow').style.display = k === 'fork' ? 'block' : 'none';
+  $('btnLift').textContent = 'フォークを上げる';
+  if (k === 'fork') setStatus('パレットの後ろからまっすぐ近づき、フォークを差してください<br><span class="small">パレットが光ったら差さった合図です　「フォークを上げる」ボタンで持ち上げます<br>持ち上げたら車庫へ運び、入れたら「フォークを下ろす」で置けます</span>');
   else setStatus('車庫の枠の中に全体を入れて、止まれば成功です<br><span class="small">まずは前進で車庫の前まで進み、バックで入れるのが基本です</span>');
   showBest();
 }
@@ -269,18 +274,17 @@ function setStatus(html){ $('status').innerHTML = html; }
 function palletCorners(){
   return bodyCorners(pallet.x, pallet.y, pallet.th, 15, 15, 30);
 }
+function forkInZone(){
+  if (!pallet || pallet.carried) return false;
+  var sp = spec();
+  var th = forkHeading(S);
+  var mx = (S.fx + S.rx) / 2, my = (S.fy + S.ry) / 2;
+  var tx = mx + (sp.frontExt + 15) * Math.cos(th), ty = my + (sp.frontExt + 15) * Math.sin(th);
+  return Math.hypot(pallet.x - tx, pallet.y - ty) < 24 && Math.abs(wrapAngle(th - pallet.th)) < 0.7;
+}
 function updatePallet(){
   if (!pallet) return;
   var sp = spec();
-  if (!pallet.carried){
-    var th = forkHeading(S);
-    var mx = (S.fx + S.rx) / 2, my = (S.fy + S.ry) / 2;
-    var tx = mx + (sp.frontExt + 15) * Math.cos(th), ty = my + (sp.frontExt + 15) * Math.sin(th);
-    if (Math.hypot(pallet.x - tx, pallet.y - ty) < 18 && Math.abs(v) <= 14 && Math.abs(wrapAngle(th - pallet.th)) < 0.6){
-      pallet.carried = true;
-      setStatus('<span class="ok">パレットを持ち上げました</span><br><span class="small">そのまま車庫まで運んでください</span>');
-    }
-  }
   if (pallet.carried){
     var th2 = forkHeading(S);
     var mx2 = (S.fx + S.rx) / 2, my2 = (S.fy + S.ry) / 2;
@@ -290,7 +294,7 @@ function updatePallet(){
   }
 }
 function judgeCorners(){
-  if (kind() === 'fork') return pallet && pallet.carried ? palletCorners() : null;
+  if (kind() === 'fork') return pallet ? palletCorners() : null;
   var cs = cornersOf(S, spec());
   if (kind() === 'trailer') return cs[1];
   if (kind() === 'loader' || kind() === 'tank') return cs[0].concat(cs[1]);
@@ -426,7 +430,14 @@ function draw(){
   }
   if (pallet){
     var pc = palletCorners();
-    drawBody(pc, pallet.carried ? '#c98d4b' : '#a06a35', '#e8c07a');
+    if (!pallet.carried && forkInZone()){
+      ctx.save();
+      ctx.shadowColor = '#8be89b'; ctx.shadowBlur = 18;
+      drawBody(pc, '#a06a35', '#8be89b');
+      ctx.restore();
+    } else {
+      drawBody(pc, pallet.carried ? '#c98d4b' : '#a06a35', '#e8c07a');
+    }
     ctx.strokeStyle = 'rgba(0,0,0,.4)'; ctx.lineWidth = 2;
     ctx.strokeRect(pallet.x - 9, pallet.y - 9, 18, 18);
   }
@@ -546,6 +557,22 @@ document.addEventListener('keydown', function(e){
 document.addEventListener('keyup', function(e){
   if (e.key === 'ArrowUp') keyF = false;
   if (e.key === 'ArrowDown') keyB = false;
+});
+$('btnLift').addEventListener('click', function(){
+  if (kind() !== 'fork' || !pallet) return;
+  if (!pallet.carried){
+    if (forkInZone()){
+      pallet.carried = true;
+      $('btnLift').textContent = 'フォークを下ろす';
+      setStatus('<span class="ok">パレットを持ち上げました</span><br><span class="small">そのまま車庫まで運んでください</span>');
+    } else {
+      setStatus('<span class="warn">フォークが差さっていません</span><br><span class="small">パレットの真後ろから、まっすぐ近づいてください　パレットが光れば差さった合図です</span>');
+    }
+  } else {
+    pallet.carried = false;
+    $('btnLift').textContent = 'フォークを上げる';
+    setStatus('パレットを下ろしました<br><span class="small">位置が悪ければ、また差し直して運べます</span>');
+  }
 });
 $('btnReset').addEventListener('click', spawn);
 document.querySelectorAll('.vbtn').forEach(function(b){
