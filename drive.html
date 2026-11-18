@@ -274,13 +274,17 @@ function setStatus(html){ $('status').innerHTML = html; }
 function palletCorners(){
   return bodyCorners(pallet.x, pallet.y, pallet.th, 15, 15, 30);
 }
-function forkInZone(){
-  if (!pallet || pallet.carried) return false;
+function forkProximity(){
   var sp = spec();
   var th = forkHeading(S);
   var mx = (S.fx + S.rx) / 2, my = (S.fy + S.ry) / 2;
   var tx = mx + (sp.frontExt + 15) * Math.cos(th), ty = my + (sp.frontExt + 15) * Math.sin(th);
-  return Math.hypot(pallet.x - tx, pallet.y - ty) < 24 && Math.abs(wrapAngle(th - pallet.th)) < 0.7;
+  return { d: Math.hypot(pallet.x - tx, pallet.y - ty), a: Math.abs(wrapAngle(th - pallet.th)) };
+}
+function forkInZone(){
+  if (!pallet || pallet.carried) return false;
+  var p = forkProximity();
+  return p.d < 24 && p.a < 0.7;
 }
 function updatePallet(){
   if (!pallet) return;
@@ -341,6 +345,12 @@ function stepOnce(dt){
       });
       if (mode === 'exam' && kind() === 'trailer' && articulationDeg(S) >= 80) fail('ジャックナイフになってしまいました');
     }
+  }
+  if (kind() === 'fork' && pallet && !pallet.carried && !finished && !failed){
+    var fp = forkProximity();
+    if (fp.d < 24 && fp.a < 0.7) setStatus('<span class="ok">フォークが差さっています</span><br><span class="small">「フォークを上げる」ボタンで持ち上げられます</span>');
+    else if (fp.d < 52 && fp.a >= 0.7) setStatus('<span class="warn">⚠ 角度が合っていません</span><br><span class="small">この角度ではフォークが差さりません　一度下がって、パレットの真後ろからまっすぐ入り直してください</span>');
+    else if (fp.d < 52) setStatus('あと少しでフォークが差さります<br><span class="small">ゆっくりまっすぐ近づいてください</span>');
   }
   if (!finished && !failed && Math.abs(v) < 0.6 && !pressF && !pressB && !keyF && !keyB && started){
     var bay = bayRect(), rc = judgeCorners();
@@ -566,7 +576,9 @@ $('btnLift').addEventListener('click', function(){
       $('btnLift').textContent = 'フォークを下ろす';
       setStatus('<span class="ok">パレットを持ち上げました</span><br><span class="small">そのまま車庫まで運んでください</span>');
     } else {
-      setStatus('<span class="warn">フォークが差さっていません</span><br><span class="small">パレットの真後ろから、まっすぐ近づいてください　パレットが光れば差さった合図です</span>');
+      var fp2 = forkProximity();
+      if (fp2.d < 60 && fp2.a >= 0.7) setStatus('<span class="warn">⚠ 角度が悪いので差さりません</span><br><span class="small">一度下がって、パレットの真後ろからまっすぐ入り直してください</span>');
+      else setStatus('<span class="warn">フォークが差さっていません</span><br><span class="small">パレットの真後ろから、まっすぐ近づいてください　パレットが光れば差さった合図です</span>');
     }
   } else {
     pallet.carried = false;
