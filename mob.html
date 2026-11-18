@@ -228,6 +228,8 @@ function endStage(cleared){
   }
   $('btnRetry').style.display = '';
   $('resultPanel').style.display = 'block';
+  var rp = $('resultPanel');
+  if (rp.scrollIntoView) rp.scrollIntoView({ behavior: 'smooth', block: 'center' });
   $('overNav').style.display = 'block';
   showBest();
 }
@@ -630,6 +632,15 @@ function draw(){
   if (announceT > 0){
     ctx.font = 'bold 34px sans-serif'; ctx.fillStyle = '#ffd873'; ctx.textAlign = 'center';
     ctx.fillText(announceText, W / 2, 300);
+    ctx.textAlign = 'left';
+  }
+  if (phase === 'clear' || phase === 'over'){
+    ctx.fillStyle = 'rgba(10,6,24,0.55)'; ctx.fillRect(0, 0, W, H);
+    ctx.font = 'bold 40px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillStyle = phase === 'clear' ? '#ffd873' : '#ff8a8a';
+    ctx.fillText(phase === 'clear' ? (stageIdx === 2 ? '🏆 全ステージ制覇！' : '🎉 ステージクリア！') : 'ゲームオーバー', W / 2, 350);
+    ctx.font = 'bold 17px sans-serif'; ctx.fillStyle = '#f2e9d8';
+    ctx.fillText('下のボタンから次に進めます', W / 2, 388);
     ctx.textAlign = 'left';
   }
   if (baseHP <= 30 && phase === 'play'){
