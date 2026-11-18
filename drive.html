@@ -46,7 +46,7 @@
 練習モードでは進む方向のガイド線と、折れ角が出ます</p>
 
 <div>
-<button type="button" class="vbtn on" data-v="car">普通車</button><button type="button" class="vbtn" data-v="truck">大型トラック</button><button type="button" class="vbtn" data-v="bus">大型バス</button><button type="button" class="vbtn" data-v="school">教習トレーラー</button><button type="button" class="vbtn" data-v="fifth">フィフストレーラー</button><button type="button" class="vbtn" data-v="fork">フォークリフト</button><button type="button" class="vbtn" data-v="loader">大型特殊</button>
+<button type="button" class="vbtn on" data-v="car">普通車</button><button type="button" class="vbtn" data-v="truck">大型トラック</button><button type="button" class="vbtn" data-v="bus">大型バス</button><button type="button" class="vbtn" data-v="school">教習トレーラー</button><button type="button" class="vbtn" data-v="fifth">フィフストレーラー</button><button type="button" class="vbtn" data-v="fork">フォークリフト</button><button type="button" class="vbtn" data-v="loader">大型特殊 教習用</button><button type="button" class="vbtn" data-v="tank">大型特殊 戦車</button>
 </div>
 <div>
 <button type="button" class="mbtn on" data-m="practice">練習モード</button><button type="button" class="mbtn" data-m="exam">検定モード</button>
@@ -78,7 +78,8 @@
 <p class="small">パソコンでは矢印キーでも操作できます（↑前進／↓バック／←→ハンドル）<br>
 検定モードはガイド線なしで、コーン2回接触かジャックナイフで失格です<br>
 フォークリフトは後ろの車輪で舵を切ります　ハンドルと反対に尻が振れるのが特徴です<br>
-大型特殊は教習でも使うホイールローダーで、車体の真ん中が折れて曲がります</p>
+大型特殊（教習用）はホイールローダーで、車体の真ん中が折れて曲がります<br>
+戦車は左右の履帯の速度差で曲がり、止まったままその場で回ることもできます</p>
 <p class="small" id="bestLine"></p>
 
 <div id="overNav" style="display:none;text-align:center;margin:16px auto;padding:14px;border:1px solid #a06cd5;border-radius:12px;max-width:560px">
@@ -107,7 +108,8 @@ var VEHICLES = {
   school: { kind: 'trailer', label: '教習トレーラー', tLabel: 'トレーラー', tLen: 62, tWid: 25, rearOver: 10, wb: 40, hitchBack: 16, trFront: 14, trRear: 62, axleDist: 44, trWid: 24, maxSteer: 0.55, fwd: 48, rev: 28, bayW: 56, bayD: 108 },
   fifth:  { kind: 'trailer', label: 'フィフストレーラー', tLabel: '海上コンテナ', tLen: 62, tWid: 27, rearOver: 10, wb: 42, hitchBack: -5, trFront: 4, trRear: 128, axleDist: 104, trWid: 27, maxSteer: 0.50, fwd: 46, rev: 26, bayW: 60, bayD: 162 },
   fork:   { kind: 'fork', label: 'フォークリフト', wb: 34, frontExt: 41, rearExt: 33, wid: 24, maxSteer: 0.55, fwd: 46, rev: 30, bayW: 54, bayD: 62 },
-  loader: { kind: 'loader', label: '大型特殊（ホイールローダー）', a: 26, b: 26, fFront: 34, fRear: 30, rFront: 30, rRear: 32, wid: 28, maxBend: 0.62, fwd: 44, rev: 26, bayW: 68, bayD: 150 }
+  loader: { kind: 'loader', label: '大型特殊 教習用（ホイールローダー）', a: 26, b: 26, fFront: 34, fRear: 30, rFront: 30, rRear: 32, wid: 28, maxBend: 0.62, fwd: 44, rev: 26, bayW: 68, bayD: 150 },
+  tank:   { kind: 'tank', label: '大型特殊 戦車', hullFront: 32, hullRear: 30, gunFront: 54, wid: 37, trackW: 30, maxDiff: 14, pivotRate: 0.9, fwd: 40, rev: 26, bayW: 72, bayD: 118 }
 };
 function wrapAngle(a){ while (a > Math.PI) a -= Math.PI * 2; while (a < -Math.PI) a += Math.PI * 2; return a; }
 function stepRigid(s, spec, steer, v, dt){
@@ -155,11 +157,19 @@ function stepLoader(s, spec, steerNorm, dt, v){
   s.px += v * Math.cos(tm) * dt;
   s.py += v * Math.sin(tm) * dt;
 }
+function stepTank(s, sp, steerNorm, v, dt){
+  var omega = (2 * steerNorm * sp.maxDiff) / sp.trackW;
+  if (v === 0) omega = steerNorm * sp.pivotRate;
+  s.th += omega * dt;
+  s.x += v * Math.cos(s.th) * dt;
+  s.y += v * Math.sin(s.th) * dt;
+}
 function stepState(s, sp, steerNorm, v, dt){
   if (sp.kind === 'rigid') stepRigid(s, sp, steerNorm * sp.maxSteer, v, dt);
   else if (sp.kind === 'trailer') stepTrailer(s, sp, steerNorm * sp.maxSteer, v, dt);
   else if (sp.kind === 'fork') stepFork(s, sp, steerNorm * sp.maxSteer, v, dt);
   else if (sp.kind === 'loader') stepLoader(s, sp, steerNorm, dt, v);
+  else if (sp.kind === 'tank') stepTank(s, sp, steerNorm, v, dt);
 }
 function bodyCorners(cx, cy, th, front, rear, wid){
   var c = Math.cos(th), sn = Math.sin(th), hw = wid / 2;
@@ -176,6 +186,10 @@ function cornersOf(s, sp){
   if (sp.kind === 'fork'){
     var th = forkHeading(s);
     return [bodyCorners((s.fx + s.rx) / 2, (s.fy + s.ry) / 2, th, sp.frontExt, sp.rearExt, sp.wid)];
+  }
+  if (sp.kind === 'tank'){
+    return [bodyCorners(s.x, s.y, s.th, sp.hullFront, sp.hullRear, sp.wid),
+            bodyCorners(s.x, s.y, s.th, sp.gunFront, -sp.hullFront, 6)];
   }
   var thf = s.thr + s.beta;
   var afx = s.px + sp.a * Math.cos(thf), afy = s.py + sp.a * Math.sin(thf);
@@ -222,8 +236,24 @@ function spawn(){
   } else if (k === 'fork'){
     S = { fx: 500, fy: 500, rx: 500, ry: 534 };
     pallet = { x: 648, y: 428, th: -Math.PI / 2, carried: false };
+  } else if (k === 'tank'){
+    drawBody(bodies[1], '#3d4a1e', '#3d4a1e');
+    drawBody(bodies[0], '#4a5d23', '#7a8c4a');
+    ctx.strokeStyle = '#22281a'; ctx.lineWidth = 9;
+    [-1, 1].forEach(function(side){
+      var ox = -Math.sin(S.th) * side * (sp.wid / 2 - 5), oy = Math.cos(S.th) * side * (sp.wid / 2 - 5);
+      ctx.beginPath();
+      ctx.moveTo(S.x - sp.hullRear * Math.cos(S.th) + ox, S.y - sp.hullRear * Math.sin(S.th) + oy);
+      ctx.lineTo(S.x + sp.hullFront * Math.cos(S.th) + ox, S.y + sp.hullFront * Math.sin(S.th) + oy);
+      ctx.stroke();
+    });
+    ctx.fillStyle = '#55682a';
+    ctx.beginPath(); ctx.arc(S.x, S.y, 13, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#7a8c4a'; ctx.lineWidth = 2; ctx.stroke();
   } else if (k === 'loader'){
     S = { px: 500, py: 472, thr: -Math.PI / 2, beta: 0 };
+  } else if (k === 'tank'){
+    S = { x: 500, y: 520, th: -Math.PI / 2 };
   } else {
     S = { x: 500, y: 520, th: -Math.PI / 2 };
   }
@@ -263,7 +293,7 @@ function judgeCorners(){
   if (kind() === 'fork') return pallet && pallet.carried ? palletCorners() : null;
   var cs = cornersOf(S, spec());
   if (kind() === 'trailer') return cs[1];
-  if (kind() === 'loader') return cs[0].concat(cs[1]);
+  if (kind() === 'loader' || kind() === 'tank') return cs[0].concat(cs[1]);
   return cs[0];
 }
 function samplePoints(corners){
@@ -281,7 +311,8 @@ function stepOnce(dt){
   var accel = target === 0 ? 150 : 80;
   if (v < target) v = Math.min(target, v + accel * dt);
   if (v > target) v = Math.max(target, v - accel * dt);
-  if (v !== 0){
+  var wantPivot = kind() === 'tank' && v === 0 && steerVal !== 0;
+  if (v !== 0 || wantPivot){
     var prev = JSON.parse(JSON.stringify(S));
     stepState(S, sp, steerVal / 100, v, dt);
     var bodies = cornersOf(S, sp), out = false;
@@ -351,7 +382,7 @@ function guidePath(){
     stepState(sim, sp, steerVal / 100, spd, 0.12);
     if (i % 3 === 0){
       var cs = cornersOf(sim, sp);
-      var rear = kind() === 'trailer' ? cs[1] : cs[cs.length - 1];
+      var rear = kind() === 'trailer' ? cs[1] : kind() === 'tank' ? cs[0] : cs[cs.length - 1];
       pts.push(rear[2]); pts.push(rear[3]);
       pts.push({ x: (rear[2].x + rear[3].x) / 2, y: (rear[2].y + rear[3].y) / 2 });
       if (kind() === 'fork' && pallet && pallet.carried){
@@ -496,6 +527,10 @@ setInterval(function(){
 function showSteer(){
   steerVal = Number($('steer').value);
   var sp = spec();
+  if (sp.kind === 'tank'){
+    $('steerVal').textContent = steerVal === 0 ? 'まっすぐ' : (steerVal < 0 ? '左旋回 ' : '右旋回 ') + Math.abs(steerVal) + '%';
+    return;
+  }
   var maxDeg = sp.kind === 'loader' ? sp.maxBend * 180 / Math.PI : sp.maxSteer * 180 / Math.PI;
   var deg = Math.round(Math.abs(steerVal) / 100 * maxDeg);
   $('steerVal').textContent = steerVal === 0 ? 'まっすぐ' : (steerVal < 0 ? '左 ' : '右 ') + deg + '°';
