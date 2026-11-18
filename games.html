@@ -16,7 +16,7 @@
       <a href="index.html">ホーム</a>
       <a href="index.html#news">お知らせ</a>
       <a href="board.html">ファン掲示板</a>
-      <a href="chat.html">AIチャット</a>
+      <a href="chat.html">魔力SIチャット</a>
       <a href="games.html" class="active">ミニゲーム</a>
       <a href="secret.html">秘密基地</a>
     </nav>
@@ -27,6 +27,12 @@
   <h1 class="page">ミニゲーム</h1>
   <p class="lead">魔王城の遊び場です<br>全23本そろいました<br>スコアはあなたのブラウザの中にだけ保存されます</p>
 
+
+  <div class="card" id="popCard" style="display:none;margin-top:20px">
+    <h3 style="margin-top:0">🔥 本日の人気トップ3</h3>
+    <ol id="popList" style="margin:6px 0;padding-left:22px"></ol>
+    <p class="small">今日開かれた回数で集計しています</p>
+  </div>
   <div class="menu-grid" style="margin-top:24px">
     <a href="game.html">
       <div class="t">魔王城ダッシュ</div>
@@ -128,5 +134,37 @@
 </footer>
 
 <div style="text-align:center;margin:22px 0 6px"><a href="index.html" style="color:#c9a227;font-weight:bold">トップページに戻る</a></div>
+
+<script>
+/* 人気表示: デプロイ時に STATS_BASE へ接続先を設定（それまでは通常の並びのまま） */
+(function(){
+  var STATS_BASE = '';
+  if (!STATS_BASE) return;
+  fetch(STATS_BASE + '/api/popular').then(function(r){ return r.json(); }).then(function(d){
+    var today = d.today || {};
+    var grid = document.querySelector('.menu-grid');
+    if (!grid) return;
+    var tiles = Array.prototype.slice.call(grid.querySelectorAll('a[href]'));
+    function slug(a){ return (a.getAttribute('href') || '').replace('.html', ''); }
+    function cnt(a){ return today[slug(a)] || 0; }
+    var ranked = tiles.slice().sort(function(x, y){ return cnt(y) - cnt(x); });
+    var top = ranked.filter(function(a){ return cnt(a) > 0; }).slice(0, 3);
+    if (top.length){
+      var list = document.getElementById('popList');
+      top.forEach(function(a){
+        var li = document.createElement('li');
+        var link = document.createElement('a');
+        link.href = a.getAttribute('href');
+        var nameEl = a.querySelector('.t');
+        link.textContent = (nameEl ? nameEl.textContent : slug(a)) + '（今日' + cnt(a) + '回）';
+        li.appendChild(link);
+        list.appendChild(li);
+      });
+      document.getElementById('popCard').style.display = 'block';
+    }
+    ranked.forEach(function(a){ grid.appendChild(a); });
+  }).catch(function(){});
+})();
+</script>
 </body>
 </html>

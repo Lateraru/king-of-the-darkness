@@ -40,7 +40,7 @@
       <a href="index.html">ホーム</a>
       <a href="index.html#news">お知らせ</a>
       <a href="board.html">ファン掲示板</a>
-      <a href="chat.html">AIチャット</a>
+      <a href="chat.html">魔力SIチャット</a>
       <a href="games.html" class="active">ミニゲーム</a>
       <a href="secret.html">秘密基地</a>
     </nav>
@@ -346,5 +346,23 @@ function shareSite(){
 }
 </script>
 <div style="text-align:center;margin:22px 0 6px"><a href="index.html" style="color:#c9a227;font-weight:bold">トップページに戻る</a></div>
+
+<script>
+/* 人気カウンター: デプロイ時に STATS_BASE へ接続先を設定（それまでは何もしません） */
+(function(){
+  var STATS_BASE = '';
+  if (!STATS_BASE) return;
+  try {
+    var slug = 'shopping';
+    var today = new Date().toLocaleDateString('sv-SE');
+    var seen = {};
+    try { seen = JSON.parse(localStorage.getItem('maouHitV1') || '{}'); } catch (e) {}
+    if (seen[slug] === today) return;
+    seen[slug] = today;
+    try { localStorage.setItem('maouHitV1', JSON.stringify(seen)); } catch (e) {}
+    fetch(STATS_BASE + '/api/hit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ game: slug }), keepalive: true }).catch(function(){});
+  } catch (e) {}
+})();
+</script>
 </body>
 </html>
