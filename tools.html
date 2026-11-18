@@ -30,13 +30,15 @@ a{color:var(--gold)}
 <h1>🛠 画像便利ツール</h1>
 <p class="small">画像の加工がブラウザでできる無料ツール集です<br>
 形式変換・リサイズ・2K拡大・円形アイコン・モザイク・圧縮・トリミング・正方形化は、あなたの端末の中だけで処理します（画像は送信されません）<br>
-背景透過とAI補完拡大は魔王城のサーバで処理します<br>
-元画像は保存されません　結果は再ダウンロード用に24時間だけ保管し、過ぎたら自動で消去されます</p>
+背景透過と魔王の魔力SI拡大は魔王城のサーバで処理します<br>
+元画像は保存されません<br>
+サーバーで処理した結果は再ダウンロード用に24時間だけ保管し、過ぎたら自動で消去されます</p>
 
 <div class="card" id="recentCard" style="display:none">
 <h2>🕘 前回の結果（24時間以内）</h2>
 <div id="recentList"></div>
-<p class="small">この端末で処理した結果へのリンクです　24時間を過ぎた結果は自動で消去されます</p>
+<p class="small">この端末から実行したサーバー処理の結果へのリンクです<br>
+24時間を過ぎた結果は自動で消去されます</p>
 </div>
 
 
@@ -92,6 +94,7 @@ a{color:var(--gold)}
 </div>
 <div class="row">大きさ：<input type="range" id="bcScale" min="10" max="130" value="90"> <span id="bcScaleVal">90</span>%</div>
 <div class="row">上下の位置：<input type="range" id="bcPos" min="0" max="100" value="100"> <span id="bcPosVal">100</span></div>
+<div class="row">左右の位置：<input type="range" id="bcPosX" min="0" max="100" value="50"> <span id="bcPosXVal">50</span></div>
 <canvas class="tool" id="bcCanvas" style="display:none"></canvas>
 <a class="dl" id="bcDl" style="display:none" download="composite.png">合成画像をダウンロード</a>
 <p class="small">透過していない画像は、そのまま四角く重なります</p>
@@ -108,6 +111,7 @@ JPEGをPNGにしたい時にもどうぞ</p>
 <option value="image/png">PNG</option>
 <option value="image/jpeg">JPEG</option>
 <option value="image/webp">WebP</option>
+<option value="image/png">PNG</option>
 </select>
 画質：<input type="range" id="cvQuality" min="10" max="100" value="90"> <span id="cvQVal">90</span>
 </div>
@@ -130,9 +134,10 @@ JPEGをPNGにしたい時にもどうぞ</p>
 <option value="w1024">横幅1024pxまで</option>
 <option value="w800">横幅800pxまで</option>
 <option value="w512">横幅512pxまで</option>
-<option value="w370">横幅370pxまで（LINEスタンプ上限）</option>
+<option value="line">LINEスタンプ用（370×320以内）</option>
 </select>
 </div>
+<div class="row"><label><input type="checkbox" id="rsMargin" checked> 周りに10%の透明な余白を作る（LINEスタンプ用）</label></div>
 <div class="row"><button id="rsRun" disabled>リサイズする</button> <span class="small" id="rsMsg"></span></div>
 <img class="preview" id="rsOut" style="display:none" alt="リサイズ結果">
 <a class="dl" id="rsDl" style="display:none">リサイズした画像をダウンロード</a>
@@ -148,12 +153,13 @@ JPEGをPNGにしたい時にもどうぞ</p>
 方式：
 <select id="ukMethod">
 <option value="browser">通常拡大（速い・端末内で処理）</option>
-<option value="ai_anime">AI補完・画像用（サーバ処理）</option>
-<option value="ai_general">AI補完・写真用（サーバ処理）</option>
+<option value="ai_anime">魔王の魔力SI・画像用（サーバ処理）</option>
+<option value="ai_general">魔王の魔力SI・写真用（サーバ処理）</option>
 </select>
 </div>
-<p class="small">AI補完は細部を補いながら2Kにします<br>
-1枚に30秒ほどかかります　制作中は順番待ちになります<br>
+<p class="small">※ 魔王の魔力SI＝スーパーインテリジェンスの力で、細部を補って拡大します<br>魔王の魔力SIは細部を補いながら2Kにします<br>
+かかる時間は混み具合で変わります<br>
+空いていれば1枚30秒ほどですが、制作中は順番待ちでもっとかかることがあります<br>
 混雑状況：<span class="status" id="ukAiStatus">確認中</span></p>
 <div class="row"><button id="ukRun" disabled>2Kにする</button> <span class="small" id="ukMsg"></span></div>
 <img class="preview" id="ukOut" style="display:none" alt="2K拡大の結果">
@@ -210,7 +216,12 @@ SNSのプロフィール画像などにどうぞ</p>
 <option value="image/webp">WebP</option>
 </select>
 </div>
-<p class="small">JPEGでは透過部分が白くなります</p>
+<p class="small">JPEGでは透過部分が白くなります<br>
+PNGは画質を落とせない形式です<br>
+目標サイズに収めるには解像度を下げるので、画像そのものが小さくなります<br>
+絵柄が細かいと、解像度を下げてもファイルサイズがあまり減らないことがあります<br>
+画質を下げても綺麗に見える理由：元の画像が高画質で保存されているほど、少し画質を下げただけでファイルサイズは大きく減ります<br>
+平らな色の多いイラストは特に崩れにくいです</p>
 <div class="row"><button id="cpRun" disabled>圧縮する</button> <span class="small" id="cpMsg"></span></div>
 <img class="preview" id="cpOut" style="display:none" alt="圧縮結果">
 <a class="dl" id="cpDl" style="display:none">圧縮した画像をダウンロード</a>
@@ -296,7 +307,8 @@ SNSへの投稿などにどうぞ</p>
 ・別のタブでゲームをしたり、他のページを見る（終わったら通知と音でお知らせします）<br>
 ・画面をスクロールしたり、他のアプリを少し開く</p>
 <p class="small">❌ 結果が受け取れなくなる操作<br>
-・背景透過とAI補完拡大は、タブを閉じてもサーバ側で処理が終わります　結果はこのページの「前回の結果」から24時間以内に受け取れます（同じブラウザで開いた場合）<br>
+・背景透過と魔王の魔力SI拡大は、タブを閉じてもサーバ側で処理が終わります<br>
+　結果はこのページの「前回の結果」から24時間以内に受け取れます（同じブラウザで開いた場合）<br>
 ・ブラウザの中で処理するツール（形式変換・リサイズなど）は、そのタブを閉じたり再読み込みすると最初からやり直しになります</p>
 </div>
 
@@ -305,8 +317,9 @@ SNSへの投稿などにどうぞ</p>
 <p class="small">他人の権利を侵害する画像の加工はご遠慮ください<br>
 透かし（ウォーターマーク）を消す目的での利用もご遠慮ください<br>
 見えない透かし（電子透かし）は、処理によって残る場合と消える場合があります<br>
-結果の画像は、再ダウンロード用に24時間だけ保管します<br>
-24時間を過ぎると自動で消去されます　また画像が必要になったら、再度実行してください<br>
+サーバーで処理する道具（背景透過・魔王の魔力SI拡大）の結果の画像は、再ダウンロード用に24時間だけ保管します<br>
+24時間を過ぎると自動で消去されます<br>
+また画像が必要になったら、再度実行してください<br>
 アップロードした元画像は保存されません</p>
 </div>
 
@@ -343,16 +356,19 @@ $('bgFile').addEventListener('change', function(){
   bgFile = this.files[0] || null;
   $('bgRun').disabled = !bgFile;
 });
+var serverReady = false;
 function pollStatus(){
   fetch(API_BASE + '/api/status').then(function(r){ return r.json(); }).then(function(s){
+    serverReady = true;
     $('bgStatus').textContent = s.label;
     if (s.upscale) $('ukAiStatus').textContent = s.upscale.label;
-  }).catch(function(){ $('bgStatus').textContent = '準備中'; $('ukAiStatus').textContent = '準備中'; });
+  }).catch(function(){ serverReady = false; $('bgStatus').textContent = '準備中'; $('ukAiStatus').textContent = '準備中'; });
 }
 pollStatus();
 setInterval(pollStatus, 15000);
 $('bgRun').addEventListener('click', function(){
   if (!bgFile) return;
+  if (!serverReady) { $('bgMsg').textContent = '今は準備中です　魔王城のサーバーが動き出したら使えます'; return; }
   prepareNotify();
   var model = $('bgMode').value;
   $('bgRun').disabled = true;
@@ -362,7 +378,7 @@ $('bgRun').addEventListener('click', function(){
   fetch(API_BASE + '/api/remove?mode=' + model, { method: 'POST', body: bgFile }).then(function(r){
     return r.json().then(function(j){ if (!r.ok) throw new Error(j.error || 'エラー'); return j; });
   }).then(function(j){
-    $('bgMsg').textContent = '透過処理中（少し待ちます）';
+    $('bgMsg').textContent = '魔王の魔力SI発動中（少し待ちます）';
     var iv = setInterval(function(){
       fetch(API_BASE + '/api/job/' + j.job_id).then(function(r){ return r.json(); }).then(function(st){
         if (st.status === 'done'){
@@ -388,7 +404,7 @@ $('bgRun').addEventListener('click', function(){
       }).catch(function(){});
     }, 2000);
   }).catch(function(e){
-    $('bgMsg').textContent = '失敗しました：' + e.message;
+    $('bgMsg').textContent = '失敗しました：サーバーと通信できませんでした';
     $('bgRun').disabled = false;
   });
 });
@@ -428,17 +444,34 @@ $('rsRun').addEventListener('click', function(){
   if (!rsFile) return;
   loadImg(rsFile).then(function(img){
     var mode = $('rsMode').value;
-    var scale;
-    if (mode.charAt(0) === 'w'){
-      var maxw = Number(mode.slice(1));
-      scale = Math.min(1, maxw / img.naturalWidth);
-    } else {
-      scale = Number(mode) / 100;
-    }
     var c = document.createElement('canvas');
-    c.width = Math.max(1, Math.round(img.naturalWidth * scale));
-    c.height = Math.max(1, Math.round(img.naturalHeight * scale));
-    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    if (mode === 'line'){
+      var margin = $('rsMargin').checked;
+      var boxW = margin ? 370 * 0.9 : 370;
+      var boxH = margin ? 320 * 0.9 : 320;
+      var ls = Math.min(1, boxW / img.naturalWidth, boxH / img.naturalHeight);
+      var cw = Math.max(1, Math.round(img.naturalWidth * ls));
+      var ch = Math.max(1, Math.round(img.naturalHeight * ls));
+      if (margin){
+        c.width = Math.min(370, Math.round(cw / 0.9));
+        c.height = Math.min(320, Math.round(ch / 0.9));
+      } else {
+        c.width = cw;
+        c.height = ch;
+      }
+      c.getContext('2d').drawImage(img, (c.width - cw) / 2, (c.height - ch) / 2, cw, ch);
+    } else {
+      var scale;
+      if (mode.charAt(0) === 'w'){
+        var maxw = Number(mode.slice(1));
+        scale = Math.min(1, maxw / img.naturalWidth);
+      } else {
+        scale = Number(mode) / 100;
+      }
+      c.width = Math.max(1, Math.round(img.naturalWidth * scale));
+      c.height = Math.max(1, Math.round(img.naturalHeight * scale));
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    }
     c.toBlob(function(b){
       var url = URL.createObjectURL(b);
       $('rsOut').src = url;
@@ -497,9 +530,9 @@ function ukAi(mode){
         if (st.status === 'done'){
           clearInterval(iv);
           ukShowResult(API_BASE + '/api/result/' + j.job_id + '.png', '2k_ai.png', 'できました');
-          storeJob(j.job_id, 'AI補完拡大');
+          storeJob(j.job_id, '魔王の魔力SI拡大');
           $('ctaCard').style.display = 'block';
-          notifyDone('AI補完拡大ができました', '結果を確認してください');
+          notifyDone('魔王の魔力SI拡大ができました', '結果を確認してください');
         } else if (st.status === 'error'){
           clearInterval(iv);
           $('ukMsg').textContent = '失敗しました：' + (st.error || '');
@@ -507,14 +540,14 @@ function ukAi(mode){
         } else if (st.status === 'waiting'){
           $('ukMsg').textContent = '魔王城で制作中です　空き次第はじめます';
         } else if (st.status === 'processing'){
-          $('ukMsg').textContent = 'AI補完中（30秒ほどかかります）';
+          $('ukMsg').textContent = '魔王の魔力SI発動中（混み具合で時間が変わります）';
         } else {
           $('ukMsg').textContent = '順番待ちです';
         }
       }).catch(function(){});
     }, 3000);
   }).catch(function(e){
-    $('ukMsg').textContent = '失敗しました：' + e.message;
+    $('ukMsg').textContent = '失敗しました：サーバーと通信できませんでした';
     $('ukRun').disabled = false;
   });
 }
@@ -525,6 +558,7 @@ $('ukRun').addEventListener('click', function(){
   $('ukOut').style.display = 'none';
   $('ukDl').style.display = 'none';
   if (method === 'browser') ukBrowser();
+  else if (!serverReady) { $('ukMsg').textContent = '今は準備中です　魔王城のサーバーが動き出したら使えます'; $('ukRun').disabled = false; }
   else { prepareNotify(); ukAi(method === 'ai_anime' ? 'anime' : 'general'); }
 });
 
@@ -654,22 +688,28 @@ $('cpRun').addEventListener('click', function(){
     var fmt = $('cpFormat').value;
     var target = Number($('cpTarget').value) * 1024;
     var scale = 1, best = null;
-    for (var attempt = 0; attempt < 8 && !best; attempt++){
+    for (var attempt = 0; attempt < (fmt === 'image/png' ? 20 : 8) && !best; attempt++){
       var c = document.createElement('canvas');
       c.width = Math.max(1, Math.round(img.naturalWidth * scale));
       c.height = Math.max(1, Math.round(img.naturalHeight * scale));
       var ctx = c.getContext('2d');
       if (fmt === 'image/jpeg'){ ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, c.width, c.height); }
       ctx.drawImage(img, 0, 0, c.width, c.height);
-      var lo = 0.05, hi = 0.95, midBlob = null;
-      for (var i = 0; i < 6; i++){
-        var q = (lo + hi) / 2;
-        midBlob = await blobOf(c, fmt, q);
-        if (midBlob.size > target) hi = q; else lo = q;
+      if (fmt === 'image/png'){
+        var pBlob = await blobOf(c, fmt);
+        if (pBlob.size <= target){ best = { blob: pBlob, canvas: c }; }
+        else scale *= 0.85;
+      } else {
+        var lo = 0.05, hi = 0.95, midBlob = null;
+        for (var i = 0; i < 6; i++){
+          var q = (lo + hi) / 2;
+          midBlob = await blobOf(c, fmt, q);
+          if (midBlob.size > target) hi = q; else lo = q;
+        }
+        var finalBlob = await blobOf(c, fmt, lo);
+        if (finalBlob.size <= target){ best = { blob: finalBlob, canvas: c }; }
+        else scale *= 0.8;
       }
-      var finalBlob = await blobOf(c, fmt, lo);
-      if (finalBlob.size <= target){ best = { blob: finalBlob, canvas: c }; }
-      else scale *= 0.8;
     }
     if (!best){
       $('cpMsg').textContent = '目標サイズまで圧縮できませんでした';
@@ -681,7 +721,7 @@ $('cpRun').addEventListener('click', function(){
     $('cpOut').style.display = 'block';
     var a = $('cpDl');
     a.href = url;
-    a.download = fmt === 'image/jpeg' ? 'compressed.jpg' : 'compressed.webp';
+    a.download = fmt === 'image/jpeg' ? 'compressed.jpg' : (fmt === 'image/png' ? 'compressed.png' : 'compressed.webp');
     a.style.display = 'inline-block';
     $('cpMsg').textContent = 'できました（' + fmtSize(cpFile.size) + ' → ' + fmtSize(best.blob.size) + ' / ' + best.canvas.width + '×' + best.canvas.height + '）';
     $('cpRun').disabled = false;
@@ -871,7 +911,7 @@ function bcRender(){
       fw = c.width * 0.98;
       fh = fw * bcImg.naturalHeight / bcImg.naturalWidth;
     }
-    var x = (c.width - fw) / 2;
+    var x = (c.width - fw) * (Number($('bcPosX').value) / 100);
     var y = (c.height - fh) * (Number($('bcPos').value) / 100);
     ctx.drawImage(bcImg, x, y, fw, fh);
     c.style.display = 'block';
@@ -885,10 +925,11 @@ $('bcFile').addEventListener('change', function(){
   if (!f) return;
   loadImg(f).then(function(img){ bcImg = img; bcRender(); });
 });
-['bcBg', 'bcStyle', 'bcScale', 'bcPos'].forEach(function(id){
+['bcBg', 'bcStyle', 'bcScale', 'bcPos', 'bcPosX'].forEach(function(id){
   $(id).addEventListener('input', function(){
     $('bcScaleVal').textContent = $('bcScale').value;
     $('bcPosVal').textContent = $('bcPos').value;
+    $('bcPosXVal').textContent = $('bcPosX').value;
     bcRender();
   });
 });
