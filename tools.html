@@ -111,7 +111,6 @@ JPEGをPNGにしたい時にもどうぞ</p>
 <option value="image/png">PNG</option>
 <option value="image/jpeg">JPEG</option>
 <option value="image/webp">WebP</option>
-<option value="image/png">PNG</option>
 </select>
 画質：<input type="range" id="cvQuality" min="10" max="100" value="90"> <span id="cvQVal">90</span>
 </div>
@@ -128,13 +127,13 @@ JPEGをPNGにしたい時にもどうぞ</p>
 <div class="row">
 大きさ：
 <select id="rsMode">
+<option value="line" selected>LINEスタンプ用（370×320以内）</option>
 <option value="50">50%にする</option>
 <option value="25">25%にする</option>
 <option value="75">75%にする</option>
 <option value="w1024">横幅1024pxまで</option>
 <option value="w800">横幅800pxまで</option>
 <option value="w512">横幅512pxまで</option>
-<option value="line">LINEスタンプ用（370×320以内）</option>
 </select>
 </div>
 <div class="row"><label><input type="checkbox" id="rsMargin" checked> 周りに10%の透明な余白を作る（LINEスタンプ用）</label></div>
@@ -157,7 +156,7 @@ JPEGをPNGにしたい時にもどうぞ</p>
 <option value="ai_general">魔王の魔力SI・写真用（サーバ処理）</option>
 </select>
 </div>
-<p class="small">※ 魔王の魔力SI＝スーパーインテリジェンスの力で、細部を補って拡大します<br>魔王の魔力SIは細部を補いながら2Kにします<br>
+<p class="small">魔王の魔力SIは細部を補いながら2Kにします<br>
 かかる時間は混み具合で変わります<br>
 空いていれば1枚30秒ほどですが、制作中は順番待ちでもっとかかることがあります<br>
 混雑状況：<span class="status" id="ukAiStatus">確認中</span></p>
@@ -214,6 +213,7 @@ SNSのプロフィール画像などにどうぞ</p>
 <select id="cpFormat">
 <option value="image/jpeg">JPEG</option>
 <option value="image/webp">WebP</option>
+<option value="image/png">PNG</option>
 </select>
 </div>
 <p class="small">JPEGでは透過部分が白くなります<br>
@@ -323,6 +323,7 @@ SNSへの投稿などにどうぞ</p>
 アップロードした元画像は保存されません</p>
 </div>
 
+<p class="small" style="text-align:center;opacity:.7">※ 魔力SI＝スーパーインテリジェンス（AI）のことです</p>
 <div style="text-align:center;margin:22px 0 6px"><a href="https://king-of-the-darkness.trailer-project.com/" style="color:#c9a227;font-weight:bold">トップページに戻る</a></div>
 </div>
 <script>
@@ -444,22 +445,14 @@ $('rsRun').addEventListener('click', function(){
   if (!rsFile) return;
   loadImg(rsFile).then(function(img){
     var mode = $('rsMode').value;
-    var c = document.createElement('canvas');
+    var margin = $('rsMargin').checked;
+    var cw, ch;
     if (mode === 'line'){
-      var margin = $('rsMargin').checked;
       var boxW = margin ? 370 * 0.9 : 370;
       var boxH = margin ? 320 * 0.9 : 320;
       var ls = Math.min(1, boxW / img.naturalWidth, boxH / img.naturalHeight);
-      var cw = Math.max(1, Math.round(img.naturalWidth * ls));
-      var ch = Math.max(1, Math.round(img.naturalHeight * ls));
-      if (margin){
-        c.width = Math.min(370, Math.round(cw / 0.9));
-        c.height = Math.min(320, Math.round(ch / 0.9));
-      } else {
-        c.width = cw;
-        c.height = ch;
-      }
-      c.getContext('2d').drawImage(img, (c.width - cw) / 2, (c.height - ch) / 2, cw, ch);
+      cw = Math.max(1, Math.round(img.naturalWidth * ls));
+      ch = Math.max(1, Math.round(img.naturalHeight * ls));
     } else {
       var scale;
       if (mode.charAt(0) === 'w'){
@@ -468,9 +461,23 @@ $('rsRun').addEventListener('click', function(){
       } else {
         scale = Number(mode) / 100;
       }
-      c.width = Math.max(1, Math.round(img.naturalWidth * scale));
-      c.height = Math.max(1, Math.round(img.naturalHeight * scale));
-      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      cw = Math.max(1, Math.round(img.naturalWidth * scale));
+      ch = Math.max(1, Math.round(img.naturalHeight * scale));
+    }
+    var content = document.createElement('canvas');
+    content.width = cw;
+    content.height = ch;
+    content.getContext('2d').drawImage(img, 0, 0, cw, ch);
+    var c = content;
+    if (margin){
+      c = document.createElement('canvas');
+      c.width = Math.round(cw / 0.9);
+      c.height = Math.round(ch / 0.9);
+      if (mode === 'line'){
+        c.width = Math.min(370, c.width);
+        c.height = Math.min(320, c.height);
+      }
+      c.getContext('2d').drawImage(content, (c.width - cw) / 2, (c.height - ch) / 2);
     }
     c.toBlob(function(b){
       var url = URL.createObjectURL(b);
