@@ -12,8 +12,11 @@
   .vbtn.on,.mbtn.on,.cbtn.on{border-color:#e8b34b;background:#3d2a5e;color:#fff;font-weight:bold}
   .pedal{font-size:1.15rem;padding:16px 26px;border-radius:12px;border:2px solid var(--purple);background:#3d2a5e;color:#fff;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:none}
   .pedal:active{background:#5a4390}
-  .steer{display:flex;align-items:center;gap:8px;justify-content:center;margin:8px 0}
-  .steer input[type=range]{flex:1;max-width:340px}
+  .wheelWrap{display:flex;flex-direction:column;align-items:center;margin:10px 0 2px}
+  .wheel{width:176px;height:176px;border-radius:50%;border:14px solid #3a3f4d;background:radial-gradient(circle,#222633 58%,#2c3140 60%);position:relative;touch-action:none;cursor:grab;box-sizing:border-box}
+  .wheel .spoke{position:absolute;left:50%;top:50%;width:10px;height:74px;background:#3a3f4d;border-radius:5px;transform-origin:50% 0}
+  .wheel .hub{position:absolute;left:50%;top:50%;width:44px;height:44px;border-radius:50%;background:#454c5e;transform:translate(-50%,-50%)}
+  .wheel .mark{position:absolute;left:50%;top:-11px;width:12px;height:12px;border-radius:50%;background:#e5383b;transform:translateX(-50%)}
   .sbtn{font-size:1.2rem;padding:10px 18px;border-radius:10px;border:2px solid #3a3358;background:#241d3f;color:#eee;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:none}
   .meter{height:12px;background:#17142a;border-radius:6px;overflow:hidden;max-width:340px;margin:4px auto}
   .meter > div{height:100%;background:#57c46a;width:0%}
@@ -70,10 +73,15 @@
 <div class="meter"><div id="angleBar"></div></div>
 </div>
 
-<div class="steer">
-<button type="button" class="sbtn" id="steerL">◀</button>
-<input type="range" id="steer" min="-100" max="100" value="0" step="1">
-<button type="button" class="sbtn" id="steerR">▶</button>
+<div class="wheelWrap">
+<div class="wheel" id="wheel">
+<div class="spoke" style="transform:translateX(-50%) rotate(90deg)"></div>
+<div class="spoke" style="transform:translateX(-50%) rotate(-90deg)"></div>
+<div class="spoke" style="transform:translateX(-50%) rotate(0deg)"></div>
+<div class="hub"></div>
+<div class="mark"></div>
+</div>
+<div class="small">ハンドルはドラッグで回ります　離しても角度はそのまま止まります</div>
 </div>
 <div class="small">ハンドル：<b id="steerVal">まっすぐ</b>　<button type="button" class="sbtn" id="steerC" style="font-size:.85rem;padding:6px 12px">まっすぐに戻す</button></div>
 
@@ -273,7 +281,7 @@ function buildCourse(){
   }
 }
 function spawn(){
-  v = 0; steerVal = 0; $('steer').value = 0;
+  v = 0; steerVal = 0; showSteer();
   coneHits = 0; coneCool = {}; started = 0; finished = false; failed = false;
   $('overNav').style.display = 'none';
   pallet = null;
@@ -644,17 +652,33 @@ function bindHold(el, set){
 }
 bindHold($('btnFwd'), function(b){ pressF = b; });
 bindHold($('btnBack'), function(b){ pressB = b; });
-var steerHold = 0;
-bindHold($('steerL'), function(b){ steerHold = b ? -1 : 0; });
-bindHold($('steerR'), function(b){ steerHold = b ? 1 : 0; });
-setInterval(function(){
-  if (steerHold !== 0){
-    steerVal = Math.max(-100, Math.min(100, steerVal + steerHold * 4));
-    $('steer').value = steerVal; showSteer();
-  }
-}, 40);
+var wheelDrag = null;
+function wheelAngleFromEvent(e){
+  var r = $('wheel').getBoundingClientRect();
+  var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  return Math.atan2(e.clientY - cy, e.clientX - cx) * 180 / Math.PI;
+}
+$('wheel').addEventListener('pointerdown', function(e){
+  wheelDrag = { last: wheelAngleFromEvent(e), deg: steerVal * 1.5 };
+  if ($('wheel').setPointerCapture) $('wheel').setPointerCapture(e.pointerId);
+  e.preventDefault();
+});
+$('wheel').addEventListener('pointermove', function(e){
+  if (!wheelDrag) return;
+  var a = wheelAngleFromEvent(e);
+  var d = a - wheelDrag.last;
+  if (d > 180) d -= 360;
+  if (d < -180) d += 360;
+  wheelDrag.last = a;
+  wheelDrag.deg = Math.max(-150, Math.min(150, wheelDrag.deg + d));
+  steerVal = Math.round(wheelDrag.deg / 1.5);
+  showSteer();
+});
+function wheelEnd(){ wheelDrag = null; }
+$('wheel').addEventListener('pointerup', wheelEnd);
+$('wheel').addEventListener('pointercancel', wheelEnd);
 function showSteer(){
-  steerVal = Number($('steer').value);
+  $('wheel').style.transform = 'rotate(' + (steerVal * 1.5) + 'deg)';
   var sp = spec();
   if (sp.kind === 'tank'){
     $('steerVal').textContent = steerVal === 0 ? 'まっすぐ' : (steerVal < 0 ? '左旋回 ' : '右旋回 ') + Math.abs(steerVal) + '%';
@@ -664,13 +688,12 @@ function showSteer(){
   var deg = Math.round(Math.abs(steerVal) / 100 * maxDeg);
   $('steerVal').textContent = steerVal === 0 ? 'まっすぐ' : (steerVal < 0 ? '左 ' : '右 ') + deg + '°';
 }
-$('steer').addEventListener('input', showSteer);
-$('steerC').addEventListener('click', function(){ $('steer').value = 0; showSteer(); });
+$('steerC').addEventListener('click', function(){ steerVal = 0; showSteer(); });
 document.addEventListener('keydown', function(e){
   if (e.key === 'ArrowUp'){ keyF = true; e.preventDefault(); }
   if (e.key === 'ArrowDown'){ keyB = true; e.preventDefault(); }
-  if (e.key === 'ArrowLeft'){ steerVal = Math.max(-100, steerVal - 6); $('steer').value = steerVal; showSteer(); e.preventDefault(); }
-  if (e.key === 'ArrowRight'){ steerVal = Math.min(100, steerVal + 6); $('steer').value = steerVal; showSteer(); e.preventDefault(); }
+  if (e.key === 'ArrowLeft'){ steerVal = Math.max(-100, steerVal - 6); showSteer(); e.preventDefault(); }
+  if (e.key === 'ArrowRight'){ steerVal = Math.min(100, steerVal + 6); showSteer(); e.preventDefault(); }
 });
 document.addEventListener('keyup', function(e){
   if (e.key === 'ArrowUp') keyF = false;
