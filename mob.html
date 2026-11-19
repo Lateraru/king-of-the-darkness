@@ -94,7 +94,7 @@
 </div>
 
 <p id="stageLine" style="font-weight:bold"></p>
-<button type="button" id="btnScroll" style="display:none;position:fixed;right:10px;bottom:70px;z-index:60;padding:13px 17px;border-radius:999px;background:#3d2a5e;border:2px solid #c9a227;color:#fff;font-weight:bold;font-size:1rem;box-shadow:0 4px 14px rgba(0,0,0,.55)">📜 画面を動かす</button>
+<button type="button" id="btnScroll" style="display:none;position:fixed;right:10px;bottom:70px;z-index:60;padding:7px 11px;border-radius:999px;background:#3d2a5e;border:2px solid #c9a227;color:#fff;font-weight:bold;font-size:.8rem;box-shadow:0 4px 14px rgba(0,0,0,.55)">📜 画面を動かす</button>
 <canvas id="cv" width="540" height="780" style="width:100%;max-width:540px;background:#17122b;border-radius:12px;touch-action:none;display:block;margin:0 auto"></canvas>
 <p class="small">操作：画面を左右にドラッグ（または←→キー）で、ちび魔王たちが左右に動きます<br>
 画面の位置を直したい時は「画面を動かす」ボタンを押すと、スクロールできるようになります<br>
@@ -297,7 +297,7 @@ var announceT = 0, announceText = '', shakeT = 0, baseFlashT = 0;
 var poofSfxT = 0, baseSfxT = 0;
 var healT = 0, floats = [];
 var items = [], ally = null, cloneT = 0, itemT = 0, guardMsgT = 0, deployCycle = 0;
-var weapons = [], swordT = 0, staffT = 0, itemSeq = 0;
+var weapons = [], swordT = 0, staffT = 0, itemSeq = 0, waveHoldT = 0;
 var shots = [], slowT = 0, faceT = 0;
 var beamT = 0, rbeamT = 0, rbeamAng = -1.2, auraT = 0;
 var rapidT = 0, badProdT = 0, cannonT = 0, cannonLT = 0, cannonRT = 0, shells = [], witch = null, witchT = 2000;
@@ -310,7 +310,7 @@ function addPart(x, y, color, n){
   }
 }
 var ITEM_CYCLE = ['clone', 'summon', 'beam', 'rapid', 'heal', 'rbeam', 'summon', 'aura', 'badslow', 'cannon', 'slow', 'clone'];
-function nextItemKind(){ var k = ITEM_CYCLE[itemSeq % ITEM_CYCLE.length]; itemSeq++; return k; }
+function nextItemKind(){ var k = ITEM_CYCLE[Math.floor(Math.random() * ITEM_CYCLE.length)]; itemSeq++; return k; }
 function killBoss(){
   if (!boss) return;
   boss.dead = true;
@@ -335,7 +335,7 @@ function startStage(idx){
   boss = null; bossSpawned = false; bossWarned = false; midSpawned = false;
   healT = 0; floats = [];
   items = []; ally = null; cloneT = 0; itemT = 500; guardMsgT = 0;
-  weapons = []; swordT = 480; staffT = 1500; itemSeq = 0;
+  weapons = []; swordT = 480; staffT = 1500; itemSeq = 0; waveHoldT = 0;
   shots = []; slowT = 0; faceT = 0;
   beamT = 0; rbeamT = 0; auraT = 0;
   rapidT = 0; badProdT = 0; cannonT = 0; shells = []; witch = null; witchT = 1500 + Math.floor(Math.random() * 1500);
@@ -520,10 +520,12 @@ function releaseWeapon(w){
   sfxRelease();
   addPart(w.x, w.y, '#ffd873', 30);
   for (var ri = enemies.length - 1; ri >= 0; ri--){
-    if (!enemies[ri].dead){ enemies[ri].dead = true; kills++; score += 10; }
+    if (!enemies[ri].dead){ enemies[ri].dead = true; kills++; score += 10; addPart(enemies[ri].x, enemies[ri].y, isSword ? '#ffd873' : '#e3b8ff', 2); }
   }
+  floats.push({ x: W / 2, y: 290, text: '雑魚を一掃！', life: 90 });
+  waveHoldT = isSword ? 300 : 180;
   if (boss && !boss.dead){
-    boss.hp -= isSword ? 200 : 120;
+    boss.hp -= isSword ? Math.max(200, Math.floor(boss.maxHp * 0.25)) : Math.max(120, Math.floor(boss.maxHp * 0.15));
     addPart(boss.x, boss.y, '#ffb3b3', 16);
     if (boss.hp <= 0){ killBoss(); boss = null; }
   }
@@ -672,7 +674,7 @@ function step(){
 
   // 敵の出現（ステージ終了まで出し続ける）
   if (enemies.length < 300){
-    waveT++;
+    if (waveHoldT > 0) waveHoldT--; else waveT++;
     if (waveT >= st.wInt){
       waveT = 0;
       var n = st.gMin + Math.floor(Math.random() * (st.gMax - st.gMin + 1));
@@ -846,8 +848,8 @@ function step(){
   for (var e3 = enemies.length - 1; e3 >= 0; e3--) if (enemies[e3].dead) enemies.splice(e3, 1);
 
   // 拘束武器の出現
-  if (swordT > 0){ swordT--; if (swordT === 0) weapons.push({ kind: 'sword', x: 44, y: 330, need: 40, charge: 0 }); }
-  if (staffT > 0){ staffT--; if (staffT === 0) weapons.push({ kind: 'staff', x: W - 44, y: 430, need: 40, charge: 0 }); }
+  if (swordT > 0){ swordT--; if (swordT === 0) weapons.push({ kind: 'sword', x: 44, y: 330, need: 25, charge: 0 }); }
+  if (staffT > 0){ staffT--; if (staffT === 0) weapons.push({ kind: 'staff', x: W - 44, y: 430, need: 25, charge: 0 }); }
   // 武器への当て込み
   for (var wi2 = weapons.length - 1; wi2 >= 0; wi2--){
     var wp = weapons[wi2];
@@ -855,7 +857,7 @@ function step(){
       var wun = units[wu];
       if (wun.dead || wun.fightT > 0) continue;
       var wdx = wun.x - wp.x, wdy = wun.y - wp.y;
-      if (wdx * wdx + wdy * wdy < 26 * 26){
+      if (wdx * wdx + wdy * wdy < 36 * 36){
         wun.dead = true;
         wp.charge++;
         addPart(wp.x, wp.y, '#ffd873', 3);
@@ -1024,31 +1026,6 @@ function step(){
         floats.push({ x: ally.x, y: ally.y - 56, text: '弾幕用意！', life: 50 });
       }
     }
-  }
-  // 謎の魔女
-  if (witch){
-    ctx.font = '40px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('🧙‍♀️', witch.x, witch.y);
-    ctx.textAlign = 'left';
-  }
-  // 砲台
-  if (cannonT > 0){
-    for (var cni = 0; cni < 2; cni++){
-      var cnx = cni === 0 ? 26 : W - 26;
-      ctx.fillStyle = '#3a3f4a';
-      ctx.beginPath(); ctx.arc(cnx, H - 128, 15, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = '#14161c'; ctx.lineWidth = 7; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(cnx, H - 132); ctx.lineTo(cnx + (cni === 0 ? 12 : -12), H - 152); ctx.stroke();
-      ctx.fillStyle = '#8a8f98';
-      ctx.fillRect(cnx - 17, H - 130, 34, 8);
-    }
-  }
-  // 砲弾（小さい魔王たち）
-  for (var shi2 = 0; shi2 < shells.length; shi2++){
-    var shl2 = shells[shi2];
-    var cfimg = charKey === 'r' ? imgFR : imgFL;
-    if (cfimg.width) ctx.drawImage(cfimg, shl2.x - 9, shl2.y - 9, 18, 18);
-    else { ctx.fillStyle = '#14161c'; ctx.beginPath(); ctx.arc(shl2.x, shl2.y, 5.5, 0, Math.PI * 2); ctx.fill(); }
   }
   // 召喚キャラへの当て込み（巨大化）
   if (ally && ally.phase === 'patrol'){
@@ -1304,6 +1281,31 @@ function draw(){
     var sfimg = charKey === 'r' ? imgFL : imgFR;
     if (sfimg.width) ctx.drawImage(sfimg, sh3.x - 10, sh3.y - 10, 20, 20);
     else { ctx.fillStyle = '#c9a6ff'; ctx.beginPath(); ctx.arc(sh3.x, sh3.y, 5, 0, Math.PI * 2); ctx.fill(); }
+  }
+  // 謎の魔女
+  if (witch){
+    ctx.font = '40px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('🧙‍♀️', witch.x, witch.y);
+    ctx.textAlign = 'left';
+  }
+  // 砲台
+  if (cannonT > 0){
+    for (var cni = 0; cni < 2; cni++){
+      var cnx = cni === 0 ? 26 : W - 26;
+      ctx.fillStyle = '#3a3f4a';
+      ctx.beginPath(); ctx.arc(cnx, H - 128, 15, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#14161c'; ctx.lineWidth = 7; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(cnx, H - 132); ctx.lineTo(cnx + (cni === 0 ? 12 : -12), H - 152); ctx.stroke();
+      ctx.fillStyle = '#8a8f98';
+      ctx.fillRect(cnx - 17, H - 130, 34, 8);
+    }
+  }
+  // 砲弾（小さい魔王たち）
+  for (var shi2 = 0; shi2 < shells.length; shi2++){
+    var shl2 = shells[shi2];
+    var cfimg = charKey === 'r' ? imgFR : imgFL;
+    if (cfimg.width) ctx.drawImage(cfimg, shl2.x - 15, shl2.y - 15, 30, 30);
+    else { ctx.fillStyle = '#14161c'; ctx.beginPath(); ctx.arc(shl2.x, shl2.y, 9, 0, Math.PI * 2); ctx.fill(); }
   }
   // パーティクル
   for (var pi = 0; pi < parts.length; pi++){
