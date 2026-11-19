@@ -76,7 +76,7 @@
 画面の敵を一掃する、超強力な攻撃が出ます</p>
 <p><strong>アイテム</strong><br>
 <strong>分身</strong>（自分の顔）：20秒間、群れの出る場所が3つになります<br>
-<strong>召喚</strong>（相方の顔）：相方が画面を巡回して敵を潰し、最後に全方位へ弾を撃ちます　もう一度取ると巨大化します<br>
+<strong>召喚</strong>（相方の顔）：相方が画面を巡回して敵を潰し、最後に全方位へ弾を撃ちます　群れを当て続けると巨大化します<br>
 <strong style="color:#57c84c">回</strong>：陣地が25回復します<br>
 <strong style="color:#7ec8e3">遅</strong>：10秒間、敵の動きが遅くなります<br>
 <strong style="color:#4fd8e3">直</strong>：指先から真上に、5秒間ビームが出ます<br>
@@ -94,6 +94,7 @@
 <p id="stageLine" style="font-weight:bold"></p>
 <canvas id="cv" width="540" height="780" style="width:100%;max-width:540px;background:#17122b;border-radius:12px;touch-action:none;display:block;margin:0 auto"></canvas>
 <p class="small">操作：画面を左右にドラッグ（または←→キー）で、ちび魔王たちが左右に動きます<br>
+画面の位置を直したい時は、2本指でスライドするとスクロールできます<br>
 増殖ゲートは上から流れてきます　紫が増えるゲート、赤は減るゲートなので避けてください</p>
 
 <div id="resultPanel" class="card" style="display:none">
@@ -145,7 +146,11 @@ var STAGES = [
   { fort: 1350, budget: 1250, gMin: 20, gMax: 40, wInt: 115, eSpeed: 1.1, bossAt: 0.35, bossHp: 1100, midHp: 340 },
   { fort: 1550, budget: 1400, gMin: 22, gMax: 44, wInt: 110, eSpeed: 1.14, bossAt: 0.35, bossHp: 1350, midHp: 400 },
   { fort: 1800, budget: 1600, gMin: 24, gMax: 48, wInt: 105, eSpeed: 1.18, bossAt: 0.3, bossHp: 1650, midHp: 470 },
-  { fort: 2100, budget: 1850, gMin: 26, gMax: 52, wInt: 100, eSpeed: 1.22, bossAt: 0.3, bossHp: 2000, midHp: 550 }
+  { fort: 2100, budget: 1850, gMin: 26, gMax: 52, wInt: 100, eSpeed: 1.22, bossAt: 0.3, bossHp: 2000, midHp: 550 },
+  { fort: 2400, budget: 2100, gMin: 28, gMax: 56, wInt: 96, eSpeed: 1.26, bossAt: 0.3, bossHp: 2400, midHp: 640 },
+  { fort: 2750, budget: 2350, gMin: 30, gMax: 60, wInt: 92, eSpeed: 1.3, bossAt: 0.3, bossHp: 2850, midHp: 740 },
+  { fort: 3150, budget: 2650, gMin: 32, gMax: 64, wInt: 88, eSpeed: 1.34, bossAt: 0.28, bossHp: 3350, midHp: 850 },
+  { fort: 3600, budget: 3000, gMin: 34, gMax: 68, wInt: 84, eSpeed: 1.38, bossAt: 0.28, bossHp: 3900, midHp: 970 }
 ];
 
 /* ===== 音 ===== */
@@ -202,7 +207,20 @@ function refreshSel(){
 }
 $('selRImg').src = THUMB_R; $('selLImg').src = THUMB_L;
 $('selR').addEventListener('click', function(){ charKey = 'r'; ac(); refreshSel();
-document.addEventListener('touchmove', function(e){ if (phase === 'play') e.preventDefault(); }, { passive: false }); });
+var twoFingerY = null;
+document.addEventListener('touchstart', function(e){
+  if (phase === 'play' && e.touches.length === 2) twoFingerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+}, { passive: true });
+document.addEventListener('touchmove', function(e){
+  if (phase !== 'play') return;
+  e.preventDefault();
+  if (e.touches.length === 2){
+    var yy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+    if (twoFingerY !== null) window.scrollBy(0, twoFingerY - yy);
+    twoFingerY = yy;
+  } else twoFingerY = null;
+}, { passive: false });
+document.addEventListener('touchend', function(e){ if (e.touches.length < 2) twoFingerY = null; }); });
 $('selL').addEventListener('click', function(){ charKey = 'l'; ac(); refreshSel(); });
 $('btnHow').addEventListener('click', function(){ var h = $('howto'); h.style.display = h.style.display === 'none' ? '' : 'none'; });
 
@@ -291,7 +309,6 @@ function startStage(idx){
   shots = []; slowT = 0; faceT = 0;
   beamT = 0; rbeamT = 0; auraT = 0;
   rapidT = 0; badProdT = 0; cannonT = 0; shells = []; witch = null; witchT = 1500 + Math.floor(Math.random() * 1500);
-  document.body.style.overflow = 'hidden';
   phase = 'play';
   announceT = 110; announceText = 'ステージ ' + (idx + 1);
   $('startPanel').style.display = 'none';
@@ -321,7 +338,6 @@ function endStage(cleared){
     $('resultText').innerHTML = '陣地が壊されてしまいました　スコア ' + score;
     $('btnNext').style.display = 'none';
   }
-  document.body.style.overflow = '';
   $('btnRetry').style.display = '';
   $('resultPanel').style.display = 'block';
   var rp = $('resultPanel');
@@ -435,7 +451,7 @@ function beamDamage(){
 
 /* ===== 砲台 ===== */
 function fireShell(x, dir){
-  shells.push({ x: x, y: H - 168, vx: dir * (1.2 + Math.random() * 1.1), vy: -(3.6 + Math.random() * 1.4) });
+  shells.push({ x: x, y: H - 168, vx: dir * (1.2 + Math.random() * 1.1), vy: -(3.6 + Math.random() * 1.4), face: Math.random() < 0.5 ? 0 : 1 });
   tone(160, 60, 0.18, 'square', 0.08);
 }
 function explodeShell(x, y){
@@ -882,7 +898,7 @@ function step(){
           ally.hp = Math.min(ally.maxHp, ally.hp + 40);
           floats.push({ x: ally.x, y: ally.y - 60, text: '巨大化！', life: 80 });
         } else {
-          ally = { x: baseX, y: H - 140, hp: 130, maxHp: 130, crushT: 0, lv: 1, t: 0, phase: 'patrol', tx: null, ty: 300 };
+          ally = { x: baseX, y: H - 140, hp: 130, maxHp: 130, crushT: 0, lv: 1, t: 0, phase: 'patrol', tx: null, ty: 300, feed: 0 };
           floats.push({ x: baseX, y: H - 170, text: CHARS[charKey === 'r' ? 'l' : 'r'].name + '召喚！', life: 80 });
         }
       } else if (it2.kind === 'beam') {
@@ -984,13 +1000,32 @@ function step(){
       ctx.fillRect(cnx - 17, H - 130, 34, 8);
     }
   }
-  // 砲弾
+  // 砲弾（小さい魔王たち）
   for (var shi2 = 0; shi2 < shells.length; shi2++){
     var shl2 = shells[shi2];
-    ctx.fillStyle = '#14161c';
-    ctx.beginPath(); ctx.arc(shl2.x, shl2.y, 5.5, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#cfd6e4';
-    ctx.beginPath(); ctx.arc(shl2.x - 1.5, shl2.y - 1.5, 1.8, 0, Math.PI * 2); ctx.fill();
+    var cfimg = shl2.face === 0 ? imgFR : imgFL;
+    if (cfimg.width) ctx.drawImage(cfimg, shl2.x - 9, shl2.y - 9, 18, 18);
+    else { ctx.fillStyle = '#14161c'; ctx.beginPath(); ctx.arc(shl2.x, shl2.y, 5.5, 0, Math.PI * 2); ctx.fill(); }
+  }
+  // 召喚キャラへの当て込み（巨大化）
+  if (ally && ally.phase === 'patrol'){
+    for (var fu = units.length - 1; fu >= 0; fu--){
+      var fun = units[fu];
+      if (fun.dead || fun.fightT > 0) continue;
+      var fdx = fun.x - ally.x, fdy = fun.y - ally.y;
+      if (fdx * fdx + fdy * fdy < 28 * 28){
+        fun.dead = true;
+        ally.feed++;
+        ally.hp = Math.min(ally.maxHp, ally.hp + 2);
+        addPart(ally.x, ally.y - 20, '#ffd873', 2);
+        var newLv = ally.feed >= 20 ? 3 : (ally.feed >= 8 ? 2 : 1);
+        if (newLv > ally.lv){
+          ally.lv = newLv;
+          floats.push({ x: ally.x, y: ally.y - 60, text: '巨大化！', life: 80 });
+          tone(600, 1200, 0.2, 'square', 0.08);
+        }
+      }
+    }
   }
   // 弾幕の弾
   for (var si2 = shots.length - 1; si2 >= 0; si2--){
@@ -1215,13 +1250,12 @@ function draw(){
     ctx.fillText(String(wp3.need - wp3.charge), wp3.x, wp3.y + bob + 30);
     ctx.textAlign = 'left';
   }
-  // 弾幕の弾
+  // 弾幕の弾（小さい魔王たち）
   for (var si3 = 0; si3 < shots.length; si3++){
     var sh3 = shots[si3];
-    ctx.fillStyle = charKey === 'r' ? '#c9a6ff' : '#ff9c9c';
-    ctx.beginPath(); ctx.arc(sh3.x, sh3.y, 5, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath(); ctx.arc(sh3.x, sh3.y, 2, 0, Math.PI * 2); ctx.fill();
+    var sfimg = si3 % 2 === 0 ? imgFR : imgFL;
+    if (sfimg.width) ctx.drawImage(sfimg, sh3.x - 10, sh3.y - 10, 20, 20);
+    else { ctx.fillStyle = '#c9a6ff'; ctx.beginPath(); ctx.arc(sh3.x, sh3.y, 5, 0, Math.PI * 2); ctx.fill(); }
   }
   // パーティクル
   for (var pi = 0; pi < parts.length; pi++){
