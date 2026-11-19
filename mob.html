@@ -73,6 +73,11 @@
 中ボスを倒すと、アイテムを落とします</p>
 <p><strong>雑魚の種類</strong><br>
 まっすぐ来る物のほかに、蛇行する物、急に加速する物、やたら速い物、大きく揺れる物、止まったり進んだりする物がいます</p>
+<p><strong>お助けボタン</strong><br>
+左下のボタンで、陣地を30回復（60秒に1回）と、魔女の召喚（60秒に1回）ができます<br>
+中ボスを倒すと陣地が10、大ボスを倒すと陣地が25回復します<br>
+大ボスは倒しても、砦を壊すまで何度でも出てきます<br>
+中ボスは2体で出てきて、放っておくと合体して大ボスになります</p>
 <p><strong>拘束武器</strong><br>
 左右の端にある魔剣と杖に、群れを40発当てると解放されます<br>
 画面の敵を一掃する、超強力な攻撃が出ます</p>
@@ -94,8 +99,10 @@
 </div>
 
 <p id="stageLine" style="font-weight:bold"></p>
-<button type="button" id="btnScroll" style="display:none;position:fixed;right:10px;bottom:70px;z-index:60;padding:7px 11px;border-radius:999px;background:#3d2a5e;border:2px solid #c9a227;color:#fff;font-weight:bold;font-size:.8rem;box-shadow:0 4px 14px rgba(0,0,0,.55)">📜 画面を動かす</button>
-<canvas id="cv" width="540" height="780" style="width:100%;max-width:540px;background:#17122b;border-radius:12px;touch-action:none;display:block;margin:0 auto"></canvas>
+<button type="button" id="btnHeal" style="display:none;position:fixed;left:10px;bottom:70px;z-index:60;padding:4px 8px;border-radius:999px;background:#2a4a2e;border:2px solid #57c84c;color:#fff;font-weight:bold;font-size:.66rem;box-shadow:0 4px 14px rgba(0,0,0,.55)">🏰 陣地+30 回復</button>
+<button type="button" id="btnWitch" style="display:none;position:fixed;left:10px;bottom:104px;z-index:60;padding:4px 8px;border-radius:999px;background:#4a2a4e;border:2px solid #e8b4f0;color:#fff;font-weight:bold;font-size:.66rem;box-shadow:0 4px 14px rgba(0,0,0,.55)">🧙‍♀️ 魔女を呼ぶ</button>
+<button type="button" id="btnScroll" style="display:none;position:fixed;right:10px;bottom:70px;z-index:60;padding:4px 8px;border-radius:999px;background:#3d2a5e;border:2px solid #c9a227;color:#fff;font-weight:bold;font-size:.66rem;box-shadow:0 4px 14px rgba(0,0,0,.55)">📜 画面を動かす</button>
+<canvas id="cv" width="540" height="780" style="width:100%;max-width:470px;background:#17122b;border-radius:12px;touch-action:none;display:block;margin:0 auto"></canvas>
 <p class="small">操作：画面を左右にドラッグ（または←→キー）で、ちび魔王たちが左右に動きます<br>
 画面の位置を直したい時は「画面を動かす」ボタンを押すと、スクロールできるようになります<br>
 増殖ゲートは上から流れてきます　紫が増えるゲート、赤は減るゲートなので避けてください</p>
@@ -237,6 +244,18 @@ document.addEventListener('touchend', function(e){ if (e.touches.length < 2) two
 $('selL').addEventListener('click', function(){ charKey = 'l'; ac(); refreshSel(); });
 $('btnHow').addEventListener('click', function(){ var h = $('howto'); h.style.display = h.style.display === 'none' ? '' : 'none'; });
 $('btnScroll').addEventListener('click', function(){ setScrollMode(!scrollMode); });
+$('btnHeal').addEventListener('click', function(){
+  if (phase !== 'play' || healBtnT > 0) return;
+  baseHP = Math.min(100, baseHP + 30);
+  healBtnT = 3600;
+  floats.push({ x: baseX, y: H - 170, text: '陣地 +30 回復', life: 80 });
+  tone(880, 1320, 0.2, 'sine', 0.07);
+});
+$('btnWitch').addEventListener('click', function(){
+  if (phase !== 'play' || witchBtnT > 0 || witch) return;
+  spawnWitch();
+  witchBtnT = 3600;
+});
 
 /* ===== 単位スプライト（描画の軽量化） ===== */
 function makeDot(fill, inner){
@@ -293,6 +312,8 @@ var baseHP = 100, fortHP = 0, reserve = 0;
 var prodT = 0, waveT = 0, gateT = 0, gateIdSeq = 1;
 var spawned = 0, kills = 0, score = 0;
 var boss = null, bossSpawned = false, bossWarned = false, midSpawned = false;
+var boss2 = null, fuseT = 0, bossRespawnT = 0, fusFxList = [];
+var healBtnT = 0, witchBtnT = 0, lastHealSec = -1, lastWitchSec = -1;
 var announceT = 0, announceText = '', shakeT = 0, baseFlashT = 0;
 var poofSfxT = 0, baseSfxT = 0;
 var healT = 0, floats = [];
@@ -309,15 +330,49 @@ function addPart(x, y, color, n){
     parts.push({ x: x, y: y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 12 + Math.random() * 8, color: color });
   }
 }
-var ITEM_CYCLE = ['clone', 'summon', 'beam', 'rapid', 'heal', 'rbeam', 'summon', 'aura', 'badslow', 'cannon', 'slow', 'clone'];
+var ITEM_CYCLE = ['clone', 'summon', 'heal', 'beam', 'rapid', 'heal', 'rbeam', 'summon', 'aura', 'badslow', 'cannon', 'slow', 'clone', 'heal'];
 function nextItemKind(){ var k = ITEM_CYCLE[Math.floor(Math.random() * ITEM_CYCLE.length)]; itemSeq++; return k; }
 function killBoss(){
   if (!boss) return;
   boss.dead = true;
   score += boss.mid ? 800 : 2000; kills++;
   addPart(boss.x, boss.y, '#e5383b', 42);
-  if (boss.mid) items.push({ x: boss.x, y: Math.max(70, boss.y), kind: nextItemKind() });
+  var healAmt = boss.mid ? 10 : 25;
+  baseHP = Math.min(100, baseHP + healAmt);
+  floats.push({ x: baseX, y: H - 170, text: '陣地 +' + healAmt + ' 回復', life: 80 });
+  if (boss.mid){ items.push({ x: boss.x, y: Math.max(70, boss.y), kind: nextItemKind() }); fuseT = 0; }
+  else bossRespawnT = 1500;
   announceT = 100; announceText = boss.mid ? '中ボスを倒しました！' : '大ボスを倒しました！';
+}
+function killBoss2(){
+  if (!boss2) return;
+  boss2.dead = true;
+  score += 800; kills++;
+  addPart(boss2.x, boss2.y, '#e5383b', 42);
+  baseHP = Math.min(100, baseHP + 10);
+  floats.push({ x: baseX, y: H - 170, text: '陣地 +10 回復', life: 80 });
+  items.push({ x: boss2.x, y: Math.max(70, boss2.y), kind: nextItemKind() });
+  announceT = 100; announceText = '中ボスを倒しました！';
+  fuseT = 0;
+  boss2 = null;
+}
+function spawnBoss(hp){
+  var gag = null;
+  if (stageIdx < STAGES.length - 1 && Math.random() < 0.6){
+    var gags = [ ['🍮', 'プリン大王'], ['🍌', 'バナナ大王'], ['🐈', 'ネコ大王'], ['🍞', '食パン大王'], ['🍕', 'ピザ大王'], ['🍙', 'おにぎり大王'], ['🦑', 'イカ大王'], ['🍩', 'ドーナツ大王'], ['🎃', 'カボチャ大王'], ['🍔', 'ハンバーガー大王'], ['🦀', 'カニ大王'], ['🍣', '寿司大王'], ['🐸', 'カエル大王'], ['🍯', 'ハチミツ大王'], ['🥟', 'ギョーザ大王'], ['🍟', 'ポテト大王'], ['🍰', 'ケーキ大王'] ];
+    gag = gags[Math.floor(Math.random() * gags.length)];
+  }
+  boss = { x: W / 2, y: -50, hp: hp, maxHp: hp, r: 50, fightT: 0, atkT: 0, huntT: 0, tx: W / 2, slamT: 90, slamWarn: null, e: gag ? gag[0] : '👹', name: gag ? gag[1] : '大ボス' };
+  announceT = 120; announceText = gag ? '⚠ ' + gag[1] + ' あらわる ⚠' : '⚠ 大ボス接近 ⚠';
+  sfxWarn();
+}
+function spawnWitch(){
+  var wdir = Math.random() < 0.5 ? 1 : -1;
+  witch = { x: wdir > 0 ? -50 : W + 50, y: 180 + Math.random() * 220, dir: wdir };
+  for (var wi9 = enemies.length - 1; wi9 >= 0; wi9--){
+    if (!enemies[wi9].dead){ enemies[wi9].dead = true; kills++; score += 10; addPart(enemies[wi9].x, enemies[wi9].y, '#e8b4f0', 6); }
+  }
+  tone(1200, 2400, 0.3, 'sine', 0.05);
 }
 function addUnit(x, y, mark){
   if (units.length < CAP){
@@ -336,6 +391,7 @@ function startStage(idx){
   healT = 0; floats = [];
   items = []; ally = null; cloneT = 0; itemT = 500; guardMsgT = 0;
   weapons = []; swordT = 480; staffT = 1500; itemSeq = 0; waveHoldT = 0;
+  boss2 = null; fuseT = 0; bossRespawnT = 0; fusFxList = []; healBtnT = 0; witchBtnT = 0; lastHealSec = -1; lastWitchSec = -1;
   shots = []; slowT = 0; faceT = 0;
   beamT = 0; rbeamT = 0; auraT = 0;
   rapidT = 0; badProdT = 0; cannonT = 0; shells = []; witch = null; witchT = 1500 + Math.floor(Math.random() * 1500);
@@ -346,6 +402,8 @@ function startStage(idx){
   $('overNav').style.display = 'none';
   $('stageLine').textContent = 'ステージ ' + (idx + 1) + '　敵の砦を壊してください';
   $('btnScroll').style.display = '';
+  $('btnHeal').style.display = '';
+  $('btnWitch').style.display = '';
   try {
     var cvr = $('cv').getBoundingClientRect();
     if (window.scrollTo) window.scrollTo(0, cvr.top + window.scrollY - 6);
@@ -375,6 +433,8 @@ function endStage(cleared){
   }
   setScrollMode(false);
   $('btnScroll').style.display = 'none';
+  $('btnHeal').style.display = 'none';
+  $('btnWitch').style.display = 'none';
   $('btnRetry').style.display = '';
   $('resultPanel').style.display = 'block';
   var rp = $('resultPanel');
@@ -498,13 +558,20 @@ function explodeShell(x, y){
     var een = enemies[ei9];
     if (een.dead) continue;
     var edx = een.x - x, edy = een.y - y;
-    if (edx * edx + edy * edy < 46 * 46){ een.dead = true; kills++; score += 10; }
+    if (edx * edx + edy * edy < 56 * 56){ een.dead = true; kills++; score += 10; }
   }
   if (boss && !boss.dead){
     var bdx9 = boss.x - x, bdy9 = boss.y - y;
-    if (bdx9 * bdx9 + bdy9 * bdy9 < (boss.r + 46) * (boss.r + 46)){
+    if (bdx9 * bdx9 + bdy9 * bdy9 < (boss.r + 56) * (boss.r + 56)){
       boss.hp -= 6;
       if (boss.hp <= 0){ killBoss(); boss = null; }
+    }
+  }
+  if (boss2 && !boss2.dead){
+    var bdxB9 = boss2.x - x, bdyB9 = boss2.y - y;
+    if (bdxB9 * bdxB9 + bdyB9 * bdyB9 < (boss2.r + 56) * (boss2.r + 56)){
+      boss2.hp -= 6;
+      if (boss2.hp <= 0) killBoss2();
     }
   }
 }
@@ -528,6 +595,11 @@ function releaseWeapon(w){
     boss.hp -= isSword ? Math.max(200, Math.floor(boss.maxHp * 0.25)) : Math.max(120, Math.floor(boss.maxHp * 0.15));
     addPart(boss.x, boss.y, '#ffb3b3', 16);
     if (boss.hp <= 0){ killBoss(); boss = null; }
+  }
+  if (boss2 && !boss2.dead){
+    boss2.hp -= isSword ? Math.max(200, Math.floor(boss2.maxHp * 0.25)) : Math.max(120, Math.floor(boss2.maxHp * 0.15));
+    addPart(boss2.x, boss2.y, '#ffb3b3', 16);
+    if (boss2.hp <= 0) killBoss2();
   }
   if (!isSword){
     baseHP = Math.min(100, baseHP + 15);
@@ -645,6 +717,8 @@ function step(){
   if (rapidT > 0) rapidT--;
   if (badProdT > 0) badProdT--;
   if (cannonT > 0) cannonT--;
+  if (healBtnT > 0) healBtnT--;
+  if (witchBtnT > 0) witchBtnT--;
   if (guardMsgT > 0) guardMsgT--;
 
   // らてらるの居眠り回復
@@ -685,26 +759,37 @@ function step(){
       }
     }
   }
-  // 中ボス出現
+  // 中ボス出現（2体・放っておくと合体する）
   if (!midSpawned && !boss && spawned >= Math.floor(st.budget * 0.3)){
     midSpawned = true;
-    var midGags = [ ['🍓', 'イチゴ王子'], ['🥒', 'キュウリ男爵'], ['🍆', 'ナス卿'], ['🐙', 'タコ将軍'], ['🧀', 'チーズ伯爵'], ['🍿', 'ポップコーン隊長'], ['🍇', 'ブドウ伯爵'], ['🥕', 'ニンジン隊長'], ['🍑', 'モモ姫'], ['🦐', 'エビ天大王'], ['🍦', 'ソフトクリーム卿'], ['🥞', 'パンケーキ将軍'] ];
+    var midGags = [ ['🍓', 'イチゴ王子'], ['🥒', 'キュウリ男爵'], ['🍆', 'ナス卿'], ['🐙', 'タコ将軍'], ['🧀', 'チーズ伯爵'], ['🍿', 'ポップコーン隊長'], ['🍇', 'ブドウ伯爵'], ['🥕', 'ニンジン隊長'], ['🍑', 'モモ姫'], ['🦐', 'エビ天大王'], ['🍦', 'ソフトクリーム卿'], ['🥞', 'パンケーキ将軍'], ['🧇', 'ワッフル王子'], ['🥖', 'チュロス隊長'], ['🧋', 'タピオカ卿'], ['🌭', 'ホットドッグ大王'] ];
     var mg = midGags[Math.floor(Math.random() * midGags.length)];
-    boss = { x: W / 2, y: -50, hp: st.midHp, maxHp: st.midHp, r: 28, fightT: 0, atkT: 0, huntT: 0, tx: W / 2, slamT: 99999, slamWarn: null, e: mg[0], name: mg[1], mid: true };
-    announceT = 120; announceText = '⚠ 中ボス ' + mg[1] + ' あらわる ⚠';
+    var mg2 = midGags[Math.floor(Math.random() * midGags.length)];
+    boss = { x: W / 2 - 80, y: -50, hp: st.midHp, maxHp: st.midHp, r: 28, fightT: 0, atkT: 0, huntT: 0, tx: W / 2 - 80, slamT: 99999, slamWarn: null, e: mg[0], name: mg[1], mid: true };
+    boss2 = { x: W / 2 + 80, y: -50, hp: st.midHp, maxHp: st.midHp, r: 28, fightT: 0, atkT: 0, huntT: 0, tx: W / 2 + 80, slamT: 99999, slamWarn: null, e: mg2[0], name: mg2[1], mid: true };
+    fuseT = 720;
+    var fusedCount = 0;
+    for (var fz = enemies.length - 1; fz >= 0 && fusedCount < 8; fz--){
+      var fen = enemies[fz];
+      if (fen.dead) continue;
+      var fdx2 = fen.x - W / 2, fdy2 = fen.y - 120;
+      if (fdx2 * fdx2 + fdy2 * fdy2 < 200 * 200){ fen.dead = true; fusedCount++; addPart(fen.x, fen.y, '#e8b4f0', 5); }
+    }
+    fusFxList.push({ x: W / 2 - 80, y: 60, t: 0 });
+    fusFxList.push({ x: W / 2 + 80, y: 60, t: 0 });
+    floats.push({ x: W / 2, y: 170, text: '雑魚が合体した！', life: 80 });
+    announceT = 120; announceText = '⚠ 中ボス ' + mg[1] + '＆' + mg2[1] + ' あらわる ⚠';
     sfxWarn();
   }
   // ボス出現
-  if (!bossSpawned && st.bossAt > 0 && spawned >= Math.floor(st.budget * st.bossAt)){
+  if (!bossSpawned && !boss && !boss2 && st.bossAt > 0 && spawned >= Math.floor(st.budget * st.bossAt)){
     bossSpawned = true;
-    var gag = null;
-    if (stageIdx < STAGES.length - 1 && Math.random() < 0.6){
-      var gags = [ ['🍮', 'プリン大王'], ['🍌', 'バナナ大王'], ['🐈', 'ネコ大王'], ['🍞', '食パン大王'], ['🍕', 'ピザ大王'], ['🍙', 'おにぎり大王'], ['🦑', 'イカ大王'], ['🍩', 'ドーナツ大王'], ['🎃', 'カボチャ大王'], ['🍔', 'ハンバーガー大王'], ['🦀', 'カニ大王'], ['🍣', '寿司大王'], ['🐸', 'カエル大王'], ['🍯', 'ハチミツ大王'] ];
-      gag = gags[Math.floor(Math.random() * gags.length)];
-    }
-    boss = { x: W / 2, y: -50, hp: st.bossHp, maxHp: st.bossHp, r: 34, fightT: 0, atkT: 0, huntT: 0, tx: W / 2, slamT: 90, slamWarn: null, e: gag ? gag[0] : '👹', name: gag ? gag[1] : '大ボス' };
-    announceT = 120; announceText = gag ? '⚠ ' + gag[1] + ' あらわる ⚠' : '⚠ 大ボス接近 ⚠';
-    sfxWarn();
+    spawnBoss(st.bossHp);
+  }
+  // 大ボスの再出現（砦を壊すまで）
+  if (bossRespawnT > 0){
+    bossRespawnT--;
+    if (bossRespawnT === 0 && !boss && st.bossHp > 0) spawnBoss(st.bossHp);
   }
 
   // 味方の移動
@@ -773,12 +858,50 @@ function step(){
           tone(90, 40, 0.3, 'sawtooth', 0.14);
         }
       }
-    } else if (boss.slamT >= 170 && units.length > 0){
+    } else if (!boss.mid && boss.slamT >= 170 && units.length > 0){
       boss.slamT = 0;
       var asum = 0, bsum = 0;
       for (var ci2 = 0; ci2 < units.length; ci2++){ asum += units[ci2].x; bsum += units[ci2].y; }
       boss.slamWarn = { x: asum / units.length, y: bsum / units.length, t: 0 };
       sfxWarn();
+    }
+  }
+
+  // 中ボス2体目（boss2）の移動
+  if (boss2){
+    boss2.huntT++;
+    if (boss2.huntT >= 30){
+      boss2.huntT = 0;
+      if (units.length){
+        var hsum2 = 0;
+        for (var hi2 = 0; hi2 < units.length; hi2++) hsum2 += units[hi2].x;
+        boss2.tx = hsum2 / units.length;
+      } else boss2.tx = baseX;
+    }
+    boss2.x += Math.max(-0.85, Math.min(0.85, boss2.tx - boss2.x));
+    boss2.x = Math.max(46, Math.min(W - 46, boss2.x));
+    if (boss2.y < BASELINE - boss2.r - 6) boss2.y += (boss2.y < 400 ? 0.24 : 0.1) * (slowT > 0 ? 0.5 : 1);
+    else {
+      boss2.atkT++;
+      if (boss2.atkT >= 30){
+        boss2.atkT = 0; baseHP -= 4; baseFlashT = 8; shakeT = 6;
+        if (baseSfxT <= 0){ sfxBaseHit(); baseSfxT = 20; }
+        if (baseHP <= 0){ baseHP = 0; endStage(false); return; }
+      }
+    }
+  }
+  // 中ボス同士の合体
+  if (fuseT > 0){
+    fuseT--;
+    if (fuseT === 0 && boss && boss.mid && boss2){
+      var fhp = st.bossHp > 0 ? Math.max(st.bossHp, Math.floor((boss.hp + boss2.hp) * 1.2)) : Math.floor((boss.hp + boss2.hp) * 1.5);
+      var fxm = (boss.x + boss2.x) / 2, fym = (boss.y + boss2.y) / 2;
+      boss = { x: fxm, y: fym, hp: fhp, maxHp: fhp, r: 56, fightT: 0, atkT: 0, huntT: 0, tx: fxm, slamT: 90, slamWarn: null, e: '👹', name: '合体大ボス', mid: false };
+      boss2 = null;
+      bossSpawned = true;
+      fusFxList.push({ x: fxm, y: fym, t: 0 });
+      announceT = 130; announceText = '⚠ 中ボスが合体して大ボスになった ⚠';
+      sfxWarn(); shakeT = 10;
     }
   }
 
@@ -827,6 +950,10 @@ function step(){
       var bdx = boss.x - uu.x, bdy = boss.y - uu.y;
       if (bdx * bdx + bdy * bdy < (boss.r + 12) * (boss.r + 12)) contact = 'boss';
     }
+    if (boss2 && !boss2.dead){
+      var bdxB = boss2.x - uu.x, bdyB = boss2.y - uu.y;
+      if (bdxB * bdxB + bdyB * bdyB < (boss2.r + 12) * (boss2.r + 12)) contact = 'boss2';
+    }
     if (contact){
       uu.fightT++;
       if (uu.fightT >= 13){
@@ -837,6 +964,10 @@ function step(){
           boss.hp -= 1;
           addPart(boss.x + (Math.random() * 40 - 20), boss.y + (Math.random() * 30 - 15), '#ffb3b3', 4);
           if (boss.hp <= 0) killBoss();
+        } else if (contact === 'boss2' && boss2){
+          boss2.hp -= 1;
+          addPart(boss2.x + (Math.random() * 40 - 20), boss2.y + (Math.random() * 30 - 15), '#ffb3b3', 4);
+          if (boss2.hp <= 0) killBoss2();
         } else if (target && !target.dead) {
           target.dead = true; kills++; score += 10;
           addPart(target.x, target.y, '#ff9c9c', 5);
@@ -845,6 +976,7 @@ function step(){
     } else uu.fightT = 0;
   }
   if (boss && boss.dead) boss = null;
+  if (boss2 && boss2.dead) boss2 = null;
   for (var e3 = enemies.length - 1; e3 >= 0; e3--) if (enemies[e3].dead) enemies.splice(e3, 1);
 
   // 拘束武器の出現
@@ -870,21 +1002,11 @@ function step(){
     }
   }
 
-  // 謎の通りすがりの魔女
-  if (!witch){
-    witchT--;
-    if (witchT <= 0){
-      var wdir = Math.random() < 0.5 ? 1 : -1;
-      witch = { x: wdir > 0 ? -50 : W + 50, y: 180 + Math.random() * 220, dir: wdir };
-      for (var wi9 = enemies.length - 1; wi9 >= 0; wi9--){
-        if (!enemies[wi9].dead){ enemies[wi9].dead = true; kills++; score += 10; addPart(enemies[wi9].x, enemies[wi9].y, '#e8b4f0', 6); }
-      }
-      tone(1200, 2400, 0.3, 'sine', 0.05);
-    }
-  } else {
+  // 魔女（ボタンで召喚）
+  if (witch){
     witch.x += witch.dir * 3.4;
     if (timeF % 6 === 0) addPart(witch.x - witch.dir * 18, witch.y + 10, '#e8b4f0', 2);
-    if (witch.x < -70 || witch.x > W + 70){ witch = null; witchT = 2700 + Math.floor(Math.random() * 1800); }
+    if (witch.x < -70 || witch.x > W + 70) witch = null;
   }
   // 砲台と砲弾
   if (cannonT > 0){
@@ -1020,6 +1142,14 @@ function step(){
           if (boss.hp <= 0){ killBoss(); boss = null; }
         }
       }
+      if (boss2 && !boss2.dead){
+        var bdxB2 = boss2.x - ally.x, bdyB2 = boss2.y - ally.y;
+        if (bdxB2 * bdxB2 + bdyB2 * bdyB2 < (boss2.r + 42) * (boss2.r + 42)){
+          boss2.hp -= 3; ally.hp -= 2;
+          addPart(boss2.x, boss2.y + 20, '#ffb3b3', 3);
+          if (boss2.hp <= 0) killBoss2();
+        }
+      }
     }
       if (ally && (ally.t >= 900 || ally.hp <= 0)){
         ally.phase = 'charge'; ally.t = 0;
@@ -1060,6 +1190,14 @@ function step(){
         if (boss.hp <= 0){ killBoss(); boss = null; }
       }
     }
+    if (!shDead && boss2 && !boss2.dead){
+      var sbx2 = boss2.x - sh.x, sby2 = boss2.y - sh.y;
+      if (sbx2 * sbx2 + sby2 * sby2 < (boss2.r + 5) * (boss2.r + 5)){
+        boss2.hp -= 1; shDead = true;
+        addPart(sh.x, sh.y, '#ffb3b3', 3);
+        if (boss2.hp <= 0) killBoss2();
+      }
+    }
     if (!shDead){
       for (var se = 0; se < enemies.length; se++){
         var sen = enemies[se];
@@ -1077,10 +1215,10 @@ function step(){
     if (u5.dead){ units.splice(u4, 1); continue; }
     if (u5.y <= TOPH + 8){
       units.splice(u4, 1);
-      if (boss){
+      if (boss || boss2){
         addPart(u5.x, TOPH + 12, '#cccccc', 4);
         if (guardMsgT <= 0){
-          floats.push({ x: W / 2, y: 100, text: (boss.mid ? '中ボス' : 'ボス') + 'が砦を守っている！', life: 80 });
+          floats.push({ x: W / 2, y: 100, text: ((boss && !boss.mid) ? 'ボス' : '中ボス') + 'が砦を守っている！', life: 80 });
           guardMsgT = 200;
         }
       } else {
@@ -1117,6 +1255,19 @@ function drawBG(){
   ctx.beginPath(); ctx.moveTo(W / 2, TOPH); ctx.lineTo(W / 2, BASELINE); ctx.stroke();
   ctx.setLineDash([]);
   ctx.fillStyle = '#120d22'; ctx.fillRect(0, 0, 26, H); ctx.fillRect(W - 26, 0, 26, H);
+}
+function drawBossShape(b){
+  var bw = Math.max(88, b.r * 2);
+  ctx.fillStyle = '#a31621';
+  ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill();
+  ctx.font = Math.round(b.r * 1.3) + 'px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText(b.e || '👹', b.x, b.y + Math.round(b.r * 0.44));
+  ctx.fillStyle = '#0d0a18'; ctx.fillRect(b.x - bw / 2, b.y - b.r - 18, bw, 10);
+  ctx.fillStyle = '#e5383b'; ctx.fillRect(b.x - bw / 2, b.y - b.r - 18, bw * Math.max(0, b.hp / b.maxHp), 10);
+  ctx.strokeStyle = '#f2e9d8'; ctx.lineWidth = 1; ctx.strokeRect(b.x - bw / 2, b.y - b.r - 18, bw, 10);
+  ctx.font = 'bold 13px sans-serif'; ctx.fillStyle = '#ffffff';
+  ctx.fillText(String(Math.max(0, b.hp)), b.x, b.y - b.r - 24);
+  ctx.textAlign = 'left';
 }
 function draw(){
   ctx.save();
@@ -1158,18 +1309,8 @@ function draw(){
     ctx.drawImage(sprEV[en.v || 0], en.x - evSz / 2, en.y - evSz / 2, evSz, evSz);
   }
   // ボス
-  if (boss){
-    ctx.fillStyle = '#a31621';
-    ctx.beginPath(); ctx.arc(boss.x, boss.y, boss.r, 0, Math.PI * 2); ctx.fill();
-    ctx.font = Math.round(boss.r * 1.3) + 'px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText(boss.e || '👹', boss.x, boss.y + Math.round(boss.r * 0.44));
-    ctx.fillStyle = '#0d0a18'; ctx.fillRect(boss.x - 44, boss.y - boss.r - 18, 88, 10);
-    ctx.fillStyle = '#e5383b'; ctx.fillRect(boss.x - 44, boss.y - boss.r - 18, 88 * Math.max(0, boss.hp / boss.maxHp), 10);
-    ctx.strokeStyle = '#f2e9d8'; ctx.lineWidth = 1; ctx.strokeRect(boss.x - 44, boss.y - boss.r - 18, 88, 10);
-    ctx.font = 'bold 13px sans-serif'; ctx.fillStyle = '#ffffff';
-    ctx.fillText(String(Math.max(0, boss.hp)), boss.x, boss.y - boss.r - 24);
-    ctx.textAlign = 'left';
-  }
+  if (boss) drawBossShape(boss);
+  if (boss2) drawBossShape(boss2);
   // オーラ
   if (auraT > 0){
     var acol = charKey === 'r' ? '229,56,59' : '160,108,213';
@@ -1304,9 +1445,21 @@ function draw(){
   for (var shi2 = 0; shi2 < shells.length; shi2++){
     var shl2 = shells[shi2];
     var cfimg = charKey === 'r' ? imgFR : imgFL;
-    if (cfimg.width) ctx.drawImage(cfimg, shl2.x - 15, shl2.y - 15, 30, 30);
-    else { ctx.fillStyle = '#14161c'; ctx.beginPath(); ctx.arc(shl2.x, shl2.y, 9, 0, Math.PI * 2); ctx.fill(); }
+    if (cfimg.width) ctx.drawImage(cfimg, shl2.x - 22, shl2.y - 22, 44, 44);
+    else { ctx.fillStyle = '#14161c'; ctx.beginPath(); ctx.arc(shl2.x, shl2.y, 13, 0, Math.PI * 2); ctx.fill(); }
   }
+  // 合体エフェクト
+  for (var fxi = fusFxList.length - 1; fxi >= 0; fxi--){
+    var fxe = fusFxList[fxi]; fxe.t++;
+    ctx.strokeStyle = 'rgba(232,180,240,' + Math.max(0, 1 - fxe.t / 36) + ')'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(fxe.x, fxe.y, 10 + fxe.t * 3.2, 0, Math.PI * 2); ctx.stroke();
+    if (fxe.t >= 36) fusFxList.splice(fxi, 1);
+  }
+  // お助けボタンの残り時間
+  var hsec = Math.ceil(healBtnT / 60);
+  if (hsec !== lastHealSec){ lastHealSec = hsec; var bhel = $('btnHeal'); bhel.textContent = hsec > 0 ? '🏰 陣地+30（あと' + hsec + '秒）' : '🏰 陣地+30 回復'; bhel.style.opacity = hsec > 0 ? '0.55' : '1'; }
+  var wsec = Math.ceil(witchBtnT / 60);
+  if (wsec !== lastWitchSec){ lastWitchSec = wsec; var bwit = $('btnWitch'); bwit.textContent = wsec > 0 ? '🧙‍♀️ 魔女（あと' + wsec + '秒）' : '🧙‍♀️ 魔女を呼ぶ'; bwit.style.opacity = wsec > 0 ? '0.55' : '1'; }
   // パーティクル
   for (var pi = 0; pi < parts.length; pi++){
     var pt = parts[pi];
