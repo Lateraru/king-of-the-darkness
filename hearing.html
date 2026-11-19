@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>耳の年齢チェック | ミニゲーム | 魔王らてらる・魔王らて子 公式ファンサイト</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .stage{max-width:520px;margin:0 auto;text-align:center}
+  .freq{font-size:2.6rem;font-weight:bold;margin:20px 0 4px;color:#e8b34b;font-variant-numeric:tabular-nums}
+  .prog{color:#bdb6d9;font-size:.95rem}
+  .playing{font-size:1.6rem;min-height:1.6em;margin:8px 0}
+  .bigbtn{font-size:1.25rem;padding:14px 30px;border-radius:999px;border:2px solid var(--purple);background:#3d2a5e;color:#fff;cursor:pointer;margin:6px}
+  .bigbtn:active{transform:scale(.96)}
+  .yesbtn{border-color:#4caf7d;background:#1e4634}
+  .nobtn{border-color:#c0504d;background:#4d2321}
+  .result{margin-top:18px;line-height:1.9;font-size:1.05rem;min-height:5.4em}
+  .age{font-size:2rem;font-weight:bold;color:#e8b34b}
+  .note{text-align:left;line-height:1.9;font-size:.92rem;color:#bdb6d9;max-width:460px;margin:14px auto}
+  .back-list{margin-top:28px;text-align:left}
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="inner">
+    <a class="logo" href="index.html">魔王<span>らてらる</span> × 魔王<span style="color:#a06cd5">らて子</span></a>
+    <nav class="main">
+      <a href="index.html">ホーム</a>
+      <a href="index.html#news">お知らせ</a>
+      <a href="board.html">ファン掲示板</a>
+      <a href="chat.html">魔力SIチャット</a>
+      <a href="games.html" class="active">ミニゲーム</a>
+      <a href="secret.html">秘密基地</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="stage">
+<h1>耳の年齢チェック</h1>
+<p>低い音から始めて、だんだん高い音になっていきます<br>
+どこまで聞こえるかで、耳年齢の目安が分かります</p>
+
+<div id="setupPanel">
+<div class="note">
+・イヤホンかヘッドホンで試してください<br>
+　スマホのスピーカーでは、高い音が出にくいことがあります<br>
+・音量は小さめから始めてください<br>
+　音量を上げすぎると耳を痛めることがあります<br>
+・このチェックは遊びの目安です<br>
+　医療の診断ではありません
+</div>
+<button class="bigbtn" id="btnSample" type="button">🔊 音量テスト（1,000Hz）</button>
+<div id="bestLine" style="margin:8px 0"></div>
+<button class="bigbtn yesbtn" id="btnStart" type="button">チェック開始</button>
+</div>
+
+<div id="testPanel" style="display:none">
+<div class="prog" id="prog"></div>
+<div class="freq" id="freqDisp"></div>
+<div class="playing" id="playState">♪</div>
+<div>
+<button class="bigbtn" id="btnReplay" type="button">🔊 もう一度聞く</button>
+</div>
+<div>
+<button class="bigbtn yesbtn" id="btnYes" type="button">👂 聞こえる</button>
+<button class="bigbtn nobtn" id="btnNo" type="button">🙉 聞こえない</button>
+</div>
+<div class="prog" id="confirmMsg"></div>
+</div>
+
+<div class="result" id="result"></div>
+
+<div id="overNav" style="display:none;text-align:center;margin:16px auto;padding:14px;border:1px solid #a06cd5;border-radius:12px;max-width:560px">
+<p style="margin:4px 0;font-weight:bold">おつかれさまでした</p>
+<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px">
+<button type="button" onclick="location.reload()">🔁 また遊ぶ</button>
+<a href="games.html"><button type="button">🎮 違うゲームをする</button></a>
+<a href="index.html"><button type="button">🏰 トップへ戻る</button></a>
+<a href="https://youtu.be/YL26sVq0rjE" target="_blank" rel="noopener"><button type="button">🎵 404あたし未検出</button></a>
+<a href="https://youtu.be/6c3PI1Vy3Nc" target="_blank" rel="noopener"><button type="button">🎧 らてらるのヒーリング動画</button></a>
+<a href="https://store.line.me/stickershop/author/6590694/ja" target="_blank" rel="noopener"><button type="button">🛒 魔王さん制作のLINEスタンプを買う</button></a>
+<button type="button" onclick="shareSite()">📣 このサイトを知り合いに教える</button>
+</div>
+</div>
+  <div class="back-list">
+    <p><a href="games.html">← ミニゲーム一覧に戻る</a></p>
+  </div>
+</div>
+</main>
+
+<div style="text-align:center;margin:22px 0 6px"><a href="index.html" style="color:#c9a227;font-weight:bold">トップページに戻る</a></div>
+<script>
+function showOverNav(){ var n = document.getElementById('overNav'); if (n) n.style.display = 'block'; }
+function shareSite(){
+  var url = 'https://king-of-the-darkness.trailer-project.com/';
+  var text = '魔王らてらる・魔王らて子の公式ファンサイト　ミニゲームと画像便利ツールがあります';
+  if (navigator.share) { navigator.share({ title: document.title, text: text, url: url }).catch(function(){}); }
+  else { window.open('https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(url), '_blank'); }
+}
+</script>
+<script>
+function $(id){ return document.getElementById(id); }
+var FREQS = [250, 500, 1000, 2000, 4000, 6000, 8000, 10000, 12000, 14000, 15000, 16000, 17000, 18000, 19000, 20000];
+var AGE = { 20000: '15歳くらい', 19000: '20歳くらい', 18000: '24歳くらい', 17000: '28歳くらい', 16000: '32歳くらい', 15000: '36歳くらい', 14000: '40歳くらい', 12000: '45歳くらい', 10000: '52歳くらい', 8000: '58歳くらい', 6000: '65歳くらい', 4000: '72歳くらい', 2000: '80歳くらい', 1000: '85歳くらい', 500: '88歳くらい', 250: '90歳くらい' };
+var actx = null, curOsc = null, curGain = null;
+var idx = 0, heardMax = 0, confirming = false, playing = false, done = false;
+
+function ac(){
+  if (!actx){
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (AC) actx = new AC();
+  }
+  if (actx && actx.state === 'suspended') actx.resume();
+  return actx;
+}
+function stopTone(){
+  if (curOsc){
+    try { curOsc.stop(); } catch (e) {}
+    curOsc = null; curGain = null;
+  }
+  playing = false;
+  $('playState').textContent = '♪';
+}
+function playTone(freq, dur){
+  var c = ac();
+  if (!c) return;
+  stopTone();
+  var t = c.currentTime;
+  curOsc = c.createOscillator();
+  curGain = c.createGain();
+  curOsc.type = 'sine';
+  curOsc.frequency.value = freq;
+  curGain.gain.setValueAtTime(0, t);
+  curGain.gain.linearRampToValueAtTime(0.12, t + 0.08);
+  curGain.gain.setValueAtTime(0.12, t + dur - 0.15);
+  curGain.gain.linearRampToValueAtTime(0, t + dur);
+  curOsc.connect(curGain);
+  curGain.connect(c.destination);
+  curOsc.start(t);
+  curOsc.stop(t + dur + 0.05);
+  playing = true;
+  $('playState').textContent = '♪ 再生中 ♪';
+  var osc = curOsc;
+  setTimeout(function(){ if (curOsc === osc){ playing = false; $('playState').textContent = '♪'; } }, dur * 1000 + 80);
+}
+function fmtHz(f){ return f.toLocaleString('ja-JP') + ' Hz'; }
+function showStep(){
+  $('prog').textContent = (idx + 1) + ' / ' + FREQS.length + ' 問目';
+  $('freqDisp').textContent = fmtHz(FREQS[idx]);
+  $('confirmMsg').textContent = '';
+  playTone(FREQS[idx], 1.4);
+}
+function commentFor(f){
+  if (f >= 18000) return 'らて子「すごい　らて子の耳より若いかも」';
+  if (f >= 15000) return 'らてらる「なかなか若い耳だ」';
+  if (f >= 12000) return 'らてらる「平均的だな　無理のない音量で楽しむといい」';
+  if (f >= 8000) return 'らて子「耳も大事にしないとだね」';
+  if (f > 0) return 'らてらる「気になるなら耳鼻科で相談するといい　これは目安だからな」';
+  return 'らてらる「音量とイヤホンを確認して、もう一度試してみてくれ」';
+}
+function finish(){
+  done = true;
+  stopTone();
+  $('testPanel').style.display = 'none';
+  var best = 0;
+  try { best = Number(localStorage.getItem('maouHearingBest') || 0); } catch (e) {}
+  var isRecord = heardMax > best;
+  if (isRecord){
+    best = heardMax;
+    try { localStorage.setItem('maouHearingBest', String(best)); } catch (e) {}
+  }
+  if (heardMax > 0){
+    $('result').innerHTML = '聞こえた一番高い音： <b>' + fmtHz(heardMax) + '</b><br>' +
+      '耳年齢の目安<br><span class="age">' + AGE[heardMax] + '</span><br>' +
+      commentFor(heardMax) + '<br>' +
+      (isRecord ? '🎉 ベスト記録を更新しました' : 'ベスト記録： ' + fmtHz(best));
+  } else {
+    $('result').innerHTML = '一番低い音も聞こえませんでした<br>' + commentFor(0);
+  }
+  showOverNav();
+}
+function answerYes(){
+  if (done) return;
+  stopTone();
+  heardMax = FREQS[idx];
+  confirming = false;
+  idx++;
+  if (idx >= FREQS.length) finish();
+  else showStep();
+}
+function answerNo(){
+  if (done) return;
+  stopTone();
+  if (!confirming){
+    confirming = true;
+    $('confirmMsg').textContent = '本当に聞こえませんか　もう一度流します';
+    playTone(FREQS[idx], 1.4);
+    return;
+  }
+  finish();
+}
+function showBestLine(){
+  var best = 0;
+  try { best = Number(localStorage.getItem('maouHearingBest') || 0); } catch (e) {}
+  $('bestLine').textContent = best > 0 ? 'ベスト記録： ' + fmtHz(best) + ' まで聞こえました' : 'ベスト記録： まだありません';
+}
+$('btnSample').addEventListener('click', function(){ playTone(1000, 1.2); });
+$('btnStart').addEventListener('click', function(){
+  ac();
+  idx = 0; heardMax = 0; confirming = false; done = false;
+  $('setupPanel').style.display = 'none';
+  $('result').innerHTML = '';
+  $('testPanel').style.display = '';
+  showStep();
+});
+$('btnReplay').addEventListener('click', function(){ playTone(FREQS[idx], 1.4); });
+$('btnYes').addEventListener('click', answerYes);
+$('btnNo').addEventListener('click', answerNo);
+showBestLine();
+</script>
+<script>
+/* 人気カウンター: デプロイ時に STATS_BASE へ接続先を設定（それまでは何もしません） */
+(function(){
+  var STATS_BASE = '';
+  if (!STATS_BASE) return;
+  try {
+    var slug = 'hearing';
+    var today = new Date().toLocaleDateString('sv-SE');
+    var seen = {};
+    try { seen = JSON.parse(localStorage.getItem('maouHitV1') || '{}'); } catch (e) {}
+    if (seen[slug] === today) return;
+    seen[slug] = today;
+    try { localStorage.setItem('maouHitV1', JSON.stringify(seen)); } catch (e) {}
+    fetch(STATS_BASE + '/api/hit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ game: slug }), keepalive: true }).catch(function(){});
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>
