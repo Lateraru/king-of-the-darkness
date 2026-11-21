@@ -67,6 +67,8 @@
       <span>連勝 <b id="streak">0</b></span>
       <span>最高連勝 <b id="bestStreak">0</b></span>
       <span>勝敗 <b id="record">0勝 0敗 0分</b></span>
+      <span>スコア <b id="score">0</b></span>
+      <span>ベストスコア <b id="bestScore">0</b></span>
     </div>
   </div>
 
@@ -93,16 +95,19 @@
   var NAMES = ['グー', 'チョキ', 'パー'];
   var LINES = {
     rateraru: {
-      win: 'ふふ、魔王の勝ちだ当然だな',
-      lose: '魔王に勝てるとは、なかなかやるな',
-      draw: '互角かもう一勝負だ'
+      win: ['ふふ、魔王の勝ちだ当然だな', 'まだまだだな次は本気を出す', '魔王の力はこんなものではないぞ'],
+      lose: ['魔王に勝てるとは、なかなかやるな', '見事だその調子で来い', 'ふむ、次は負けんぞ'],
+      draw: ['互角かもう一勝負だ', '気が合うなもう一回だ', '決着は次に持ち越しだ']
     },
     rateko: {
-      win: 'らて子の勝ちだぉえっへん♡',
-      lose: 'つ、強いのだもう一回しよ',
-      draw: 'あいこだぉ次で決めよ'
+      win: ['らて子の勝ちだぉえっへん♡', 'やったぉらて子の勝ちだぉ', 'えへへ、らて子は強いのだぉ'],
+      lose: ['つ、強いのだもう一回しよ', '負けたぉ次は勝つぉ', 'すごいぉもう一勝負だぉ'],
+      draw: ['あいこだぉ次で決めよ', 'あいこだぉ息ぴったりだぉ', 'まだ決まらないぉもう一回だぉ']
     }
   };
+  function pickLine(key, kind){ var arr = LINES[key][kind]; return arr[Math.floor(Math.random() * arr.length)]; }
+  var score = 0, bestScore = 0;
+  try { bestScore = parseInt(localStorage.getItem('maouJankenScoreV1') || '0', 10) || 0; } catch(e) {}
   var opp = 'rateraru';
   var streak = 0, win = 0, lose = 0, draw = 0;
   var bestStreak = 0;
@@ -110,6 +115,8 @@
 
   var oppImg = document.getElementById('oppImg'), oppHand = document.getElementById('oppHand'), voice = document.getElementById('voice');
   var elYou = document.getElementById('youHand'), elStreak = document.getElementById('streak'), elBest = document.getElementById('bestStreak'), elRec = document.getElementById('record');
+  var elScore = document.getElementById('score'), elBestScore = document.getElementById('bestScore');
+  elBestScore.textContent = bestScore;
   document.getElementById('imgRateraru').src = SPR_R;
   document.getElementById('imgRateko').src = SPR_K;
   oppImg.src = FACES.rateraru.normal;
@@ -137,26 +144,31 @@
       if (diff === 0) {
         draw++;
         oppImg.src = FACES[opp].draw;
-        line = LINES[opp].draw;
-        voice.textContent = 'あいこ' + line;
+        line = pickLine(opp, 'draw');
+        voice.textContent = '✨ あいこ ✨ ' + line + '（連勝はそのままキープ）';
+        oppHand.textContent = HANDS[cpu] + ' あいこ！';
       } else if (diff === 2) { // you win: 0>1, 1>2, 2>0 -> (you-cpu+3)%3 == 2
         win++;
         oppImg.src = FACES[opp].lose;
         streak++;
+        var bonus = streak >= 2 ? (streak - 1) * 5 : 0;
+        score += 10 + bonus;
         if (streak > bestStreak) {
           bestStreak = streak;
           try { localStorage.setItem('maouJankenBest', String(bestStreak)); } catch(e) {}
           elBest.textContent = bestStreak;
         }
-        line = LINES[opp].lose;
-        voice.textContent = 'あなたの勝ち' + line;
+        if (score > bestScore) { bestScore = score; try { localStorage.setItem('maouJankenScoreV1', String(bestScore)); } catch(e) {} elBestScore.textContent = bestScore; }
+        elScore.textContent = score;
+        line = pickLine(opp, 'lose');
+        voice.textContent = 'あなたの勝ち ＋' + (10 + bonus) + '点' + (bonus > 0 ? '（' + streak + '連勝ボーナス ＋' + bonus + '）' : '') + ' ' + line;
       } else {
         lose++;
         oppImg.src = FACES[opp].win;
         streak = 0;
         showOverNav();
-        line = LINES[opp].win;
-        voice.textContent = '相手の勝ち' + line;
+        line = pickLine(opp, 'win');
+        voice.textContent = '相手の勝ち ' + line;
       }
       oppImg.classList.remove('pop'); void oppImg.offsetWidth; oppImg.classList.add('pop');
       elStreak.textContent = streak;

@@ -52,6 +52,7 @@
       <span>レベル <b id="level">0</b></span>
       <span>ベスト <b id="best">0</b></span>
     </div>
+    <p id="faceMsg" style="min-height:2.2em;font-size:1.15rem">😐 らてらる「準備はいいか」</p>
     <p id="msg" style="min-height:1.8em">スタートを押すと詠唱が始まります</p>
     <button type="button" class="start-btn" id="btnStart">スタート</button>
   </div>
@@ -73,6 +74,7 @@
   var pads = Array.prototype.slice.call(document.querySelectorAll('.pad'));
   var elLevel = document.getElementById('level'), elBest = document.getElementById('best'), elMsg = document.getElementById('msg');
   var btn = document.getElementById('btnStart');
+  var elFace = document.getElementById('faceMsg');
   var FREQS = [392, 523, 659, 784];
   var audioCtx = null;
 
@@ -131,6 +133,7 @@
       try { localStorage.setItem('maouSimonBest', String(best)); } catch(e) {}
     }
     elMsg.textContent = '詠唱失敗レベル ' + lv + ' まで到達';
+    elFace.textContent = '😖 らて子「ああっ、ちがうぉ」らてらる「また挑戦すればよい」';
     btn.textContent = 'もう一度';
     btn.disabled = false;
   }
@@ -144,6 +147,7 @@
         inputIdx++;
         if (inputIdx >= seq.length) {
           accepting = false;
+          elFace.textContent = '😊 らてらる「正解だ見事だな」らて子「すごいぉ♡」';
           elMsg.textContent = '正解次の詠唱へ';
           setTimeout(nextLevel, 750);
         }
@@ -160,6 +164,7 @@
     elLevel.textContent = '0';
     btn.disabled = true;
     btn.textContent = '詠唱中…';
+    elFace.textContent = '😐 らてらる「詠唱開始だ集中しろ」';
     nextLevel();
   });
 })();

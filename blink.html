@@ -50,7 +50,18 @@
       <span>ベスト <b id="best">0</b> 回</span>
     </div>
     <p id="msg" style="min-height:1.8em">下のボタンでスタート<br>始まったら顔を連打</p>
+    <div style="margin-top:10px">スピード
+      <label><input type="radio" name="blinkSpeed" value="15000"> ゆっくり 15秒</label>
+      <label><input type="radio" name="blinkSpeed" value="10000" checked> ふつう 10秒</label>
+      <label><input type="radio" name="blinkSpeed" value="5000"> 高速 5秒</label>
+    </div>
     <button type="button" class="start-btn" id="btnStart">スタート</button>
+    <div class="quiz" id="trioQuiz" style="display:none">
+      <p style="margin:0 0 6px"><strong>おまけ：言葉トリオクイズ</strong>　一瞬出た言葉はどれ？</p>
+      <p id="trioWord" style="font-size:1.5rem;font-weight:bold;min-height:1.6em"></p>
+      <div id="trioChoices"></div>
+      <p id="trioResult" style="min-height:1.6em;margin:8px 0 0"></p>
+    </div>
     <div class="quiz" id="quiz" style="display:none">
       <p style="margin:0 0 6px"><strong>クイズ：どっちの目を何回つむった？</strong>（見た目の左右で答えてね）</p>
       <label>右目 <input type="number" id="qR" min="0" inputmode="numeric"> 回</label>
@@ -110,6 +121,7 @@
     elMsg.textContent = count + ' 回称号「' + rank(count) + '」らて子「せーのぉ、よくがんばったぉ♡」';
     var qz = document.getElementById('quiz');
     qz.style.display = 'block';
+    startTrio();
     document.getElementById('qR').value = '';
     document.getElementById('qL').value = '';
     document.getElementById('qB').value = '';
@@ -126,14 +138,15 @@
     document.getElementById('quiz').style.display = 'none';
     elCount.textContent = '0';
     elMsg.textContent = 'いくよせーのぉ';
-    endAt = Date.now() + 10000;
+    var dur = 10000; var selSp = document.querySelector('input[name="blinkSpeed"]:checked'); if (selSp) dur = parseInt(selSp.value, 10) || 10000;
+    endAt = Date.now() + dur;
     playing = true;
     btn.disabled = true;
     btn.textContent = '対決中…';
     tickTimer = setInterval(function(){
       var remain = endAt - Date.now();
       if (remain <= 0) { finish(); return; }
-      elTime.style.width = (remain / 100) + '%';
+      elTime.style.width = (remain / (dur / 100)) + '%';
     }, 50);
   });
 
@@ -152,6 +165,29 @@
       face.src = IMG_OPEN; face.style.transform = '';
     }
   });
+  var TRIOS = [
+    ['まほう', 'まぼう', 'まほうう'], ['らてらる', 'らてまる', 'らてらら'], ['ピグパーティ', 'ピグパーテイ', 'ビグパーティ'],
+    ['まばたき', 'まばたぎ', 'まはたき'], ['まおうじょう', 'まおうしょう', 'まおうじよう'], ['つえ', 'つあ', 'づえ'],
+    ['まほうじん', 'まほうしん', 'まぼうじん'], ['こおり', 'こお里', 'こうり'], ['ほのお', 'ほのう', 'ほのおお'],
+    ['でんげき', 'てんげき', 'でんげぎ']
+  ];
+  function startTrio(){
+    var box = document.getElementById('trioQuiz'); box.style.display = 'block';
+    var trio = TRIOS[Math.floor(Math.random() * TRIOS.length)];
+    var ans = trio[0];
+    var wEl = document.getElementById('trioWord'), cEl = document.getElementById('trioChoices'), rEl = document.getElementById('trioResult');
+    rEl.textContent = ''; cEl.innerHTML = ''; wEl.textContent = ans;
+    setTimeout(function(){ wEl.textContent = '？？？'; }, 700);
+    var shuffled = trio.slice().sort(function(){ return Math.random() - 0.5; });
+    shuffled.forEach(function(w){
+      var b = document.createElement('button'); b.type = 'button'; b.textContent = w; b.className = 'start-btn'; b.style.margin = '4px';
+      b.addEventListener('click', function(){
+        rEl.textContent = (w === ans) ? '正解！らて子「よく見てたぉ♡」' : 'はずれ　正解は「' + ans + '」だぉ';
+        Array.prototype.forEach.call(cEl.querySelectorAll('button'), function(x){ x.disabled = true; });
+      });
+      cEl.appendChild(b);
+    });
+  }
   document.getElementById('btnQuiz').addEventListener('click', function(){
     function val(id){ var v = parseInt(document.getElementById(id).value, 10); return isNaN(v) ? -1 : v; }
     var aR = val('qR'), aL = val('qL'), aB = val('qB');

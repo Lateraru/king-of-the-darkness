@@ -37,7 +37,9 @@
   <canvas id="game" width="900" height="440"></canvas>
   <div class="game-ui">
     <button type="button" id="btnAction">スタート</button>
-    <span class="score-line">高さ <b id="scoreNow">0</b> ／ ベスト <b id="scoreHigh">0</b></span>
+    <span class="score-line">魔王城 <b id="scoreNow">0</b> 階 ／ ベスト <b id="scoreHigh">0</b> 階</span>
+    <span class="score-line">パーフェクト <b id="perfectNow">0</b> 回（ボーナス ＋<b id="bonusNow">0</b>）</span>
+    <span id="windMsg" style="font-weight:bold;color:#4d9de5"></span>
     <span id="flash" style="color:#57ab5a;font-weight:bold"></span>
   </div>
 
@@ -59,6 +61,8 @@
   var canvas = document.getElementById('game');
   var ctx = canvas.getContext('2d');
   var elNow = document.getElementById('scoreNow'), elHigh = document.getElementById('scoreHigh'), elFlash = document.getElementById('flash');
+  var elPerfect = document.getElementById('perfectNow'), elBonus = document.getElementById('bonusNow'), elWind = document.getElementById('windMsg');
+  var perfectCount = 0, windDir = 0, windTimer = 0;
   var btn = document.getElementById('btnAction');
 
   var best = 0;
@@ -73,6 +77,7 @@
     spawn();
     elNow.textContent = '0';
     elFlash.textContent = '';
+    perfectCount = 0; windDir = 0; windTimer = 0; elPerfect.textContent = '0'; elBonus.textContent = '0'; elWind.textContent = '';
   }
   function spawn(){
     var prev = blocks[blocks.length - 1];
@@ -92,7 +97,9 @@
     var perfect = Math.abs(cur.x - prev.x) < 5;
     if (perfect) {
       blocks.push({ x: prev.x, w: prev.w });
-      elFlash.textContent = 'ぴったり';
+      perfectCount++;
+      elPerfect.textContent = perfectCount; elBonus.textContent = perfectCount * 10;
+      elFlash.textContent = 'ぴったり！パーフェクトボーナス ＋10（合計 ＋' + (perfectCount * 10) + '）';
     } else {
       blocks.push({ x: left, w: overlap });
       elFlash.textContent = '';
@@ -115,6 +122,10 @@
 
   function step(){
     if (state === 'run' && cur) {
+      windTimer++;
+      if (blocks.length >= 5 && windTimer % 300 === 0) { windDir = Math.random() < 0.5 ? -1 : 1; elWind.textContent = windDir < 0 ? '🍃 風イベント！左へ流される' : '🍃 風イベント！右へ流される'; }
+      if (blocks.length >= 5 && windTimer % 300 === 150) { windDir = 0; elWind.textContent = ''; }
+      if (windDir !== 0) cur.x += windDir * 1.1;
       cur.x += dir * speed;
       if (cur.x <= 0) { cur.x = 0; dir = 1; }
       if (cur.x + cur.w >= W) { cur.x = W - cur.w; dir = -1; }
@@ -170,7 +181,7 @@
       ctx.fillStyle = '#fff'; ctx.font = 'bold 32px sans-serif';
       ctx.fillText('城は崩れた', W / 2, H / 2 - 24);
       ctx.font = '20px sans-serif'; ctx.fillStyle = '#cfc4ee';
-      ctx.fillText('高さ ' + (blocks.length - 1) + ' ／ ベスト ' + best, W / 2, H / 2 + 14);
+      ctx.fillText('魔王城 ' + (blocks.length - 1) + ' 階 ／ ベスト ' + best + ' 階　パーフェクト ' + perfectCount + ' 回', W / 2, H / 2 + 14);
     }
   }
 

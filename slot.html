@@ -12,6 +12,10 @@
   .reel{width:104px;height:104px;border:3px solid var(--purple);border-radius:14px;background:#f3eefc;display:flex;align-items:center;justify-content:center;font-size:3.2rem;overflow:hidden}
   .reel img{width:88%;height:88%;border-radius:50%}
   .reel.win{border-color:#57ab5a;box-shadow:0 0 14px rgba(87,171,90,.6)}
+  .reel.jackpot{animation:jackflash .45s 6;border-color:#e8b34b}
+  @keyframes jackflash{0%,100%{transform:scale(1)}50%{transform:scale(1.12);box-shadow:0 0 26px rgba(232,179,75,.95)}}
+  .goalbar{height:12px;background:#241739;border-radius:6px;overflow:hidden;margin:8px auto;max-width:420px}
+  .goalbar div{height:100%;background:#e8b34b;width:0%}
   .spin-btn{padding:12px 34px;border:none;border-radius:10px;background:var(--red);color:#fff;font-size:1.1rem;cursor:pointer}
   .spin-btn:disabled{opacity:.5}
   .hud{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;margin-top:14px}
@@ -57,7 +61,12 @@
     <div class="hud">
       <span>ポイント <b id="points">100</b></span>
       <span>最高 <b id="maxPoints">100</b></span>
+      <span>コイン <b id="coins">100</b></span>
+      <span>目標まで <b id="goalLeft">900</b></span>
     </div>
+    <div class="goalbar"><div id="goalBar"></div></div>
+    <p style="margin:4px 0">目標は 1000 コイン　魔王城の借金を返しきろう</p>
+    <p id="jackpot" style="min-height:1.6em;font-size:1.25rem;font-weight:bold;color:#e8b34b"></p>
     <p id="msg" style="min-height:1.6em"></p>
     <button type="button" id="btnGift" style="display:none;padding:8px 20px;border:none;border-radius:10px;background:#3d2a5e;color:#fff;cursor:pointer">魔王の施し（+100）</button>
   </div>
@@ -88,6 +97,10 @@
   ];
   var reels = [document.getElementById('reel0'), document.getElementById('reel1'), document.getElementById('reel2')];
   var elPoints = document.getElementById('points'), elMax = document.getElementById('maxPoints'), elMsg = document.getElementById('msg');
+  var elCoins = document.getElementById('coins'), elGoalLeft = document.getElementById('goalLeft'), elGoalBar = document.getElementById('goalBar'), elJack = document.getElementById('jackpot');
+  var GOAL = 1000, goalCleared = 0;
+  try { goalCleared = parseInt(localStorage.getItem('maouSlotGoalV1') || '0', 10) || 0; } catch(e) {}
+  function drawGoal(){ elCoins.textContent = points; var left = Math.max(0, GOAL - points); elGoalLeft.textContent = left; elGoalBar.style.width = Math.min(100, points / GOAL * 100) + '%'; }
   var btn = document.getElementById('btnSpin'), btnGift = document.getElementById('btnGift');
 
   var points = 100, maxPoints = 100, spinning = false;
@@ -95,7 +108,7 @@
     var saved = JSON.parse(localStorage.getItem('maouSlot') || 'null');
     if (saved) { points = saved.p; maxPoints = saved.m; }
   } catch(e) {}
-  elPoints.textContent = points; elMax.textContent = maxPoints;
+  elPoints.textContent = points; elMax.textContent = maxPoints; drawGoal();
   if (points < 10) btnGift.style.display = 'inline-block';
 
   function save(){ try { localStorage.setItem('maouSlot', JSON.stringify({ p: points, m: maxPoints })); } catch(e) {} }
@@ -107,8 +120,9 @@
     btn.disabled = false;
     var ids = finals.map(function(s){ return s.id; });
     var win = 0, label = '';
+    var isJackpot = false;
     if (ids[0] === ids[1] && ids[1] === ids[2]) {
-      if (finals[0].face) { win = 500; label = '顔が3つ揃った大当たり'; }
+      if (finals[0].face) { win = 500; label = '顔が3つ揃った大当たり'; isJackpot = true; }
       else { win = 200; label = '絵柄が3つ揃った当たり'; }
       reels.forEach(function(r){ r.classList.add('win'); });
     } else if (ids[0] === ids[1] || ids[1] === ids[2] || ids[0] === ids[2]) {
@@ -120,7 +134,14 @@
     } else {
       elMsg.textContent = 'はずれまた回してみよう';
     }
+    if (isJackpot) {
+      reels.forEach(function(r){ r.classList.add('jackpot'); });
+      elJack.textContent = '🎉 大当たり！魔王絵柄ぞろい 🎉 らてらる「見事だ」らて子「すごいぉ♡」';
+      setTimeout(function(){ reels.forEach(function(r){ r.classList.remove('jackpot'); }); }, 2800);
+    } else { elJack.textContent = ''; }
     if (points > maxPoints) maxPoints = points;
+    drawGoal();
+    if (points >= GOAL && goalCleared === 0) { goalCleared = 1; try { localStorage.setItem('maouSlotGoalV1', '1'); } catch(e) {} elJack.textContent = '🎊 目標達成！借金完済おめでとう 🎊'; }
     elPoints.textContent = points; elMax.textContent = maxPoints;
     btnGift.style.display = points < 10 ? 'inline-block' : 'none';
     save();
@@ -132,8 +153,8 @@
     spinning = true;
     btn.disabled = true;
     btnGift.style.display = 'none';
-    elMsg.textContent = '';
-    reels.forEach(function(r){ r.classList.remove('win'); });
+    elMsg.textContent = ''; elJack.textContent = '';
+    reels.forEach(function(r){ r.classList.remove('win'); r.classList.remove('jackpot'); });
     points -= 10;
     elPoints.textContent = points;
     save();
@@ -152,7 +173,7 @@
 
   btnGift.addEventListener('click', function(){
     points += 100;
-    elPoints.textContent = points;
+    elPoints.textContent = points; drawGoal();
     elMsg.textContent = '魔王の施しありがたく受け取ろう';
     btnGift.style.display = 'none';
     save();
