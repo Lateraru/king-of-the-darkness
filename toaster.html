@@ -60,6 +60,7 @@
     <div class="order-line" id="orderLine">らて子の注文はスタート後に表示されます</div>
     <div class="gauge"><div class="zone" id="zoneBand" style="left:62%;width:16%"></div><div class="marker" id="marker" style="left:0%"></div></div>
     <div class="warn-line" id="warnLine">⚠ ドラゴンの鼻がムズムズ…</div>
+    <div id="bakeStage" style="text-align:center;font-weight:bold;margin-top:6px;min-height:1.4em">焼き加減：まだ生</div>
     <div class="zone-label"><span>生焼け</span><span id="zoneMid">注文のゾーン</span><span>真っ黒こげ</span></div>
     <button type="button" class="hold-btn" id="btnFire" disabled>火を吹く（押しっぱなし）</button>
     <div class="hud">
@@ -94,6 +95,10 @@
   var elBest = document.getElementById('best'), elResult = document.getElementById('result');
   var orderLine = document.getElementById('orderLine'), zoneBand = document.getElementById('zoneBand');
   var warnLine = document.getElementById('warnLine'), zoneMid = document.getElementById('zoneMid'), elCombo = document.getElementById('combo');
+  var elBake = document.getElementById('bakeStage');
+  var BREADS = [{ n: '食パン', e: '🍞', rate: 1, width: 1 }, { n: 'クロワッサン', e: '🥐', rate: 1.15, width: 0.9 }, { n: 'バゲット', e: '🥖', rate: 0.88, width: 1.12 }, { n: 'ベーグル', e: '🥯', rate: 0.95, width: 1.05 }, { n: 'プレッツェル', e: '🥨', rate: 1.08, width: 0.95 }, { n: 'ドーナツ', e: '🍩', rate: 1.2, width: 0.85 }];
+  var bread = BREADS[0];
+  function bakeLabel(T){ if (T < 200) return 'まだ生'; if (T < 400) return 'ほんのり温かい'; if (T < 550) return 'うっすら焼き色'; if (T < 700) return 'あっさり焼き色'; if (T < 820) return 'こんがり焼き色'; if (T < 920) return 'よく焼き色'; if (T < 970) return 'かなり濃い焼き色'; return '真っ黒こげ寸前'; }
   sceneImg.src = IMG_MAIN;
 
   var best = 0;
@@ -118,15 +123,18 @@
     sneezed = false;
     warned = false;
     warnLine.style.display = 'none';
+    bread = BREADS[Math.floor(Math.random() * BREADS.length)];
     var base = ORDERS[Math.floor(Math.random() * ORDERS.length)];
     var shift = Math.round(Math.random() * 60 - 30);
-    var lo = Math.max(300, base.lo + shift), hi = Math.min(960, base.hi + shift);
+    var midB = (base.lo + base.hi) / 2, halfB = (base.hi - base.lo) / 2 * bread.width;
+    var lo = Math.max(300, Math.round(midB + shift - halfB)), hi = Math.min(960, Math.round(midB + shift + halfB));
     order = { name: base.name, lo: lo, hi: hi, center: (lo + hi) / 2 };
-    orderLine.textContent = 'らて子の注文：' + order.name + '（' + lo + '〜' + hi + '°C）';
+    orderLine.textContent = 'らて子の注文：' + bread.e + bread.n + 'を' + order.name + '（' + lo + '〜' + hi + '°C）';
+    elBake.textContent = '焼き加減：まだ生（' + bread.e + bread.n + '）';
     zoneBand.style.left = (lo / 10) + '%';
     zoneBand.style.width = ((hi - lo) / 10) + '%';
     zoneMid.textContent = order.name + ' ' + lo + '〜' + hi + '°C';
-    rate = 240 + Math.random() * 90;
+    rate = (240 + Math.random() * 90) * bread.rate;
     sneezeAt = (Math.random() < 0.3) ? (350 + Math.random() * 400) : -1;
     marker.style.left = '0%';
     tempNow.textContent = '0';
@@ -148,7 +156,7 @@
       var basePts = 100 - Math.round(Math.abs(T - order.center) * 0.25);
       if (basePts < 60) basePts = 60;
       pts = basePts * combo;
-      label = '注文通り！ ' + basePts + ' 点' + (combo >= 2 ? ' ×' + combo + 'コンボ = ' + pts + ' 点' : '') + '　らて子：' + kPick(K_HIT);
+      label = bread.e + bread.n + '注文通り！ ' + basePts + ' 点' + (combo >= 2 ? ' ×' + combo + 'コンボ = ' + pts + ' 点' : '') + '　らて子：' + kPick(K_HIT);
       color = '#57ab5a'; sceneImg.src = IMG_GOOD;
     } else {
       combo = 0;
@@ -209,6 +217,7 @@
       }
       marker.style.left = (temp / 10) + '%';
       tempNow.textContent = Math.floor(temp);
+      elBake.textContent = '焼き加減：' + bakeLabel(Math.floor(temp)) + '（' + bread.e + bread.n + '）';
       if (temp >= 1000) { holding = false; judge(); return; }
     }
     if (playing) requestAnimationFrame(loop);

@@ -124,7 +124,11 @@
     { e: '🍞', n: 'かたくなったパン', p: 15 },
     { e: '🧹', n: 'まほうのほうき', p: 260 },
     { e: '🐉', n: 'ドラゴントースター', p: 980 },
-    { e: '🧯', n: '火災保険', p: 300 }
+    { e: '🧯', n: '火災保険', p: 300 },
+    { e: '🧸', n: 'まおうのぬいぐるみ', p: 150 },
+    { e: '🎩', n: 'まどうしのぼうし', p: 70 },
+    { e: '🍰', n: '魔王城ケーキ', p: 130 },
+    { e: '⚗️', n: 'ひみつの秘薬', p: 420 }
   ];
   var SLOT_MS = 2400, ROUND_MS = 45000, ROUNDS = 3;
   var CART_MAX = 5;
@@ -140,6 +144,7 @@
   var round = 0, scoreTotal = 0, target = 0, total = 0, cart = [];
   var roundCombo = [], stream = [], streamIdx = 0;
   var current = null, currentPrice = 0, currentSale = false, slotEndsAt = 0, endsAt = 0, rafId = 0;
+  var pendingDelta = 0;
 
   function shuffle(a){
     var arr = a.slice();
@@ -160,6 +165,7 @@
     target = 0;
     roundCombo.forEach(function(it){ target += it.p; });
     total = 0; cart = [];
+    if (pendingDelta) { target = Math.max(200, target + pendingDelta); pendingDelta = 0; }
     buildStream();
   }
   function buildStream(){
@@ -236,9 +242,11 @@
     el.itemPrice.textContent = '';
     el.saleBadge.style.display = 'none';
     if (round < ROUNDS) {
-      el.result.textContent = label + '（合計 ' + scoreTotal + ' 点）';
+      state = 'lottery';
+      el.result.textContent = label + '（合計 ' + scoreTotal + ' 点）　福引の時間です';
       el.result.style.color = color;
-      el.btnStart.textContent = '次のラウンドへ';
+      el.btnStart.textContent = '福引を引く';
+      say('らて子', '福引だよ　割引か増額か、運次第だよ');
     } else {
       state = 'final';
       el.result.textContent = '全ラウンド終了　合計 ' + scoreTotal + ' 点　称号：' + titleFor(scoreTotal);
@@ -279,7 +287,26 @@
     rafId = requestAnimationFrame(loop);
   }
 
+  var LOTTERY = [
+    { t: '特賞　ボーナス500点', score: 500, delta: 0 },
+    { t: '割引券　次のラウンドの目標が150 G安くなる', score: 0, delta: -150 },
+    { t: '増額券　次のラウンドの目標が150 G増える　ぴったり成功で大チャンス', score: 0, delta: 150 },
+    { t: '参加賞　50点', score: 50, delta: 0 }
+  ];
   el.btnStart.addEventListener('click', function(){
+    if (state === 'lottery') {
+      var lot = LOTTERY[Math.floor(Math.random() * LOTTERY.length)];
+      scoreTotal += lot.score;
+      pendingDelta = lot.delta;
+      el.itemEmoji.textContent = '🎟️';
+      el.itemName.textContent = '福引結果';
+      el.itemPrice.textContent = lot.t;
+      el.result.textContent = '福引：' + lot.t + '（合計 ' + scoreTotal + ' 点）';
+      say(lot.delta < 0 ? 'らてらる' : 'らて子', lot.delta < 0 ? '割引券とは運が良いな' : (lot.delta > 0 ? '増額券だ　腕の見せどころだよ' : '福引の結果が出たよ'));
+      state = 'between';
+      el.btnStart.textContent = '次のラウンドへ';
+      return;
+    }
     if (state === 'playing') { // やり直し：最初から
       cancelAnimationFrame(rafId);
       playing = false;

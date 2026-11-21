@@ -67,7 +67,8 @@
         <div class="zzz" id="zzz">💤</div>
         <img id="guardImg" alt="魔王らてらる">
       </div>
-      <div class="cake">🍰</div>
+      <div class="cake" id="cake">🍰</div>
+      <div class="patrol" id="patrol" style="display:none;position:absolute;bottom:52px;font-size:2.4rem">🦉</div>
       <div class="sneaker" id="sneaker"><img id="sneakImg" alt="魔王らて子"></div>
     </div>
     <div class="state-line sleep" id="stateLine">魔王は寝ています</div>
@@ -75,7 +76,9 @@
     <button type="button" class="hold-btn" id="btnHold">すすむ（押しっぱなし）</button>
     <div class="hud">
       <button type="button" id="btnStart">スタート</button>
+      <span>ステージ <b id="stageNum">1</b>/3</span>
       <span>すすみ具合 <b id="pct">0</b>%</span>
+      <span>ねらい <b id="sweetName">ケーキ</b></span>
       <span>ベストタイム <b id="best">―</b></span>
       <span id="result" style="font-weight:bold"></span>
     </div>
@@ -103,6 +106,10 @@
   var stateLine = document.getElementById('stateLine'), progBar = document.getElementById('progBar');
   var elPct = document.getElementById('pct'), elBest = document.getElementById('best'), elResult = document.getElementById('result');
   var btnHold = document.getElementById('btnHold'), btnStart = document.getElementById('btnStart');
+  var cakeEl = document.getElementById('cake'), patrolEl = document.getElementById('patrol');
+  var elStage = document.getElementById('stageNum'), elSweet = document.getElementById('sweetName');
+  var STAGES = [{ sweet: '🍰', name: 'ケーキ', speed: 15, sleepF: 1 }, { sweet: '🍮', name: 'プリン', speed: 17, sleepF: 0.85 }, { sweet: '🍩', name: 'ドーナツ', speed: 19, sleepF: 0.7 }];
+  var stage = 1;
   guardImg.src = FACE_SLEEP;
   sneakImg.src = FACE_K;
 
@@ -136,7 +143,7 @@
 
   function schedule(now){
     if (state === 'sleep') {
-      var factor = 1 - progress / 100 * 0.35;
+      var factor = (1 - progress / 100 * 0.35) * STAGES[stage - 1].sleepF;
       stateUntil = now + (1500 + Math.random() * 2100) * factor;
       state = 'sleeping';
     }
@@ -150,13 +157,20 @@
 
     if (state === 'sleeping' || state === 'warning' || state === 'awake') {
       if (holding && state !== 'awake') {
-        progress = Math.min(100, progress + dt * 15);
+        progress = Math.min(100, progress + dt * STAGES[stage - 1].speed);
         sneaker.style.left = (2 + progress * 0.72) + '%';
         progBar.style.width = progress + '%';
         elPct.textContent = Math.floor(progress);
         if (progress >= 100) { clear(now); }
       }
       if (holding && state === 'awake') { caught(); }
+      if (stage >= 2 && state !== 'clear' && state !== 'caught') {
+        var px2 = 47 + Math.sin(now / 1400) * 17;
+        patrolEl.style.left = px2 + '%';
+        var looking = (now / 1000) % 4 < 1.1;
+        patrolEl.textContent = looking ? '👀' : '🦉';
+        if (looking && holding) { state = 'caught'; showOverNav(); sneakImg.src = FACE_K_LOSE; elResult.textContent = '巡回中のフクロウに見られた' + Math.floor(progress) + '% 地点で捕獲'; elResult.style.color = '#e5484d'; btnStart.textContent = 'もう一度'; return; }
+      }
       if (state !== 'awake' && now >= stateUntil && state === 'sleeping') {
         state = 'warning';
         setGuard('warn');
@@ -185,12 +199,33 @@
     elResult.style.color = '#e5484d';
     btnStart.textContent = 'もう一度';
   }
+  function applyStage(){
+    cakeEl.textContent = STAGES[stage - 1].sweet;
+    elStage.textContent = stage;
+    elSweet.textContent = STAGES[stage - 1].name;
+    patrolEl.style.display = stage >= 2 ? 'block' : 'none';
+  }
   function clear(now){
+    if (stage < 3) {
+      var gotName = STAGES[stage - 1].name;
+      stage++;
+      progress = 0; holding = false;
+      sneaker.style.left = '2%';
+      progBar.style.width = '0%';
+      elPct.textContent = '0';
+      applyStage();
+      elResult.textContent = gotName + 'ゲット　次は' + STAGES[stage - 1].name + 'だぉ';
+      elResult.style.color = '#57ab5a';
+      state = 'sleep';
+      setGuard('sleep');
+      schedule(now);
+      return;
+    }
     state = 'clear';
     showOverNav();
     sneakImg.src = FACE_K_WIN;
     var t = (now - startedAt) / 1000;
-    elResult.textContent = 'お菓子ゲット' + t.toFixed(1) + ' 秒';
+    elResult.textContent = '全ステージのお菓子ゲット' + t.toFixed(1) + ' 秒';
     elResult.style.color = '#57ab5a';
     if (!best || t < best) {
       best = t; elBest.textContent = best.toFixed(1) + ' 秒';
@@ -200,6 +235,7 @@
   }
 
   btnStart.addEventListener('click', function(){
+    stage = 1; applyStage();
     progress = 0; holding = false;
     sneaker.style.left = '2%';
     progBar.style.width = '0%';

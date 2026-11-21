@@ -12,7 +12,7 @@
   .tile{aspect-ratio:1;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.55rem;background:#17102b;overflow:hidden}
   .tile img{width:92%;height:92%;border-radius:50%}
   .tile.s1{background:#2c1c52}.tile.s2{background:#3d2a5e}.tile.s3{background:#4a3577}
-  .tile.s4{background:#5d4396}.tile.s5{background:#7a4fd0}.tile.s6{background:#6d4fc2}.tile.s7{background:#8a2f35}.tile.s8{background:#a8854a}
+  .tile.s4{background:#5d4396}.tile.s5{background:#7a4fd0}.tile.s6{background:#6d4fc2}.tile.s7{background:#8a2f35}.tile.s8{background:#a8854a}.tile.s9{background:#c9a227;box-shadow:0 0 10px #ffd76a}
   .hud{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:10px}
   .hud b{font-size:1.25rem}
   .hud button{padding:10px 22px;border:none;border-radius:10px;background:var(--red);color:#fff;font-size:1rem;cursor:pointer}
@@ -40,13 +40,14 @@
 
 <main>
   <h1 class="page">合体ちび魔王</h1>
-  <p class="lead">同じ絵をくっつけて進化させよう<br>卵→使い魔→…→らて子→らてらる、が最終形です<br>矢印キー／スワイプ／ボタンで動かします</p>
+  <p class="lead">同じ絵をくっつけて進化させよう<br>卵→使い魔→…→らて子→らてらる、が最終形です<br>らてらる同士を合体させると、真・魔王らてらるになります<br>矢印キー／スワイプ／ボタンで動かします</p>
 
   <div class="stage">
     <div class="grid" id="grid"></div>
     <div class="hud">
       <span>スコア <b id="score">0</b></span>
       <span>ベスト <b id="best">0</b></span>
+      <span>次のピース <b id="nextPiece">🥚</b></span>
       <button type="button" id="btnRestart">はじめから</button>
     </div>
     <p id="msg" style="text-align:center;min-height:1.6em"></p>
@@ -79,7 +80,10 @@
   try { best = parseInt(localStorage.getItem('maouMergeBest') || '0', 10) || 0; } catch(e) {}
   elBest.textContent = best;
 
-  var board, score, won, over;
+  var board, score, won, over, won9, nextVal;
+  var elNext = document.getElementById('nextPiece');
+  function randSpawn(){ return Math.random() < 0.9 ? 1 : 2; }
+  function showNext(){ elNext.textContent = STAGES[nextVal - 1]; }
 
   function emptyBoard(){ return [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0]; }
   function spawnTile(){
@@ -87,7 +91,9 @@
     board.forEach(function(v, i){ if (!v) empty.push(i); });
     if (!empty.length) return;
     var i = empty[Math.floor(Math.random() * empty.length)];
-    board[i] = Math.random() < 0.9 ? 1 : 2;
+    board[i] = nextVal;
+    nextVal = randSpawn();
+    showNext();
   }
   function render(){
     gridEl.innerHTML = '';
@@ -96,6 +102,7 @@
       d.className = 'tile' + (v ? ' s' + v : '');
       if (v === 7) d.innerHTML = '<img alt="魔王らて子" src="' + SPR_K + '">';
       else if (v === 8) d.innerHTML = '<img alt="魔王らてらる" src="' + SPR_R + '">';
+      else if (v === 9) d.innerHTML = '<img alt="真・魔王らてらる" src="' + SPR_R + '">';
       else if (v) d.textContent = STAGES[v - 1];
       gridEl.appendChild(d);
     });
@@ -103,7 +110,8 @@
   }
   function start(){
     board = emptyBoard();
-    score = 0; won = false; over = false;
+    score = 0; won = false; won9 = false; over = false;
+    nextVal = randSpawn(); showNext();
     spawnTile(); spawnTile();
     elMsg.textContent = '';
     render();
@@ -112,12 +120,16 @@
     var arr = line.filter(function(v){ return v; });
     var gained = 0;
     for (var i = 0; i < arr.length - 1; i++) {
-      if (arr[i] === arr[i + 1] && arr[i] < 8) {
+      if (arr[i] === arr[i + 1] && arr[i] < 9) {
         arr[i] += 1;
         gained += Math.pow(2, arr[i]);
         if (arr[i] === 8 && !won) {
           won = true;
           elMsg.textContent = '魔王らてらる、誕生そのまま続けられます';
+        }
+        if (arr[i] === 9 && !won9) {
+          won9 = true;
+          elMsg.textContent = '真・魔王らてらる、誕生これが合体の最終形態です';
         }
         arr.splice(i + 1, 1);
       }
