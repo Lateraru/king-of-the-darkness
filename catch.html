@@ -43,8 +43,8 @@
     <div class="panel">
       <p style="margin-top:0"><strong>◾︎遊び方◾︎</strong></p>
       <p>指でなぞる／マウスを動かす／←→キーで移動</p>
-      <p>星 ＋10 ／ 宝石 ＋30<br>星や宝石を取りこぼすか、爆弾を受けるとライフが減ります（ライフ3つ）</p>
-      <p style="margin-bottom:0">だんだん落下が速くなります</p>
+      <p>星 ＋10 ／ 宝石 ＋30 ／ ケーキ🍰 ＋50 ／ 特大ケーキ🍰 ＋150<br>星や宝石を取りこぼすか、爆弾を受けるとライフが減ります（ライフ3つ）<br>ケーキを取りこぼしてもライフは減りません</p>
+      <p style="margin-bottom:0">だんだん落下が速くなります<br>相方が時々特大ケーキを落としてくれます<br>終盤は風イベントでアイテムが横に流れます</p>
     </div>
   </section>
 
@@ -91,10 +91,12 @@
 
   var state = 'ready';
   var score = 0, lives = 3, items = [], spawnIn = 0, elapsed = 0;
+  var bigCakeIn = 600, wind = 0, windLeft = 0, windGap = 420;
   var px = W / 2, targetX = W / 2, keys = {};
 
   function reset(){
     score = 0; lives = 3; items = []; spawnIn = 30; elapsed = 0;
+    bigCakeIn = 600; wind = 0; windLeft = 0; windGap = 420;
     px = W / 2; targetX = W / 2;
     elNow.textContent = '0'; elLives.textContent = '♥♥♥';
   }
@@ -112,8 +114,12 @@
 
   function spawn(){
     var r = Math.random();
-    var kind = r < 0.68 ? 'star' : r < 0.82 ? 'gem' : 'bomb';
+    var kind = r < 0.62 ? 'star' : r < 0.74 ? 'gem' : r < 0.82 ? 'cake' : 'bomb';
     items.push({ kind: kind, x: 30 + Math.random() * (W - 60), y: -24, vy: 2.2 + Math.random() * 1.1 + elapsed / 900, rot: Math.random() * 6.28 });
+  }
+
+  function spawnBigCake(){
+    items.push({ kind: 'bigcake', x: 60 + Math.random() * (W - 120), y: -40, vy: 1.7 + Math.random() * 0.5 + elapsed / 1800, rot: 0 });
   }
 
   function step(){
@@ -124,17 +130,24 @@
       targetX = Math.max(46, Math.min(W - 46, targetX));
       px += (targetX - px) * 0.35;
       if (--spawnIn <= 0) { spawn(); spawnIn = Math.max(26, 52 - Math.floor(elapsed / 240)) + Math.random() * 18; }
+      if (--bigCakeIn <= 0) { spawnBigCake(); bigCakeIn = 700 + Math.floor(Math.random() * 500); }
+      if (elapsed >= 1500) {
+        if (windLeft > 0) { windLeft--; if (windLeft <= 0) wind = 0; }
+        else if (--windGap <= 0) { wind = (Math.random() < 0.5 ? -1 : 1) * (0.9 + Math.random() * 0.7); windLeft = 240; windGap = 480 + Math.floor(Math.random() * 360); }
+      }
       for (var i = items.length - 1; i >= 0; i--) {
         var it = items[i];
         it.y += it.vy; it.rot += 0.02;
+        if (wind !== 0) it.x = Math.max(16, Math.min(W - 16, it.x + wind));
         var basketY = FLOOR - 58;
-        if (it.y >= basketY && it.y <= basketY + 26 && Math.abs(it.x - px) < 52) {
+        var catchHalf = it.kind === 'bigcake' ? 74 : 52;
+        if (it.y >= basketY && it.y <= basketY + 26 && Math.abs(it.x - px) < catchHalf) {
           if (it.kind === 'bomb') loseLife();
-          else { score += it.kind === 'gem' ? 30 : 10; elNow.textContent = score; }
+          else { score += it.kind === 'gem' ? 30 : it.kind === 'cake' ? 50 : it.kind === 'bigcake' ? 150 : 10; elNow.textContent = score; }
           items.splice(i, 1); continue;
         }
         if (it.y > FLOOR + 8) {
-          if (it.kind !== 'bomb') loseLife();
+          if (it.kind === 'star' || it.kind === 'gem') loseLife();
           items.splice(i, 1);
         }
       }
@@ -161,8 +174,16 @@
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     for (var i = 0; i < items.length; i++) {
       var it = items[i];
-      ctx.font = it.kind === 'gem' ? '30px serif' : '32px serif';
-      ctx.fillText(it.kind === 'star' ? '⭐' : it.kind === 'gem' ? '💎' : '💣', it.x, it.y);
+      if (it.kind === 'bigcake' && it.y >= -10 && it.y < 80) {
+        var partnerImg = IMGS[charKey === 'rateraru' ? 'rateko' : 'rateraru'];
+        if (partnerImg.complete && partnerImg.naturalWidth) ctx.drawImage(partnerImg, it.x - 27, 2, 54, 54);
+      }
+      ctx.font = it.kind === 'bigcake' ? '64px serif' : it.kind === 'cake' ? '36px serif' : it.kind === 'gem' ? '30px serif' : '32px serif';
+      ctx.fillText(it.kind === 'star' ? '⭐' : it.kind === 'gem' ? '💎' : it.kind === 'cake' || it.kind === 'bigcake' ? '🍰' : '💣', it.x, it.y);
+    }
+    if (wind !== 0) {
+      ctx.font = 'bold 20px sans-serif'; ctx.fillStyle = '#cfc4ee';
+      ctx.fillText(wind > 0 ? '風 >>>' : '<<< 風', W / 2, 24);
     }
 
     // player: face + basket

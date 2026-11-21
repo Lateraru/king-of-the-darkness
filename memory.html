@@ -58,6 +58,7 @@
     </div>
     <div class="cards n12" id="cards"></div>
     <p id="msg" style="text-align:center;min-height:1.6em"></p>
+    <p id="bonus" style="text-align:center;min-height:1.6em;color:#c9a227;font-weight:bold"></p>
   </div>
 
   <div class="other-games" style="margin-top:28px">
@@ -83,10 +84,16 @@
     { id: 'mic',      html: '🎤' },
     { id: 'bat',      html: '🦇' },
     { id: 'rose',     html: '🌹' },
-    { id: 'cake',     html: '🍰' }
+    { id: 'cake',     html: '🍰' },
+    { id: 'smile',    html: '😊' },
+    { id: 'laugh',    html: '😆' },
+    { id: 'wink',     html: '😉' },
+    { id: 'stareyes', html: '🤩' },
+    { id: 'sleepy',   html: '😴' },
+    { id: 'surprise', html: '😲' }
   ];
   var cardsEl = document.getElementById('cards');
-  var elMoves = document.getElementById('moves'), elPairs = document.getElementById('pairs'), elTime = document.getElementById('time'), elMsg = document.getElementById('msg');
+  var elMoves = document.getElementById('moves'), elPairs = document.getElementById('pairs'), elTime = document.getElementById('time'), elMsg = document.getElementById('msg'), elBonus = document.getElementById('bonus');
 
   var lock = false, first = null, moves = 0, pairs = 0, totalPairs = 6;
   var startedAt = 0, timer = null, playing = false;
@@ -101,8 +108,14 @@
     moves = 0; pairs = 0; first = null; lock = false; playing = true;
     elMoves.textContent = '0'; elPairs.textContent = '0'; elTime.textContent = '0:00';
     elMsg.textContent = '';
+    if (elBonus) elBonus.textContent = '';
     var deck = [];
-    FACES.slice(0, nPairs).forEach(function(f){ deck.push(f, f); });
+    var pool = FACES.slice();
+    for (var p = pool.length - 1; p > 0; p--) {
+      var q = Math.floor(Math.random() * (p + 1));
+      var pt = pool[p]; pool[p] = pool[q]; pool[q] = pt;
+    }
+    pool.slice(0, nPairs).forEach(function(f){ deck.push(f, f); });
     for (var i = deck.length - 1; i > 0; i--) {
       var j = Math.floor(Math.random() * (i + 1));
       var tmp = deck[i]; deck[i] = deck[j]; deck[j] = tmp;
@@ -136,6 +149,11 @@
         clearInterval(timer);
         var t = fmt(Date.now() - startedAt);
         elMsg.textContent = '全て揃いました' + moves + '手・' + t + ' でクリア';
+        var elapsedSec = Math.floor((Date.now() - startedAt) / 1000);
+        var timeBonus = Math.max(0, (totalPairs * 30 - elapsedSec) * 10);
+        var moveBonus = Math.max(0, (totalPairs * 3 - moves) * 20);
+        var bonus = timeBonus + moveBonus;
+        if (elBonus) elBonus.textContent = 'クリアタイムボーナス ' + bonus + '点（時間ボーナス ' + timeBonus + '点＋手数ボーナス ' + moveBonus + '点）';
         showOverNav();
       }
     } else {

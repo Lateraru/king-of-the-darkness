@@ -40,7 +40,7 @@
 
 <main>
   <h1 class="page">魔王みくじ</h1>
-  <p class="lead">魔王城のおみくじです<br>1日1回、今日の運勢をどうぞ</p>
+  <p class="lead">魔王城のおみくじです<br>1日1回、今日の運勢をどうぞ<br>ごくまれに超大吉も出ます</p>
 
   <div class="omikuji-box">
     <div class="kuji-img" id="kujiImg">🎋</div>
@@ -58,6 +58,7 @@
         <div class="voice"><img id="imgR" alt="魔王らてらる"><div><div class="n">魔王らてらる</div><div id="voiceR"></div></div></div>
         <div class="voice"><img id="imgK" alt="魔王らて子"><div><div class="n">魔王らて子</div><div id="voiceK"></div></div></div>
       </div>
+      <p style="text-align:center;margin-top:12px">相方からの一言：<span id="partner"></span></p>
     </div>
   </div>
 
@@ -80,19 +81,29 @@
   document.getElementById('imgK').src = SPR_K;
 
   var FORTUNES = [
-    { name: '大吉', w: 12 }, { name: '中吉', w: 22 }, { name: '小吉', w: 24 },
+    { name: '超大吉', w: 2 }, { name: '大吉', w: 12 }, { name: '中吉', w: 22 }, { name: '小吉', w: 24 },
     { name: '吉', w: 22 }, { name: '末吉', w: 14 }, { name: '凶', w: 6 }
   ];
   var ITEMS = ['紫水晶の杖', '大きな黒いリボン', '銀のアミュレット', '王冠', 'マイク', '黒い手袋', '魔法陣のメモ帳', 'ハンバーグのキーホルダー'];
   var COLORS = ['紫', '黒', '赤', 'エメラルドグリーン', 'ピンク', '銀色'];
   var SPOTS = ['魔王城の玉座の間', 'ピグパーティのパーティー会場', '秘密基地', 'らてまりチャンネルの動画の中', 'お城の図書室'];
   var VOICES = {
+    '超大吉': { r: '滅多に出ない札だ今日は思いきりいけ', k: '超大吉だぉ♡ こんな日はなかなかないよ' },
     '大吉': { r: '見事だ今日の魔王はご機嫌だぞ', k: 'すごーい♡ 今日はらて子も太鼓判だぉ' },
     '中吉': { r: '悪くない運気だその調子で進め', k: 'いい感じだぉその笑顔で大丈夫' },
     '小吉': { r: '小さな幸運は、拾った者のものだ', k: 'ちっちゃなラッキー、見逃さないでね' },
     '吉': { r: '平穏こそ力だ今日はそれでよい', k: 'ふつうの日が、いちばん平和だぉ' },
     '末吉': { r: '焦るな運気はこれから上向く', k: 'あとから良くなる日だぉのんびりいこ' },
     '凶': { r: 'ふむ今日は城で大人しくしているがよい', k: '今日は無理しないでお茶でも飲も' }
+  };
+  var PARTNER = {
+    '超大吉': '二人そろって太鼓判、今日の主役はあなたです',
+    '大吉': '相方も納得の強運、笑顔で過ごそう',
+    '中吉': '相方からも応援あり、その調子で大丈夫',
+    '小吉': '相方が小さな幸運に気づかせてくれる日',
+    '吉': '相方とのんびり過ごすのが今日の開運法',
+    '末吉': '相方のひとことが運気アップのきっかけに',
+    '凶': '相方がそばにいる日、無理せず頼って大丈夫'
   };
 
   function todayKey(){
@@ -119,6 +130,8 @@
     document.getElementById('spot').textContent = data.s;
     document.getElementById('voiceR').textContent = VOICES[data.f].r;
     document.getElementById('voiceK').textContent = VOICES[data.f].k;
+    var elPartner = document.getElementById('partner');
+    if (elPartner) elPartner.textContent = PARTNER[data.f] || '';
     result.classList.add('show');
     showOverNav();
   }

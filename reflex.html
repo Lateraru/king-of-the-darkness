@@ -10,6 +10,7 @@
   .stage{max-width:560px;margin:0 auto}
   .arena{height:300px;border:2px solid var(--line);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;text-align:center;padding:16px}
   .arena.wait{background:#3d1420}
+  .arena.feint{background:#1d3a5f}
   .arena.go{background:#14421f}
   .arena.idle{background:#17102b}
   .arena img{width:110px;height:110px;border-radius:50%;display:none}
@@ -45,7 +46,8 @@
       <p style="margin-top:0"><strong>◾︎遊び方◾︎</strong></p>
       <p>画面を押すと開始<br>緑になる前に押すとお手つきです</p>
       <p>たまに「今だ…？」と違う絵が出るフェイントがあります<br>それもお手つきです</p>
-      <p style="margin-bottom:0">3回測って、一番速いタイムで称号が決まります（200ms以下：魔王級／280ms以下：騎士級／350ms以下：兵士級）</p>
+      <p>たまに画面の色だけが変わるフェイントもあります<br>顔が出ていないのに押すとお手つきです</p>
+      <p style="margin-bottom:0">ステージごとに3回測って、一番速いタイムで称号が決まります（200ms以下：魔王級／280ms以下：騎士級／350ms以下：兵士級）<br>3回測り終えると次のステージへ進み、合図までの待ち時間がだんだん短く速くなります</p>
     </div>
   </section>
 
@@ -59,6 +61,8 @@
     <div class="hud">
       <span>今回 <b id="now">―</b></span>
       <span>ベスト <b id="best">―</b></span>
+      <span>ステージ <b id="stageNow">1</b></span>
+      <span>最高到達ステージ <b id="stageBest">―</b></span>
       <span>回数 <b id="count">0</b> / 3</span>
       <span id="rank"></span>
     </div>
@@ -83,13 +87,31 @@
   var face = document.getElementById('face');
   var big = document.getElementById('big'), sub = document.getElementById('sub');
   var elNow = document.getElementById('now'), elBest = document.getElementById('best'), elCount = document.getElementById('count'), elRank = document.getElementById('rank');
+  var elStageNow = document.getElementById('stageNow'), elStageBest = document.getElementById('stageBest');
 
   var bestEver = 0;
   try { bestEver = parseInt(localStorage.getItem('maouReflexBest') || '0', 10) || 0; } catch(e) {}
   if (bestEver) elBest.textContent = bestEver + 'ms';
 
-  var state = 'idle'; // idle | wait | go | foul | done
-  var timer = null, goAt = 0, tries = 0, sessionBest = 0;
+  var bestStage = 0;
+  try { bestStage = parseInt(localStorage.getItem('maouReflexBestStage') || '0', 10) || 0; } catch(e) {}
+  if (bestStage) elStageBest.textContent = bestStage;
+
+  var state = 'idle'; // idle | wait | go | foul | done | stageclear
+  var timer = null, goAt = 0, tries = 0, sessionBest = 0, stage = 1;
+
+  function saveStageReached(){
+    if (stage > bestStage) {
+      bestStage = stage;
+      elStageBest.textContent = bestStage;
+      try { localStorage.setItem('maouReflexBestStage', String(bestStage)); } catch(e) {}
+    }
+  }
+  function stageDelay(){
+    var base = Math.max(450, 1200 - (stage - 1) * 150);
+    var range = Math.max(700, 3000 - (stage - 1) * 350);
+    return base + Math.random() * range;
+  }
   var decoy = document.getElementById('decoy');
   var DECOYS = ['👑', '🦇', '🔮', '🍰', '🌹', '🎤'];
   var feintTimers = [], feintVisible = false;
@@ -99,22 +121,32 @@
     feintTimers = [];
     feintVisible = false;
     decoy.style.display = 'none';
+    if (state === 'wait') arena.className = 'arena wait';
   }
   function scheduleFeint(delay){
-    if (Math.random() >= 0.45) return;
+    var feintChance = Math.min(0.75, 0.45 + (stage - 1) * 0.05);
+    if (Math.random() >= feintChance) return;
     var latest = delay - 750;
     if (latest < 500) return;
     var at = 500 + Math.random() * (latest - 500);
     feintTimers.push(setTimeout(function(){
       if (state !== 'wait') return;
-      decoy.textContent = DECOYS[Math.floor(Math.random() * DECOYS.length)];
-      decoy.style.display = 'block';
+      var colorFeint = Math.random() < 0.5;
+      if (colorFeint) {
+        arena.className = 'arena feint';
+      } else {
+        decoy.textContent = DECOYS[Math.floor(Math.random() * DECOYS.length)];
+        decoy.style.display = 'block';
+      }
       feintVisible = true;
       big.textContent = '今だ…？';
       feintTimers.push(setTimeout(function(){
         feintVisible = false;
         decoy.style.display = 'none';
-        if (state === 'wait') big.textContent = '待て…';
+        if (state === 'wait') {
+          arena.className = 'arena wait';
+          big.textContent = '待て…';
+        }
       }, 420));
     }, at));
   }
@@ -129,11 +161,13 @@
   function toWait(){
     state = 'wait';
     clearFeints();
+    elStageNow.textContent = stage;
+    saveStageReached();
     arena.className = 'arena wait';
     face.style.display = 'none';
     big.textContent = '待て…';
-    sub.textContent = '緑になったら即タップ';
-    var delay = 1200 + Math.random() * 3000;
+    sub.textContent = '緑になったら即タップ（ステージ ' + stage + '）';
+    var delay = stageDelay();
     scheduleFeint(delay);
     timer = setTimeout(function(){
       clearFeints();
@@ -150,6 +184,12 @@
   arena.addEventListener('pointerdown', function(e){
     e.preventDefault();
     if (state === 'idle' || state === 'done') {
+      stage = 1; tries = 0; sessionBest = 0;
+      elStageNow.textContent = stage;
+      elCount.textContent = '0';
+      elNow.textContent = '―'; elRank.textContent = '';
+      toWait();
+    } else if (state === 'stageclear') {
       tries = 0; sessionBest = 0;
       elCount.textContent = '0';
       elNow.textContent = '―'; elRank.textContent = '';
@@ -177,10 +217,13 @@
       }
       face.style.display = 'none';
       if (tries >= 3) {
-        state = 'done';
+        state = 'stageclear';
         arena.className = 'arena idle';
-        big.textContent = '結果：' + sessionBest + 'ms';
-        sub.textContent = '押すと、もう一度挑戦できます';
+        big.textContent = 'ステージ ' + stage + ' 結果：' + sessionBest + 'ms';
+        stage++;
+        elStageNow.textContent = stage;
+        saveStageReached();
+        sub.textContent = '押すとステージ ' + stage + ' へ進みます（合図はもっと速くなります）';
         elRank.textContent = '称号：' + rank(sessionBest);
         showOverNav();
       } else {

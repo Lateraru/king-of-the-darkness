@@ -37,7 +37,7 @@
 
 <main>
   <h1 class="page">魔法陣起動</h1>
-  <p class="lead">1から25まで、順番にタップして魔法陣を起動しよう<br>タイムアタックです</p>
+  <p class="lead">1から順番にタップして魔法陣を起動しよう<br>25モードと50モードのタイムアタックです</p>
 
   <div class="stage">
     <div class="hud">
@@ -46,8 +46,15 @@
       <span>ミス <b id="miss">0</b></span>
       <button type="button" id="btnStart">スタート</button>
     </div>
+    <div class="hud" style="margin-top:10px">
+      <button type="button" id="btnMode25">1〜25モード</button>
+      <button type="button" id="btnMode50">1〜50モード</button>
+      <span id="modeLabel">いまは1〜25モード</span>
+    </div>
+    <p style="text-align:center;margin-bottom:0">ミス1回につきペナルティ <b>+3秒</b>　いまのペナルティ <b id="penalty">+0秒</b></p>
     <div class="grid" id="grid"></div>
     <p id="msg" style="text-align:center;min-height:1.6em"></p>
+    <p id="lateko" style="text-align:center;min-height:1.6em;color:#d8b4fe">魔王らて子だぉ♡ 順番にタップするぉ</p>
     <p style="text-align:center">ベストタイム：<b id="best">―</b></p>
   </div>
 
@@ -67,17 +74,44 @@
   "use strict";
   var grid = document.getElementById('grid');
   var elNext = document.getElementById('next'), elTime = document.getElementById('time'), elMiss = document.getElementById('miss'), elMsg = document.getElementById('msg'), elBest = document.getElementById('best');
+  var elPenalty = document.getElementById('penalty'), elLateko = document.getElementById('lateko'), elModeLabel = document.getElementById('modeLabel');
   var btn = document.getElementById('btnStart');
+  var btnMode25 = document.getElementById('btnMode25'), btnMode50 = document.getElementById('btnMode50');
 
-  var best = 0;
-  try { best = parseFloat(localStorage.getItem('maouNumbersBest') || '0') || 0; } catch(e) {}
-  if (best) elBest.textContent = best.toFixed(1) + ' 秒';
+  var maxNum = 25;
+  var best25 = 0, best50 = 0;
+  try { best25 = parseFloat(localStorage.getItem('maouNumbersBest') || '0') || 0; } catch(e) {}
+  try { best50 = parseFloat(localStorage.getItem('maouNumbersBest50') || '0') || 0; } catch(e) {}
+
+  var LATEKO_CHEERS = [
+    '魔王らて子だぉ♡ その調子だぉ',
+    'いい感じだぉ♡ 次も見つけるぉ',
+    'すごいぉ♡ 魔法陣が光ってるぉ',
+    'あと少しだぉ♡ 落ち着いていくぉ'
+  ];
+  var LATEKO_MISS = [
+    'ドンマイだぉ♡ 次は合ってるぉ',
+    'おしいぉ♡ ペナルティ+3秒だけどまだいけるぉ',
+    '大丈夫だぉ♡ 順番を思い出すぉ'
+  ];
+
+  function currentBest(){ return maxNum === 50 ? best50 : best25; }
+  function showBest(){
+    var b = currentBest();
+    elBest.textContent = b ? b.toFixed(1) + ' 秒（1〜' + maxNum + 'モード）' : '―';
+  }
+  function penaltySec(){ return miss * 3; }
+  function showPenalty(){ elPenalty.textContent = '+' + penaltySec() + '秒'; }
+  function cheerFor(n){
+    if (n % 10 === 0) elLateko.textContent = LATEKO_CHEERS[Math.floor(n / 10 - 1) % LATEKO_CHEERS.length];
+  }
+  showBest();
 
   var playing = false, next = 1, miss = 0, startedAt = 0, timer = null;
 
   function build(){
     var nums = [];
-    for (var i = 1; i <= 25; i++) nums.push(i);
+    for (var i = 1; i <= maxNum; i++) nums.push(i);
     for (var j = nums.length - 1; j > 0; j--) {
       var k = Math.floor(Math.random() * (j + 1));
       var t = nums[j]; nums[j] = nums[k]; nums[k] = t;
@@ -97,16 +131,26 @@
     if (!playing || b.classList.contains('hit')) return;
     if (n === next) {
       b.classList.add('hit');
+      cheerFor(n);
       next++;
-      elNext.textContent = next <= 25 ? next : '―';
-      if (next > 25) {
+      elNext.textContent = next <= maxNum ? next : '―';
+      if (next > maxNum) {
         playing = false;
         clearInterval(timer);
-        var t = (Date.now() - startedAt) / 1000;
-        elMsg.textContent = '魔法陣、起動' + t.toFixed(1) + ' 秒（ミス ' + miss + ' 回）';
-        if (!best || t < best) {
-          best = t; elBest.textContent = best.toFixed(1) + ' 秒';
-          try { localStorage.setItem('maouNumbersBest', String(best)); } catch(e) {}
+        var elapsed = (Date.now() - startedAt) / 1000;
+        var t = elapsed + penaltySec();
+        elTime.textContent = t.toFixed(1);
+        elMsg.textContent = '魔法陣、起動　合計 ' + t.toFixed(1) + ' 秒（経過 ' + elapsed.toFixed(1) + ' 秒＋ペナルティ +' + penaltySec() + ' 秒／ミス ' + miss + ' 回）';
+        elLateko.textContent = 'やったぉ♡ 魔法陣バッチリ起動だぉ';
+        if (!currentBest() || t < currentBest()) {
+          if (maxNum === 50) {
+            best50 = t;
+            try { localStorage.setItem('maouNumbersBest50', String(best50)); } catch(e) {}
+          } else {
+            best25 = t;
+            try { localStorage.setItem('maouNumbersBest', String(best25)); } catch(e) {}
+          }
+          showBest();
         }
         btn.textContent = 'もう一度';
         showOverNav();
@@ -114,20 +158,42 @@
     } else {
       miss++;
       elMiss.textContent = miss;
+      showPenalty();
+      elLateko.textContent = LATEKO_MISS[(miss - 1) % LATEKO_MISS.length];
       b.classList.remove('miss'); void b.offsetWidth; b.classList.add('miss');
     }
   }
 
-  btn.addEventListener('click', function(){
+  function startGame(){
     next = 1; miss = 0;
     elNext.textContent = '1'; elMiss.textContent = '0'; elTime.textContent = '0.0'; elMsg.textContent = '';
+    showPenalty();
+    elLateko.textContent = '魔王らて子だぉ♡ 1から順番にタップするぉ';
     build();
     playing = true;
     startedAt = Date.now();
     clearInterval(timer);
-    timer = setInterval(function(){ elTime.textContent = ((Date.now() - startedAt) / 1000).toFixed(1); }, 100);
+    timer = setInterval(function(){ elTime.textContent = ((Date.now() - startedAt) / 1000 + penaltySec()).toFixed(1); }, 100);
     btn.textContent = 'リスタート';
-  });
+  }
+
+  function setMode(n){
+    maxNum = n;
+    playing = false;
+    clearInterval(timer);
+    next = 1; miss = 0;
+    elNext.textContent = '1'; elMiss.textContent = '0'; elTime.textContent = '0.0'; elMsg.textContent = '';
+    showPenalty();
+    elModeLabel.textContent = 'いまは1〜' + maxNum + 'モード';
+    elLateko.textContent = maxNum === 50 ? '50モードだぉ♡ 長いけど一緒にいくぉ' : '魔王らて子だぉ♡ 順番にタップするぉ';
+    showBest();
+    build();
+    btn.textContent = 'スタート';
+  }
+
+  btn.addEventListener('click', startGame);
+  btnMode25.addEventListener('click', function(){ setMode(25); });
+  btnMode50.addEventListener('click', function(){ setMode(50); });
 
   build();
 })();
