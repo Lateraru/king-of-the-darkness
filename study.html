@@ -57,7 +57,7 @@
 <button class="act" id="startBtn" type="button">クイズスタート（10問）</button>
 </div>
 <div class="qbox" id="qbox" style="display:none">
-<div class="hud"><span id="prog"></span><span id="score"></span></div>
+<div class="hud"><span id="prog"></span><span id="score"></span><span id="combo"></span></div>
 <div class="qtext" id="qtext"></div>
 <div class="choices" id="choices"></div>
 <div class="explain" id="explain"></div>
@@ -111,7 +111,12 @@ var SCIENCE = [
 ['水を電気分解すると出る気体は？','水素と酸素',['窒素と酸素','二酸化炭素だけ'],'水は水素と酸素からできています'],
 ['種が芽を出すのに必要なものは？','水・空気・適当な温度',['日光・肥料・砂糖','土・砂糖水・光'],'発芽には水と空気と適当な温度の3つが必要です'],
 ['季節が変わる一番の理由は？','地球の軸が傾いているから',['太陽が近づいたり遠のいたりするから','月の引力のせい'],'地軸の傾きで、日光の当たり方が変わるため季節が生まれます'],
-['鉄とアルミニウム、磁石につくのは？','鉄',['アルミニウム','両方つく'],'磁石につく金属は限られていて、アルミニウムはつきません']
+['鉄とアルミニウム、磁石につくのは？','鉄',['アルミニウム','両方つく'],'磁石につく金属は限られていて、アルミニウムはつきません'],
+['太陽の光が地球に届くまで約何分？','約8分',['約1分','約1時間'],'太陽の光は約8分で地球に届きます'],
+['人の体の約何パーセントが水？','約60パーセント',['約30パーセント','約90パーセント'],'人の体は約60パーセントが水でできています'],
+['空気の中で一番多い気体は？','窒素',['酸素','二酸化炭素'],'空気の約78パーセントは窒素です'],
+['電池の向きを逆につなぐと豆電球は？','つかない',['明るくなる','色が変わる'],'電流の向きが合わないと豆電球はつきません'],
+['てんびんで重さを比べる時に使うものは？','分銅',['磁石','温度計'],'分銅は決まった重さの目安になるおもりです']
 ];
 var ENGLISH = [
 ['「りんご」を英語で言うと？','apple',['orange','banana'],'apple は りんご、orange は みかん・オレンジ、banana は バナナです'],
@@ -125,7 +130,12 @@ var ENGLISH = [
 ['「学校」を英語で言うと？','school',['hospital','station'],'school は学校、hospital は病院、station は駅です'],
 ['「雨」を英語で言うと？','rain',['snow','wind'],'rain は雨、snow は雪、wind は風です'],
 ['「10」を英語で言うと？','ten',['five','eight'],'ten は10、five は5、eight は8です'],
-['「友達」を英語で言うと？','friend',['teacher','family'],'friend は友達、teacher は先生、family は家族です']
+['「友達」を英語で言うと？','friend',['teacher','family'],'friend は友達、teacher は先生、family は家族です'],
+['「猫」を英語で言うと？','cat',['dog','fish'],'cat は猫、dog は犬、fish は魚です'],
+['「青」を英語で言うと？','blue',['red','yellow'],'blue は青、red は赤、yellow は黄色です'],
+['「走る」を英語で言うと？','run',['walk','sleep'],'run は走る、walk は歩く、sleep は眠るです'],
+['「水」を英語で言うと？','water',['milk','juice'],'water は水、milk は牛乳、juice はジュースです'],
+['「大きい」を英語で言うと？','big',['small','long'],'big は大きい、small は小さい、long は長いです']
 ];
 var SOCIAL = [
 ['日本で一番長い川は？','信濃川',['利根川','石狩川'],'信濃川は全長367kmで日本一長い川です'],
@@ -137,7 +147,12 @@ var SOCIAL = [
 ['初代の内閣総理大臣は？','伊藤博文',['大隈重信','桂太郎'],'伊藤博文が1885年に初代の総理大臣になりました'],
 ['日本で一番人口が多い都道府県は？','東京都',['大阪府','神奈川県'],'東京都の人口は約1,400万人です'],
 ['聖徳太子と関わりが深いお寺は？','法隆寺',['東大寺','清水寺'],'法隆寺は世界最古の木造建築として知られます'],
-['世界で一番大きな大陸は？','ユーラシア大陸',['アフリカ大陸','北アメリカ大陸'],'アジアとヨーロッパを合わせたユーラシア大陸が最大です']
+['世界で一番大きな大陸は？','ユーラシア大陸',['アフリカ大陸','北アメリカ大陸'],'アジアとヨーロッパを合わせたユーラシア大陸が最大です'],
+['日本で一番小さい都道府県は？','香川県',['鳥取県','沖縄県'],'香川県は日本で一番面積が小さい都道府県です'],
+['参勤交代を制度にした将軍は？','徳川家光',['徳川家康','徳川吉宗'],'三代将軍の徳川家光が参勤交代を制度にしました'],
+['世界で一番人口が多い国は？','インド',['中国','アメリカ'],'インドは世界で一番人口が多い国です'],
+['国会議事堂がある場所は？','東京都千代田区',['京都市','大阪市'],'国会議事堂は東京都千代田区永田町にあります'],
+['古墳の形で有名なものは？','前方後円墳',['四角墳','星形墳'],'前方後円墳は前が四角で後ろが丸い形の古墳です']
 ];
 var KANJI = [
 ['「相撲」の読みは？','すもう',['そうぼく','あいす'],'相撲（すもう）は日本の国技とされます'],
@@ -151,17 +166,27 @@ var KANJI = [
 ['「心太」の読みは？','ところてん',['しんた','こころふと'],'心太（ところてん）は天草から作る食べ物です'],
 ['「紫陽花」の読みは？','あじさい',['しようか','むらさきはな'],'紫陽花（あじさい）は梅雨の花です'],
 ['「草履」の読みは？','ぞうり',['そうり','くさり'],'草履（ぞうり）は和服の履き物です'],
-['「蒲公英」の読みは？','たんぽぽ',['かまこうえい','ほこうえい'],'蒲公英（たんぽぽ）は春の野花です']
+['「蒲公英」の読みは？','たんぽぽ',['かまこうえい','ほこうえい'],'蒲公英（たんぽぽ）は春の野花です'],
+['「蛍」の読みは？','ほたる',['かえる','せみ'],'蛍（ほたる）は夏の夜に光る虫です'],
+['「栗」の読みは？','くり',['かき','もも'],'栗（くり）は秋の味覚です'],
+['「蝉」の読みは？','せみ',['ちょう','とんぼ'],'蝉（せみ）は夏に鳴く虫です'],
+['「兎」の読みは？','うさぎ',['ねこ','とら'],'兎（うさぎ）は長い耳が特徴の動物です'],
+['「鱗」の読みは？','うろこ',['ひれ','えら'],'鱗（うろこ）は魚の体を守る小さな板です']
 ];
 var PREFS47 = [['北海道','札幌市'],['青森県','青森市'],['岩手県','盛岡市'],['宮城県','仙台市'],['秋田県','秋田市'],['山形県','山形市'],['福島県','福島市'],['茨城県','水戸市'],['栃木県','宇都宮市'],['群馬県','前橋市'],['埼玉県','さいたま市'],['千葉県','千葉市'],['東京都','新宿区'],['神奈川県','横浜市'],['新潟県','新潟市'],['富山県','富山市'],['石川県','金沢市'],['福井県','福井市'],['山梨県','甲府市'],['長野県','長野市'],['岐阜県','岐阜市'],['静岡県','静岡市'],['愛知県','名古屋市'],['三重県','津市'],['滋賀県','大津市'],['京都府','京都市'],['大阪府','大阪市'],['兵庫県','神戸市'],['奈良県','奈良市'],['和歌山県','和歌山市'],['鳥取県','鳥取市'],['島根県','松江市'],['岡山県','岡山市'],['広島県','広島市'],['山口県','山口市'],['徳島県','徳島市'],['香川県','高松市'],['愛媛県','松山市'],['高知県','高知市'],['福岡県','福岡市'],['佐賀県','佐賀市'],['長崎県','長崎市'],['熊本県','熊本市'],['大分県','大分市'],['宮崎県','宮崎市'],['鹿児島県','鹿児島市'],['沖縄県','那覇市']];
 
 function mathQuestion(){
-  var kind = ['add', 'sub', 'mul', 'div'][rnd(0, 3)];
+  var kind = ['add', 'sub', 'mul', 'div', 'area', 'perim', 'avg', 'unit', 'remain'][rnd(0, 8)];
   var q, ans;
   if (kind === 'add'){ var a = rnd(12, 98), b = rnd(12, 98); q = a + ' + ' + b; ans = a + b; }
   else if (kind === 'sub'){ var a2 = rnd(21, 99), b2 = rnd(11, a2 - 1); q = a2 + ' - ' + b2; ans = a2 - b2; }
   else if (kind === 'mul'){ var a3 = rnd(2, 9), b3 = rnd(2, 9); q = a3 + ' × ' + b3; ans = a3 * b3; }
-  else { var d = rnd(2, 9), quo = rnd(2, 9); q = (d * quo) + ' ÷ ' + d; ans = quo; }
+  else if (kind === 'div') { var d = rnd(2, 9), quo = rnd(2, 9); q = (d * quo) + ' ÷ ' + d; ans = quo; }
+  else if (kind === 'area'){ var w = rnd(2, 12), h = rnd(2, 9); q = 'たて ' + h + 'cm、よこ ' + w + 'cm の長方形の面積（平方cm）'; ans = w * h; }
+  else if (kind === 'perim'){ var w2 = rnd(3, 15), h2 = rnd(3, 12); q = 'たて ' + h2 + 'cm、よこ ' + w2 + 'cm の長方形のまわりの長さ（cm）'; ans = 2 * (w2 + h2); }
+  else if (kind === 'avg'){ var n1 = rnd(2, 9) * 10, n2 = rnd(2, 9) * 10; q = n1 + '点と ' + n2 + '点の平均（点）'; ans = (n1 + n2) / 2; }
+  else if (kind === 'unit'){ var m = rnd(2, 9); q = m + 'm は何cm'; ans = m * 100; }
+  else { var dd = rnd(3, 9), qq = rnd(2, 8), rr = rnd(1, dd - 1); q = (dd * qq + rr) + ' ÷ ' + dd + ' のあまり'; ans = rr; }
   var opts = [ans];
   var cand = [ans + 1, ans - 1, ans + 2, ans - 2, ans + 10, ans - 10, ans + 3, ans * 2];
   for (var i = 0; i < cand.length && opts.length < 3; i++){
@@ -169,7 +194,15 @@ function mathQuestion(){
   }
   return { q: '計算しましょう： ' + q + ' = ?', choices: shuffle(opts).map(String), answer: String(ans), ex: q + ' = ' + ans + ' です' };
 }
+var PREF_EXTRA = [
+['北海道の形に似ていると言われる生き物は？','カニ',['タコ','クジラ'],'北海道の形はカニに似ていると言われることがあります'],
+['日本で一番長いトンネル、青函トンネルがつなぐのは？','本州と北海道',['本州と四国','本州と九州'],'青函トンネルは本州と北海道をつないでいます'],
+['沖縄県にある世界遺産のお城は？','首里城',['姫路城','松本城'],'首里城は沖縄県那覇市にあるお城です'],
+['富士山がある都道府県は？','静岡県と山梨県',['神奈川県と長野県','愛知県と岐阜県'],'富士山は静岡県と山梨県にまたがっています'],
+['日本で一番大きな湖は？','琵琶湖',['霞ヶ浦','サロマ湖'],'琵琶湖は滋賀県にある日本最大の湖です']
+];
 function prefQuestion(){
+  if (Math.random() < 0.3) return bankQuestion(PREF_EXTRA);
   var p = PREFS47[rnd(0, PREFS47.length - 1)];
   var opts = [p[1]];
   while (opts.length < 3){
@@ -212,6 +245,7 @@ function showQuestion(){
   var item = quiz.list[quiz.idx];
   $('prog').textContent = (quiz.idx + 1) + ' / 10 問目';
   $('score').textContent = '正解 ' + quiz.correct + ' 問';
+  $('combo').textContent = quiz.combo >= 2 ? '🔥 ' + quiz.combo + '連続正解中' : '';
   $('qtext').textContent = item.q;
   $('explain').style.display = 'none';
   $('nextBtn').style.display = 'none';
@@ -231,8 +265,9 @@ function answer(btn, choice, item){
     b.disabled = true;
     if (b.textContent === item.answer) b.classList.add('right');
   });
-  if (choice === item.answer){ quiz.correct++; }
-  else { btn.classList.add('wrong'); }
+  if (choice === item.answer){ quiz.correct++; quiz.combo++; if (quiz.combo > quiz.maxCombo) quiz.maxCombo = quiz.combo; }
+  else { btn.classList.add('wrong'); quiz.combo = 0; }
+  $('combo').textContent = quiz.combo >= 2 ? '🔥 ' + quiz.combo + '連続正解中' : '' ;
   var ex = $('explain');
   ex.innerHTML = (choice === item.answer ? '⭕ 正解です<br>' : '❌ 答えは「' + item.answer + '」でした<br>') + item.ex;
   ex.style.display = 'block';
@@ -249,7 +284,7 @@ function finish(){
   showOverNav();
   var sec = Math.round((Date.now() - quiz.t0) / 1000);
   var comment = quiz.correct === 10 ? '全問正解です　お勉強マスター！' : quiz.correct >= 7 ? 'よくできました　あと少しで全問正解です' : quiz.correct >= 4 ? 'その調子です　解説を読んで覚えましょう' : '解説を読めば次はできます　もう一度挑戦しましょう';
-  $('studyResult').innerHTML = '結果： 10問中 <b>' + quiz.correct + ' 問</b> 正解でした（' + sec + '秒）<br>' + comment;
+  $('studyResult').innerHTML = '結果： 10問中 <b>' + quiz.correct + ' 問</b> 正解でした（' + sec + '秒）<br>最大コンボ： ' + quiz.maxCombo + '連続正解<br>' + comment;
 }
 $('nextBtn').addEventListener('click', function(){
   quiz.idx++;
@@ -257,7 +292,7 @@ $('nextBtn').addEventListener('click', function(){
   else showQuestion();
 });
 $('startBtn').addEventListener('click', function(){
-  quiz = { list: makeSet($('catSel').value), idx: 0, correct: 0, t0: Date.now() };
+  quiz = { list: makeSet($('catSel').value), idx: 0, correct: 0, combo: 0, maxCombo: 0, t0: Date.now() };
   $('overNav').style.display = 'none';
   $('qbox').style.display = 'block';
   showQuestion();

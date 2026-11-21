@@ -48,6 +48,13 @@
 <span>スコア <b id="score">0</b></span>
 <span>ベスト <b id="best">―</b></span>
 </div>
+<div style="margin-top:10px">回転スピード：
+<select id="speedSel" style="background:#100d20;color:#eee;border:1px solid #3a3358;border-radius:8px;padding:8px;font-size:1rem">
+<option value="1.35">ゆっくり</option>
+<option value="1" selected>ふつう</option>
+<option value="0.65">はやい</option>
+</select>
+</div>
 <div class="spinarea"><span id="word">スタートを押してください</span></div>
 <button class="bigbtn" id="btnGo" type="button">スタート</button>
 <div class="choices" id="choices" style="display:none">
@@ -107,7 +114,17 @@ var BANK = [
   ['魔法少女', '魔法少年', '魔法使い'],
   ['パンケーキ', 'ホットケーキ', 'パソケーキ'],
   ['剣と盾', '剣と魔法', '弓と矢'],
-  ['魔王らてらる', '魔王らて子', '魔王らてらら']
+  ['魔王らてらる', '魔王らて子', '魔王らてらら'],
+  ['飛行機', '飛行場', '飛行士'],
+  ['自転車', '自動車', '三輪車'],
+  ['雪だるま', '雪まつり', '雪合戦'],
+  ['潜水艦', '潜水服', '潜水鏡'],
+  ['望遠鏡', '顕微鏡', '双眼鏡'],
+  ['信号機', '信号待ち', '青信号'],
+  ['運動会', '運動場', '運動靴'],
+  ['図工室', '音楽室', '理科室'],
+  ['魔力回復', '魔力切れ', '魔力全開'],
+  ['宝箱', '宝石箱', '道具箱']
 ];
 var TOTAL_Q = 10, SPIN_TICKS = 375; // 約6秒
 var qs = [], qi = 0, score = 0, correctCount = 0;
@@ -124,7 +141,7 @@ function shuffle(a){
   }
   return arr;
 }
-function periodFor(q){ return Math.max(0.45, 1.3 - q * 0.095); }
+function periodFor(q){ var mul = 1; try { mul = Number(document.getElementById('speedSel').value) || 1; } catch(e) {} return Math.max(0.3, (1.3 - q * 0.095) * mul); }
 function titleFor(n){
   if (n >= 10) return '動体視力の達人';
   if (n >= 8) return '鷹の目';

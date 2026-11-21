@@ -155,13 +155,41 @@ function showStep(){
   $('confirmMsg').textContent = '';
   playTone(FREQS[idx], 1.4);
 }
+var COMMENTS = {
+  top: ['らて子「すごい　らて子の耳より若いかも」', 'らてらる「見事だ　モスキート音まで聞き取るとはな」', 'らて子「わあ　すごく高い音まで聞こえたぉ」'],
+  high: ['らてらる「なかなか若い耳だ」', 'らて子「いい耳してるね　この調子ぉ」', 'らてらる「若々しい聞こえ方だな」'],
+  mid: ['らてらる「平均的だな　無理のない音量で楽しむといい」', 'らて子「ふつうくらいかな　大きな音はほどほどにね」', 'らてらる「標準的な結果だ　耳を休ませる時間も大事だぞ」'],
+  low: ['らて子「耳も大事にしないとだね」', 'らてらる「高い音は聞き取りにくくなっているようだな」', 'らて子「イヤホンの音量、大きくしすぎてないかな」'],
+  verylow: ['らてらる「気になるなら耳鼻科で相談するといい　これは目安だからな」', 'らて子「心配しすぎないで　気になる時はお医者さんに聞いてみてぉ」'],
+  none: ['らてらる「音量とイヤホンを確認して、もう一度試してみてくれ」', 'らて子「イヤホンがちゃんとつながっているか見てみてぉ」']
+};
+function pickComment(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
 function commentFor(f){
-  if (f >= 18000) return 'らて子「すごい　らて子の耳より若いかも」';
-  if (f >= 15000) return 'らてらる「なかなか若い耳だ」';
-  if (f >= 12000) return 'らてらる「平均的だな　無理のない音量で楽しむといい」';
-  if (f >= 8000) return 'らて子「耳も大事にしないとだね」';
-  if (f > 0) return 'らてらる「気になるなら耳鼻科で相談するといい　これは目安だからな」';
-  return 'らてらる「音量とイヤホンを確認して、もう一度試してみてくれ」';
+  if (f >= 18000) return pickComment(COMMENTS.top);
+  if (f >= 15000) return pickComment(COMMENTS.high);
+  if (f >= 12000) return pickComment(COMMENTS.mid);
+  if (f >= 8000) return pickComment(COMMENTS.low);
+  if (f > 0) return pickComment(COMMENTS.verylow);
+  return pickComment(COMMENTS.none);
+}
+function ageDetailFor(f){
+  if (f >= 20000) return '10代半ばの耳に一番近い聞こえ方です';
+  if (f >= 19000) return '10代後半から20代前半の耳に近い聞こえ方です';
+  if (f >= 18000) return '20代の耳に近い聞こえ方です';
+  if (f >= 17000) return '20代後半の耳に近い聞こえ方です';
+  if (f >= 16000) return '30代前半の耳に近い聞こえ方です';
+  if (f >= 15000) return '30代後半の耳に近い聞こえ方です';
+  if (f >= 14000) return '40代前半の耳に近い聞こえ方です';
+  if (f >= 12000) return '40代後半の耳に近い聞こえ方です';
+  if (f >= 10000) return '50代前半の耳に近い聞こえ方です';
+  if (f >= 8000) return '50代後半の耳に近い聞こえ方です';
+  if (f >= 6000) return '60代半ばの耳に近い聞こえ方です';
+  if (f >= 4000) return '70代前半の耳に近い聞こえ方です';
+  if (f >= 2000) return '80代前半の耳に近い聞こえ方です';
+  if (f >= 1000) return '80代後半の耳に近い聞こえ方です';
+  if (f >= 500) return '80代後半より上の耳に近い聞こえ方です';
+  if (f > 0) return '90歳前後の耳に近い聞こえ方です';
+  return '';
 }
 function finish(){
   done = true;
@@ -176,7 +204,7 @@ function finish(){
   }
   if (heardMax > 0){
     $('result').innerHTML = '聞こえた一番高い音： <b>' + fmtHz(heardMax) + '</b><br>' +
-      '耳年齢の目安<br><span class="age">' + AGE[heardMax] + '</span><br>' +
+      '耳年齢の目安<br><span class="age">' + AGE[heardMax] + '</span><br>' + ageDetailFor(heardMax) + '<br>' +
       commentFor(heardMax) + '<br>' +
       (isRecord ? '🎉 ベスト記録を更新しました' : 'ベスト記録： ' + fmtHz(best));
   } else {

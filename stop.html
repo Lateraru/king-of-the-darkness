@@ -42,7 +42,9 @@
 目標：
 <select id="targetSel">
 <option value="5">5秒</option>
+<option value="7">7秒</option>
 <option value="10" selected>10秒</option>
+<option value="12">12秒</option>
 <option value="15">15秒</option>
 <option value="20">20秒</option>
 <option value="30">30秒</option>
@@ -85,12 +87,17 @@ function $(id){ return document.getElementById(id); }
 var state = 'idle'; // idle | running | stopped
 var t0 = 0, timer = null;
 
+var TITLES = [
+  ['神業です！　称号：時を止める魔王', '神業です！　称号：ピッタリの覇者', '神業です！　称号：体内時計マスター'],
+  ['すごい！　ほぼピッタリ　称号：秒読みの達人', 'すごい！　ほぼピッタリ　称号：感覚の魔術師', 'すごい！　ほぼピッタリ　称号：時計いらず'],
+  ['おしい！　称号：あと一歩の勇者', 'おしい！　称号：惜しさの貴公子', 'おしい！　称号：ピッタリ予備軍'],
+  ['なかなかの感覚です　称号：感覚修行中', 'なかなかの感覚です　称号：時の見習い', 'なかなかの感覚です　称号：秒の旅人'],
+  ['まだまだ　感覚を研ぎ澄ましましょう　称号：時の挑戦者', 'まだまだ　次は数え方を変えてみましょう　称号：リベンジ魔王', 'まだまだ　ゆっくり数えるのがコツです　称号：修行中の身']
+];
 function ratingFor(absDiff){
-  if (absDiff <= 0.10) return '神業です！';
-  if (absDiff <= 0.30) return 'すごい！　ほぼピッタリ';
-  if (absDiff <= 0.50) return 'おしい！';
-  if (absDiff <= 1.00) return 'なかなかの感覚です';
-  return 'まだまだ　感覚を研ぎ澄ましましょう';
+  var band = absDiff <= 0.10 ? 0 : absDiff <= 0.30 ? 1 : absDiff <= 0.50 ? 2 : absDiff <= 1.00 ? 3 : 4;
+  var arr = TITLES[band];
+  return arr[Math.floor(Math.random() * arr.length)];
 }
 function loadBests(){
   try { return JSON.parse(localStorage.getItem('maouStopBestV1') || '{}'); } catch(e){ return {}; }
