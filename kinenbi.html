@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>今日は何の日・記念日 | 便利情報 | 魔王らてらる・魔王らて子 公式ファンサイト</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .stage{max-width:760px;margin:0 auto}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+  .chips a{background:#241f35;border:1px solid #3a3355;color:#f2e9d8;border-radius:999px;padding:7px 13px;text-decoration:none;font-size:.92rem}
+  .sec{margin:22px 0}
+  .sec h2{border-left:5px solid #a06cd5;padding-left:9px}
+  .song{display:flex;justify-content:space-between;gap:10px;padding:8px 10px;border-bottom:1px solid #2c2742}
+  .song b{font-weight:bold;white-space:nowrap}
+  .song span{color:#bdb4d4;text-align:right}
+  .today{border:2px solid #e8b34b;border-radius:12px;padding:16px;text-align:center;margin:16px 0;background:#241d3f}
+  .today .big{font-size:1.5rem;font-weight:bold;margin:6px 0}
+  .mnote{font-size:.88rem;color:#bdb4d4;margin-top:6px}
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="inner">
+    <a class="logo" href="index.html">魔王<span>らてらる</span> × 魔王<span style="color:#a06cd5">らて子</span></a>
+    <nav class="main">
+      <a href="index.html">ホーム</a>
+      <a href="index.html#news">お知らせ</a>
+      <a href="board.html">ファン掲示板</a>
+      <a href="chat.html">魔力SIチャット</a>
+      <a href="games.html">ミニゲーム</a>
+      <a href="secret.html">秘密基地</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="stage">
+<h1>📅 今日は何の日・記念日</h1>
+<p>有名な記念日を中心に、1年分をまとめました<br>
+毎日の会話のネタにどうぞ</p>
+
+<div class="today">
+<div id="todayDate">読み込み中</div>
+<div class="big" id="todayName"></div>
+<div id="todayNote"></div>
+</div>
+
+<div class="chips"><a href="#m1">1月</a><a href="#m2">2月</a><a href="#m3">3月</a><a href="#m4">4月</a><a href="#m5">5月</a><a href="#m6">6月</a><a href="#m7">7月</a><a href="#m8">8月</a><a href="#m9">9月</a><a href="#m10">10月</a><a href="#m11">11月</a><a href="#m12">12月</a></div>
+
+<div id="months"></div>
+
+<p>毎月29日は肉の日、毎月25日はプリンの日です<br>
+日にちが動く祝日や行事は、それぞれの月の下にメモを書いています</p>
+<p><a href="jouhou.html">情報まとめに戻る</a>　<a href="index.html">トップページに戻る</a></p>
+</div>
+</main>
+
+<footer class="site">
+  魔王らてらる・魔王らて子 公式ファンサイト（trailer-project.com）
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  var DATA = {
+    1:{1:"元日|新しい1年の始まり",2:"初夢の日",3:"ひとみの日",7:"七草の日|七草がゆで無病息災",10:"110番の日",11:"鏡開き",12:"スキーの日",15:"いちごの日",17:"防災とボランティアの日",19:"カラオケの日",22:"カレーの日",25:"中華まんの日",26:"文化財防火デー",31:"愛妻の日"},
+    2:{1:"テレビ放送記念日",2:"夫婦の日",3:"節分|豆まきと恵方巻き",5:"笑顔の日",9:"肉の日",11:"建国記念の日",14:"バレンタインデー",22:"猫の日|にゃんにゃんにゃん",23:"富士山の日",29:"うるう日|4年に1度の特別な日"},
+    3:{3:"ひな祭り・耳の日",5:"サンゴの日",8:"みつばちの日",9:"ありがとうの日",10:"砂糖の日",14:"ホワイトデー",27:"さくらの日"},
+    4:{1:"エイプリルフール",3:"シーサーの日",4:"あんぱんの日",6:"城の日",8:"タイヤの日",10:"駅弁の日",12:"パンの記念日",14:"オレンジデー",18:"発明の日",22:"アースデー|地球のことを考える日",23:"子ども読書の日",29:"昭和の日・羊肉の日"},
+    5:{1:"メーデー",3:"憲法記念日・ゴミの日",4:"みどりの日",5:"こどもの日・おもちゃの日",6:"コロッケの日",8:"ゴーヤーの日",9:"アイスクリームの日",16:"旅の日",18:"ことばの日",29:"こんにゃくの日",31:"世界禁煙デー"},
+    6:{1:"衣替え・気象記念日",4:"虫の日",5:"環境の日",6:"楽器の日",9:"ロックの日",10:"時の記念日",11:"傘の日",16:"和菓子の日",18:"おにぎりの日",26:"露天風呂の日",28:"パフェの日"},
+    7:{3:"ソフトクリームの日",6:"サラダ記念日",7:"七夕",10:"納豆の日",14:"ひまわりの日",15:"マンゴーの日",20:"ハンバーガーの日",23:"ふみの日",26:"幽霊の日",27:"スイカの日",30:"梅干しの日"},
+    8:{1:"水の日",2:"パンツの日",3:"はちみつの日",4:"箸の日",7:"花の日・バナナの日",8:"そろばんの日・タコの日",9:"ながさき平和の日・ムーミンの日",10:"帽子の日・焼き鳥の日",11:"山の日",13:"左利きの日",15:"終戦記念日",19:"バイクの日",27:"ジェラートの日",29:"焼き肉の日",31:"野菜の日"},
+    9:{1:"防災の日",2:"宝くじの日",3:"グミの日・ドラえもんの誕生日|2112年生まれの設定です",4:"くしの日",6:"黒の日",9:"救急の日・重陽の節句",10:"牛タンの日",12:"宇宙の日",15:"老人の日",20:"空の日",29:"招き猫の日"},
+    10:{1:"メガネの日",2:"豆腐の日",3:"登山の日",4:"天使の日",7:"ミステリー記念日",8:"木の日",10:"目の愛護デー・銭湯の日",13:"さつまいもの日",14:"鉄道の日",15:"きのこの日",17:"沖縄そばの日",18:"冷凍食品の日",20:"リサイクルの日",21:"あかりの日",26:"柿の日",27:"読書の日",29:"おしぼりの日",30:"たまごかけごはんの日",31:"ハロウィン"},
+    11:{1:"犬の日|わんわんわん",3:"文化の日・まんがの日・文具の日",4:"魔王らてらる・魔王らて子の誕生日|🎂 サイトの二人の記念日です",7:"鍋の日",8:"いい歯の日",9:"換気の日",10:"トイレの日",11:"ポッキー＆プリッツの日・チーズの日",15:"七五三・きものの日",17:"将棋の日",18:"ミッキーマウスの誕生日",20:"ピザの日",22:"いい夫婦の日",23:"勤労感謝の日",26:"いい風呂の日",29:"いい服の日",30:"本みりんの日"},
+    12:{1:"映画の日",3:"妻の日・カレンダーの日",6:"音の日",7:"クリスマスツリーの日",12:"漢字の日",13:"正月事始め",14:"四十七士討ち入りの日",17:"飛行機の日",21:"遠距離恋愛の日",24:"クリスマスイブ",25:"クリスマス",27:"ピーターパンの日",30:"地下鉄記念日",31:"大晦日"}
+  };
+  var NOTES = {
+    1:"成人の日は第2月曜日です",
+    3:"春分の日は年によって20日か21日です",
+    5:"母の日は第2日曜日です",
+    6:"父の日は第3日曜日です",
+    7:"海の日は第3月曜日　土用の丑の日は年によって変わります",
+    9:"敬老の日は第3月曜日　秋分の日は年によって前後します",
+    10:"スポーツの日は第2月曜日です"
+  };
+  var WD = ["日","月","火","水","木","金","土"];
+  function esc(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
+  function parts(v){ var p = v.split("|"); return { name: p[0], note: p[1] || "" }; }
+
+  var now = new Date();
+  var m = now.getMonth() + 1, d = now.getDate();
+  document.getElementById("todayDate").textContent = m + "月" + d + "日（" + WD[now.getDay()] + "）";
+  var tName = document.getElementById("todayName");
+  var tNote = document.getElementById("todayNote");
+  if (DATA[m] && DATA[m][d]) {
+    var tp = parts(DATA[m][d]);
+    tName.textContent = tp.name;
+    tNote.textContent = tp.note;
+  } else {
+    tName.textContent = "今日は登録記念日がありません";
+    var nm = m, nd = d, found = null;
+    for (var i = 0; i < 366 && !found; i++) {
+      nd++;
+      var dim = new Date(now.getFullYear(), nm, 0).getDate();
+      if (nd > dim) { nd = 1; nm = nm % 12 + 1; }
+      if (DATA[nm] && DATA[nm][nd]) found = { m: nm, d: nd, v: DATA[nm][nd] };
+    }
+    if (found) tNote.textContent = "次の記念日は " + found.m + "月" + found.d + "日 の " + parts(found.v).name + " です";
+  }
+
+  var html = "";
+  for (var mm = 1; mm <= 12; mm++) {
+    html += '<div class="sec" id="m' + mm + '"><h2>' + mm + '月</h2><div class="card">';
+    var days = Object.keys(DATA[mm]).map(Number).sort(function(a,b){ return a - b; });
+    for (var j = 0; j < days.length; j++) {
+      var pp = parts(DATA[mm][days[j]]);
+      html += '<div class="song"><b>' + days[j] + '日</b><span>' + esc(pp.name) + (pp.note ? "　" + esc(pp.note) : "") + '</span></div>';
+    }
+    html += '</div>';
+    if (NOTES[mm]) html += '<p class="mnote">' + esc(NOTES[mm]) + '</p>';
+    html += '</div>';
+  }
+  document.getElementById("months").innerHTML = html;
+})();
+</script>
+
+</body>
+</html>

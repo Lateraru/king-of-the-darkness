@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>旅行の持ち物チェックリスト | 便利情報 | 魔王らてらる・魔王らて子 公式ファンサイト</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .stage{max-width:760px;margin:0 auto}
+  .sec{margin:22px 0}
+  .sec h2{border-left:5px solid #a06cd5;padding-left:9px}
+  .item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-bottom:1px solid #2c2742;cursor:pointer}
+  .item input{width:20px;height:20px;accent-color:#a06cd5}
+  .item.done span{text-decoration:line-through;color:#bdb4d4}
+  .meter{height:12px;background:#17142a;border-radius:6px;overflow:hidden;margin:8px 0}
+  .meter > div{height:100%;background:#57c46a;width:0%}
+  .rbtn{padding:9px 16px;border-radius:10px;border:2px solid #3a3358;background:#241d3f;color:#eee;cursor:pointer;font-size:.95rem}
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="inner">
+    <a class="logo" href="index.html">魔王<span>らてらる</span> × 魔王<span style="color:#a06cd5">らて子</span></a>
+    <nav class="main">
+      <a href="index.html">ホーム</a>
+      <a href="index.html#news">お知らせ</a>
+      <a href="board.html">ファン掲示板</a>
+      <a href="chat.html">魔力SIチャット</a>
+      <a href="games.html">ミニゲーム</a>
+      <a href="secret.html">秘密基地</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="stage">
+<h1>🧳 旅行の持ち物チェックリスト</h1>
+<p>旅行や遠征の前に、忘れ物がないかチェックできます<br>
+チェックはこの端末の中にだけ保存されます</p>
+<p id="countLine">0 / 30 そろいました</p>
+<div class="meter"><div id="meterBar"></div></div>
+<p id="doneMsg" style="display:none">🎉 全部そろいました　いってらっしゃい！</p>
+
+<div class="sec"><h2>💰 貴重品・お金</h2><div class="card">
+<label class="item"><input type="checkbox" data-k="m1"><span>財布（現金とカード）</span></label>
+<label class="item"><input type="checkbox" data-k="m2"><span>スマホ</span></label>
+<label class="item"><input type="checkbox" data-k="m3"><span>身分証（免許証・マイナンバーカードなど）</span></label>
+<label class="item"><input type="checkbox" data-k="m4"><span>チケット・予約の控え</span></label>
+<label class="item"><input type="checkbox" data-k="m5"><span>家の鍵</span></label>
+<label class="item"><input type="checkbox" data-k="m6"><span>常備薬・保険証のコピー</span></label>
+</div></div>
+
+<div class="sec"><h2>👕 衣類</h2><div class="card">
+<label class="item"><input type="checkbox" data-k="c1"><span>着替え（日数分＋予備1セット）</span></label>
+<label class="item"><input type="checkbox" data-k="c2"><span>下着・靴下</span></label>
+<label class="item"><input type="checkbox" data-k="c3"><span>パジャマ</span></label>
+<label class="item"><input type="checkbox" data-k="c4"><span>羽織るもの（冷房・気温差対策）</span></label>
+<label class="item"><input type="checkbox" data-k="c5"><span>汚れ物入れの袋</span></label>
+</div></div>
+
+<div class="sec"><h2>🧴 洗面・ケア</h2><div class="card">
+<label class="item"><input type="checkbox" data-k="s1"><span>歯ブラシ・歯みがき</span></label>
+<label class="item"><input type="checkbox" data-k="s2"><span>洗顔・スキンケア</span></label>
+<label class="item"><input type="checkbox" data-k="s3"><span>シャンプー類（宿にない場合）</span></label>
+<label class="item"><input type="checkbox" data-k="s4"><span>タオル・ハンカチ</span></label>
+<label class="item"><input type="checkbox" data-k="s5"><span>ティッシュ・ウェットティッシュ</span></label>
+<label class="item"><input type="checkbox" data-k="s6"><span>日焼け止め（季節に合わせて）</span></label>
+</div></div>
+
+<div class="sec"><h2>🔌 スマホ・ガジェット</h2><div class="card">
+<label class="item"><input type="checkbox" data-k="g1"><span>充電ケーブル</span></label>
+<label class="item"><input type="checkbox" data-k="g2"><span>モバイルバッテリー</span></label>
+<label class="item"><input type="checkbox" data-k="g3"><span>イヤホン</span></label>
+<label class="item"><input type="checkbox" data-k="g4"><span>電源タップ（部屋のコンセント対策）</span></label>
+</div></div>
+
+<div class="sec"><h2>⭐ あると安心</h2><div class="card">
+<label class="item"><input type="checkbox" data-k="a1"><span>折りたたみ傘</span></label>
+<label class="item"><input type="checkbox" data-k="a2"><span>エコバッグ（お土産用）</span></label>
+<label class="item"><input type="checkbox" data-k="a3"><span>絆創膏・痛み止め</span></label>
+<label class="item"><input type="checkbox" data-k="a4"><span>マスクの予備</span></label>
+<label class="item"><input type="checkbox" data-k="a5"><span>ビニール袋（何かと便利）</span></label>
+<label class="item"><input type="checkbox" data-k="a6"><span>筆記用具・メモ</span></label>
+<label class="item"><input type="checkbox" data-k="a7"><span>推しグッズ（遠征の人は忘れずに）</span></label>
+<label class="item"><input type="checkbox" data-k="a8"><span>双眼鏡・ペンライト（ライブ遠征用）</span></label>
+<label class="item"><input type="checkbox" data-k="a9"><span>帰りの荷物スペース（お土産分を空けておく）</span></label>
+</div></div>
+
+<p><button type="button" class="rbtn" id="resetBtn">チェックを全部はずす</button></p>
+<p><a href="jouhou.html">情報まとめに戻る</a>　<a href="index.html">トップページに戻る</a></p>
+</div>
+</main>
+
+<footer class="site">
+  魔王らてらる・魔王らて子 公式ファンサイト（trailer-project.com）
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  var KEY = 'maouMochimonoV1';
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('input[type=checkbox][data-k]'));
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch(e) { saved = {}; }
+  var countLine = document.getElementById('countLine');
+  var meterBar = document.getElementById('meterBar');
+  var doneMsg = document.getElementById('doneMsg');
+  function refresh(){
+    var n = 0;
+    boxes.forEach(function(b){
+      if (b.checked) n++;
+      b.parentNode.className = 'item' + (b.checked ? ' done' : '');
+    });
+    countLine.textContent = n + ' / ' + boxes.length + ' そろいました';
+    meterBar.style.width = (boxes.length ? (n / boxes.length * 100) : 0) + '%';
+    doneMsg.style.display = (n === boxes.length && boxes.length > 0) ? '' : 'none';
+    var out = {};
+    boxes.forEach(function(b){ if (b.checked) out[b.getAttribute('data-k')] = 1; });
+    try { localStorage.setItem(KEY, JSON.stringify(out)); } catch(e) {}
+  }
+  boxes.forEach(function(b){
+    if (saved[b.getAttribute('data-k')]) b.checked = true;
+    b.addEventListener('change', refresh);
+  });
+  document.getElementById('resetBtn').addEventListener('click', function(){
+    boxes.forEach(function(b){ b.checked = false; });
+    refresh();
+  });
+  refresh();
+})();
+</script>
+
+</body>
+</html>
