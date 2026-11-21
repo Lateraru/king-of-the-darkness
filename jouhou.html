@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>情報まとめ | 魔王らてらる・魔王らて子 公式ファンサイト</title>
+<meta name="description" content="便利情報のまとめページ　天気や映画、アニメ、車情報、防災、お出かけ情報など、毎日に役立つ情報を集めました">
 <link rel="stylesheet" href="style.css">
 <style>
   .stage{max-width:760px;margin:0 auto}
@@ -116,12 +117,25 @@
 
 
 <script>
-/* 来訪者カウンター: デプロイ時に STATS_BASE へ接続先を設定（それまでは何もしません） */
+/* 来訪者カウンター＋導線クリック記録: デプロイ時に STATS_BASE へ接続先を設定（それまでは何もしません） */
 (function(){
   var STATS_BASE = '';
   if (!STATS_BASE) return;
+  document.addEventListener('click', function(ev){
+    var a = (ev.target && ev.target.closest) ? ev.target.closest('a[href]') : null;
+    if (!a) return;
+    var href = a.getAttribute('href') || '';
+    var dest = '';
+    if (href.indexOf('store.line.me') >= 0) dest = 'line';
+    else if (href.indexOf('line.me/ti/g2') >= 0) dest = 'linechat';
+    else if (href.indexOf('YL26sVq0rjE') >= 0) dest = 'mv404';
+    else if (href.indexOf('6c3PI1Vy3Nc') >= 0) dest = 'healing';
+    else if (href.indexOf('youtube.com/@latemarined') >= 0) dest = 'youtube';
+    if (!dest) return;
+    fetch(STATS_BASE + '/api/click', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to: dest }), keepalive: true }).catch(function(){});
+  }, true);
   try {
-    var slug = 'site';
+    var slug = 'pg-jouhou';
     var today = new Date().toLocaleDateString('sv-SE');
     var seen = {};
     try { seen = JSON.parse(localStorage.getItem('maouHitV1') || '{}'); } catch (e) {}
