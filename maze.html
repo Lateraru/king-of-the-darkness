@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>魔王城めいろ | ミニゲーム | 魔王らてらる・魔王らて子 公式ファンサイト</title>
+<meta name="description" content="迷路ゲーム　魔王城の迷路を抜けてゴールを目指す、魔王らてらる・魔王らて子のミニゲームです">
 <link rel="stylesheet" href="style.css">
 <style>
   .char-select{display:flex;gap:12px;margin:16px 0}
@@ -257,6 +258,27 @@ function shareSite(){
     try { localStorage.setItem('maouHitV1', JSON.stringify(seen)); } catch (e) {}
     fetch(STATS_BASE + '/api/hit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ game: slug }), keepalive: true }).catch(function(){});
   } catch (e) {}
+})();
+</script>
+
+<script>
+/* 導線クリック記録: デプロイ時に STATS_BASE へ接続先を設定（それまでは何もしません） */
+(function(){
+  var STATS_BASE = '';
+  if (!STATS_BASE) return;
+  document.addEventListener('click', function(ev){
+    var a = (ev.target && ev.target.closest) ? ev.target.closest('a[href]') : null;
+    if (!a) return;
+    var href = a.getAttribute('href') || '';
+    var dest = '';
+    if (href.indexOf('store.line.me') >= 0) dest = 'line';
+    else if (href.indexOf('line.me/ti/g2') >= 0) dest = 'linechat';
+    else if (href.indexOf('YL26sVq0rjE') >= 0) dest = 'mv404';
+    else if (href.indexOf('6c3PI1Vy3Nc') >= 0) dest = 'healing';
+    else if (href.indexOf('youtube.com/@latemarined') >= 0) dest = 'youtube';
+    if (!dest) return;
+    fetch(STATS_BASE + '/api/click', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to: dest }), keepalive: true }).catch(function(){});
+  }, true);
 })();
 </script>
 </body>

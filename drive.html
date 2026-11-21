@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>車庫入れシミュレータ | 便利情報 | 魔王らてらる・魔王らて子 公式ファンサイト</title>
+<title>車庫入れシミュレータ（トレーラーのバック練習・けん引一発試験対策） | 魔王らてらる・魔王らて子 公式ファンサイト</title>
+<meta name="description" content="車庫入れの練習用シミュレータ　普通車からトレーラー、フォークリフト、戦車まで9車両のバックの動きを練習できます　けん引免許の一発試験対策にも">
 <link rel="stylesheet" href="style.css">
 <style>
   .stage{max-width:760px;margin:0 auto;text-align:center}
@@ -51,6 +52,11 @@
 <p><b>これは車庫入れの練習用シミュレータです</b><br>
 実際の運転や教習の代わりにはなりません<br>
 車両ごとの動きの違いを理解して、バックで入れる感覚をつかむために使えます</p>
+<h2>🚛 トレーラー（けん引）免許を一発試験で合格しました</h2>
+<p>このシミュレータを作った管理人は、トレーラーの動きをシミュレータで理解してから試験に挑み、けん引免許の一発試験（免許センターでの直接試験）に一回で合格しました<br>
+トレーラーのバックは普通車と逆に動く場面があり、頭で考えるより「動きを見て覚える」のが近道です<br>
+教習トレーラーとフィフストレーラーで、折れ角の感覚と切り返しのコツをつかんでみてください</p>
+
 
 <div>
 <button type="button" class="vbtn on" data-v="car">普通車</button><button type="button" class="vbtn" data-v="truck2">準中型トラック</button><button type="button" class="vbtn" data-v="truck">大型トラック</button><button type="button" class="vbtn" data-v="bus">大型バス</button><button type="button" class="vbtn" data-v="school">教習トレーラー</button><button type="button" class="vbtn" data-v="fifth">フィフストレーラー</button><button type="button" class="vbtn" data-v="fork">フォークリフト</button><button type="button" class="vbtn" data-v="loader">大型特殊 教習用</button><button type="button" class="vbtn" data-v="tank">大型特殊 戦車</button>
@@ -770,6 +776,27 @@ requestAnimationFrame(loop);
     try { localStorage.setItem('maouHitV1', JSON.stringify(seen)); } catch (e) {}
     fetch(STATS_BASE + '/api/hit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ game: slug }), keepalive: true }).catch(function(){});
   } catch (e) {}
+})();
+</script>
+
+<script>
+/* 導線クリック記録: デプロイ時に STATS_BASE へ接続先を設定（それまでは何もしません） */
+(function(){
+  var STATS_BASE = '';
+  if (!STATS_BASE) return;
+  document.addEventListener('click', function(ev){
+    var a = (ev.target && ev.target.closest) ? ev.target.closest('a[href]') : null;
+    if (!a) return;
+    var href = a.getAttribute('href') || '';
+    var dest = '';
+    if (href.indexOf('store.line.me') >= 0) dest = 'line';
+    else if (href.indexOf('line.me/ti/g2') >= 0) dest = 'linechat';
+    else if (href.indexOf('YL26sVq0rjE') >= 0) dest = 'mv404';
+    else if (href.indexOf('6c3PI1Vy3Nc') >= 0) dest = 'healing';
+    else if (href.indexOf('youtube.com/@latemarined') >= 0) dest = 'youtube';
+    if (!dest) return;
+    fetch(STATS_BASE + '/api/click', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to: dest }), keepalive: true }).catch(function(){});
+  }, true);
 })();
 </script>
 </body>
