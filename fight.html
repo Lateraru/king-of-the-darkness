@@ -43,7 +43,7 @@
 <h1>🥊 魔王格闘バトル</h1>
 <p>1対1の格闘バトルです<br>
 2ラウンド先取で勝ち　勝ち進むと相手が強くなります<br>
-最後の魔界大皇帝を倒せば優勝です</p>
+最後の影ダブルを倒せば優勝です</p>
 
 <div id="selectPanel">
 <h2>キャラクター選択</h2>
@@ -77,7 +77,8 @@
 </div>
 <p class="small">キー操作：←→で移動　↑でジャンプ　Jが弱攻撃　Kが強攻撃　Lが必殺技　Hが超必殺技　↓かSを押している間ガード<br>
 超必殺技は、体力が30%以下になったら1回だけ使えます（大きく光ったらチャンスです）<br>
-ガード中はダメージを少しだけ受けます　必殺技は少し待つとまた使えます</p>
+ガード中はダメージを少しだけ受けます　必殺技は少し待つとまた使えます<br>
+ジャンプ中に弱か強を押すと空中攻撃が出ます　最終戦は影ダブルです</p>
 
 <div id="resultPanel" class="card" style="display:none">
 <p id="resultText" style="font-weight:bold"></p>
@@ -130,8 +131,9 @@ var CH = {
   lateko: { name: '魔王らて子', speed: 3.15, heavyRange: 88, accent: '#a06cd5', special: 'spin', specialName: '高速回転アタック', superName: '超高速回転アタック' }
 };
 var ATK = {
-  light: { su: 6, ac: 5, rc: 11, dmg: 5, range: 84, push: 3, stun: 12 },
-  heavy: { su: 14, ac: 6, rc: 21, dmg: 11, range: 0, push: 7, stun: 19 },
+  light: { su: 6, ac: 5, rc: 10, dmg: 5, range: 84, push: 3, stun: 12 },
+  heavy: { su: 13, ac: 6, rc: 21, dmg: 11, range: 0, push: 7, stun: 19 },
+  air: { su: 5, ac: 5, rc: 10, dmg: 6, range: 82, push: 4, stun: 13 },
   shot: { su: 12, ac: 1, rc: 15, dmg: 8, range: 0, push: 4, stun: 14 },
   spinHit: { dmg: 9, push: 6, stun: 15 },
   superShot: { dmg: 26, push: 10, stun: 22 },
@@ -140,7 +142,8 @@ var ATK = {
 var STAGES = [
   { label: '第1戦', variant: 'normal', hp: 100, dmgMul: 1.0, ai: { react: 17, blockP: 0.12, aggro: 0.45 } },
   { label: '第2戦', variant: 'shadow', hp: 112, dmgMul: 1.1, ai: { react: 11, blockP: 0.28, aggro: 0.65 } },
-  { label: '最終戦', variant: 'boss', hp: 145, dmgMul: 1.25, ai: { react: 7, blockP: 0.42, aggro: 0.85 } }
+  { label: '第3戦', variant: 'boss', hp: 145, dmgMul: 1.25, ai: { react: 7, blockP: 0.42, aggro: 0.85 } },
+  { label: '最終戦', variant: 'double', hp: 165, dmgMul: 1.35, ai: { react: 6, blockP: 0.5, aggro: 0.9 } }
 ];
 
 /* ===== 音 ===== */
@@ -200,11 +203,11 @@ function mkFighter(charKey, x, variant, hpMul, dmgMul){
   return {
     key: charKey, ch: CH[charKey], variant: variant,
     img: variant === 'normal' ? base : null, baseImg: base,
-    dispName: variant === 'boss' ? '魔界大皇帝' : (variant === 'shadow' ? '影の' + CH[charKey].name : CH[charKey].name),
+    dispName: variant === 'boss' ? '魔界大皇帝' : (variant === 'double' ? '影ダブル・' + CH[charKey].name : (variant === 'shadow' ? '影の' + CH[charKey].name : CH[charKey].name)),
     x: x, y: GROUND, vx: 0, vy: 0, face: x < W / 2 ? 1 : -1,
     hp: Math.round(100 * hpMul), maxHp: Math.round(100 * hpMul), dmgMul: dmgMul,
     state: 'idle', t: 0, atk: null, atkHit: false, stun: 0, blockStun: 0, cd: 0,
-    guarding: false, spinA: 0, scale: variant === 'boss' ? 1.3 : 1, hitFlash: 0,
+    guarding: false, spinA: 0, scale: variant === 'boss' ? 1.3 : (variant === 'double' ? 1.15 : 1), hitFlash: 0,
     superUsed: false, spinCfg: null, recT: 14
   };
 }
@@ -270,13 +273,13 @@ function startMatch(idx){
 }
 function endMatch(playerWon){
   phase = 'matchEnd';
-  if (playerWon && stageIdx === 2){
+  if (playerWon && stageIdx === STAGES.length - 1){
     try {
       var best = JSON.parse(localStorage.getItem('maouFightBest') || '{}');
       best.champ = (best.champ || 0) + 1;
       localStorage.setItem('maouFightBest', JSON.stringify(best));
     } catch (e) {}
-    $('resultText').innerHTML = '🏆 優勝です！　魔界大皇帝を倒しました';
+    $('resultText').innerHTML = '🏆 優勝です！　影ダブルを倒しました';
     $('btnNext').style.display = 'none'; $('btnRetry').style.display = ''; $('btnReselect').style.display = '';
     sfxWin();
   } else if (playerWon){
@@ -353,6 +356,7 @@ function aiThink(){
     else if (r < 0.93) { aiMoveDir = -dir; aiMove = 8; }
     else aiGuardT = 10;
   }
+  if (E.y < GROUND && dist < 130 && Math.random() < 0.45) aiPress.light = true;
   aiT = ai.react + Math.floor(Math.random() * 8);
 }
 function aiInput(){
@@ -365,7 +369,8 @@ function aiInput(){
 
 /* ===== 戦闘 ===== */
 function startAttack(f, kind){
-  if (f.state !== 'idle' || f.y < GROUND) return;
+  if (f.state !== 'idle') return;
+  if (f.y < GROUND && kind !== 'light' && kind !== 'heavy') return;
   if (kind === 'super'){
     if (!superReady(f)) return;
     f.superUsed = true;
@@ -380,6 +385,7 @@ function startAttack(f, kind){
     else { f.state = 'spin'; f.t = 0; f.atkHit = false; f.spinCfg = { speed: 9, dur: 16, dmg: ATK.spinHit.dmg, push: ATK.spinHit.push, stun: ATK.spinHit.stun, rec: 14 }; sfxSpin(); }
     return;
   }
+  if (f.y < GROUND) kind = 'air';
   f.state = 'attack'; f.atk = kind; f.t = 0; f.atkHit = false;
 }
 function addSparks(x, y, color, n){

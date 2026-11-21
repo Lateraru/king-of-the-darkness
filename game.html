@@ -52,7 +52,7 @@
       <p>敵とアイテムの見分け方<br>敵には赤い▼の目印と赤い影がついています<br>アイテムは、まわる輪っかと名前の札が目印です</p>
       <p>🗡️魔剣を取ると10秒間、剣を振り回して障害物をなぎ払えます<br>🪄魔法の杖を取ると10秒間、魔法ビームで障害物を撃ち落とせます<br>壊すと+40点<br>💖復活アイテムを取ると、1回だけその場で復活できます</p>
       <p>召喚ボタンを押すと、相方がすぐに登場します<br>登場して0.5秒後に、障害物を全部壊して帰ります<br>ボスの弾も消えます<br>もう一度呼べるまで30秒かかります</p>
-      <p>進んでいくとネタボスが登場します<br>弾をよけきれば、そのうち勝手に帰っていきます</p>
+      <p>進んでいくとネタボスが登場します<br>弾をよけきれば、そのうち勝手に帰っていきます<br>新ボス「🍮プリン大公」も登場します<br>3000進むごとに夜が深くなります</p>
       <p>地面のゾーン：緑は加速、橙は減速します<br>⭐️を取ると+25点（高い所の星はジャンプで取ろう）</p>
       <p style="margin-bottom:0">スコアはあなたのブラウザの中にだけ保存されます</p>
     </div>
@@ -226,11 +226,19 @@
       { emoji: '🧀', name: 'チーズ男爵', spread: true, rate: 88 },
       { emoji: '🥒', name: 'きゅうり番長', spread: false, rate: 48 },
       { emoji: '🍦', name: 'ソフトクリーム王子', spread: false, rate: 62 },
-      { emoji: '🐸', name: 'ケロケロ大佐', spread: false, rate: 42 }
+      { emoji: '🐸', name: 'ケロケロ大佐', spread: false, rate: 42 },
+      { emoji: '🍮', name: 'プリン大公', spread: true, rate: 66 }
     ];
     var b = pool[Math.floor(Math.random() * pool.length)];
     var byes = ['お腹が減ったので帰っていった', '魔王には勝てないと判断し逃げていった', '彼女の誕生日だったのを思い出して帰っていった', 'お母さんに呼ばれたので帰っていった', '洗濯物を取り込むのを思い出して帰っていった', '推しの配信が始まるので帰っていった', 'スマホの充電が切れそうなので帰っていった', 'バイトの時間なので帰っていった', 'なんか眠くなったので帰っていった', 'お腹が痛くなったので帰っていった'];
     return { emoji: b.emoji, name: b.name, spread: b.spread, rate: b.rate, x: W + 90, y: GL - 118, baseY: GL - 118, t: 0, fightT: 0, phase: 'in', bye: byes[Math.floor(Math.random() * byes.length)] };
+  }
+
+  function burst(x, y, color, n){
+    for (var k = 0; k < (n || 6); k++) {
+      var a = Math.random() * 6.28, v = 1 + Math.random() * 3;
+      parts.push({ x: x, y: y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 1, life: 0.6 + Math.random() * 0.4, color: color, size: 2 + Math.random() * 3 });
+    }
   }
 
   function destroyObstacle(idx){
@@ -640,11 +648,13 @@
   }
 
   function draw(){
+    var nightCyc = Math.floor(dist / 3000) % 2 === 1;
     var g = ctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, '#1a1033'); g.addColorStop(1, '#0b0817');
+    if (nightCyc) { g.addColorStop(0, '#05030f'); g.addColorStop(1, '#160b38'); }
+    else { g.addColorStop(0, '#1a1033'); g.addColorStop(1, '#0b0817'); }
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
     // moon
-    ctx.fillStyle = '#e8e2f5';
+    ctx.fillStyle = nightCyc ? '#fff3b0' : '#e8e2f5';
     ctx.beginPath(); ctx.arc(W - 130, 52, 24, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#1a1033';
     ctx.beginPath(); ctx.arc(W - 142, 44, 20, 0, Math.PI * 2); ctx.fill();

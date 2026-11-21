@@ -94,6 +94,7 @@
 <strong style="color:#ffd23e">速</strong>：10秒間、群れの出る間隔が短くなります<br>
 <strong>✕</strong>（黒）：BADアイテムです　10秒間、群れの出る間隔が長くなります　取らないように避けてください<br>
 <strong style="color:#8a8f98">砲</strong>：10秒間、画面の両端に砲台が出て、砦の近くまで届く大きな砲弾をランダムに撃ちます　当たると広い範囲が爆発します<br>
+<strong style="color:#d8e6ff">鏡</strong>：3秒間、敵の進行が止まります<br>
 アイテムは重ねて同時に使えます</p>
 </div>
 <button type="button" id="btnStart" style="font-size:1.15rem;padding:14px 26px">▶ ゲームスタート</button>
@@ -166,7 +167,9 @@ var STAGES = [
   { fort: 4100, budget: 3400, gMin: 36, gMax: 72, wInt: 80, eSpeed: 1.42, bossAt: 0.28, bossHp: 4500, midHp: 1100 },
   { fort: 4700, budget: 3850, gMin: 38, gMax: 76, wInt: 77, eSpeed: 1.46, bossAt: 0.26, bossHp: 5200, midHp: 1250 },
   { fort: 5400, budget: 4350, gMin: 40, gMax: 80, wInt: 74, eSpeed: 1.5, bossAt: 0.26, bossHp: 6000, midHp: 1420 },
-  { fort: 6200, budget: 4900, gMin: 42, gMax: 84, wInt: 70, eSpeed: 1.54, bossAt: 0.25, bossHp: 6900, midHp: 1600 }
+  { fort: 6200, budget: 4900, gMin: 42, gMax: 84, wInt: 70, eSpeed: 1.54, bossAt: 0.25, bossHp: 6900, midHp: 1600 },
+  { fort: 7100, budget: 5500, gMin: 44, gMax: 88, wInt: 67, eSpeed: 1.58, bossAt: 0.25, bossHp: 7900, midHp: 1820 },
+  { fort: 8100, budget: 6150, gMin: 46, gMax: 92, wInt: 64, eSpeed: 1.62, bossAt: 0.24, bossHp: 9000, midHp: 2080 }
 ];
 
 /* ===== 音 ===== */
@@ -321,7 +324,7 @@ var poofSfxT = 0, baseSfxT = 0;
 var healT = 0, floats = [];
 var items = [], ally = null, cloneT = 0, itemT = 0, guardMsgT = 0, deployCycle = 0;
 var weapons = [], swordT = 0, staffT = 0, itemSeq = 0, waveHoldT = 0;
-var shots = [], slowT = 0, faceT = 0;
+var shots = [], slowT = 0, faceT = 0, mirrorT = 0;
 var beamT = 0, rbeamT = 0, rbeamAng = -1.2, auraT = 0;
 var rapidT = 0, badProdT = 0, cannonT = 0, cannonLT = 0, cannonRT = 0, shells = [], witch = null, witchT = 2000;
 
@@ -332,7 +335,7 @@ function addPart(x, y, color, n){
     parts.push({ x: x, y: y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 12 + Math.random() * 8, color: color });
   }
 }
-var ITEM_CYCLE = ['clone', 'summon', 'heal', 'beam', 'rapid', 'heal', 'rbeam', 'summon', 'aura', 'badslow', 'cannon', 'slow', 'clone', 'heal'];
+var ITEM_CYCLE = ['clone', 'summon', 'heal', 'beam', 'rapid', 'heal', 'rbeam', 'summon', 'aura', 'badslow', 'cannon', 'slow', 'mirror', 'clone', 'heal', 'mirror'];
 function nextItemKind(){ var k = ITEM_CYCLE[Math.floor(Math.random() * ITEM_CYCLE.length)]; itemSeq++; return k; }
 function killBoss(){
   if (!boss) return;
@@ -390,7 +393,7 @@ function startStage(idx){
   items = []; ally = null; cloneT = 0; itemT = 500; guardMsgT = 0;
   weapons = []; swordT = 480; staffT = 1500; itemSeq = 0; waveHoldT = 0;
   boss2 = null; fuseT = 0; bossRespawnT = 0; fusFxList = []; healBtnT = 0; witchBtnT = 0; lastHealSec = -1; lastWitchSec = -1;
-  shots = []; slowT = 0; faceT = 0;
+  shots = []; slowT = 0; faceT = 0; mirrorT = 0;
   beamT = 0; rbeamT = 0; auraT = 0;
   rapidT = 0; badProdT = 0; cannonT = 0; shells = []; witch = null; witchT = 1500 + Math.floor(Math.random() * 1500);
   phase = 'play';
@@ -713,6 +716,7 @@ function step(){
   }
   if (cloneT > 0) cloneT--;
   if (slowT > 0) slowT--;
+  if (mirrorT > 0) mirrorT--;
   if (beamT > 0) beamT--;
   if (rbeamT > 0){ rbeamT--; rbeamAng += 0.0035; }
   if (auraT > 0) auraT--;
@@ -809,7 +813,7 @@ function step(){
     var en = enemies[ei];
     if (en.fightT > 0){ en.fightT = 0; }
     else {
-      var esp = st.eSpeed * (slowT > 0 ? 0.45 : 1);
+      var esp = st.eSpeed * (mirrorT > 0 ? 0 : (slowT > 0 ? 0.45 : 1));
       if (en.v === 1){ en.x += Math.sin(timeF * 0.09 + en.ph) * 1.1; }
       else if (en.v === 2){ var cyc2 = (timeF + en.ph * 40) % 150; esp *= (cyc2 < 38 ? 2.3 : 0.5); }
       else if (en.v === 3){ esp *= 1.55; }
@@ -831,9 +835,9 @@ function step(){
         boss.tx = hsum / units.length;
       } else boss.tx = baseX;
     }
-    boss.x += Math.max(-0.85, Math.min(0.85, boss.tx - boss.x));
+    boss.x += Math.max(-0.85, Math.min(0.85, boss.tx - boss.x)) * (mirrorT > 0 ? 0 : 1);
     boss.x = Math.max(46, Math.min(W - 46, boss.x));
-    if (boss.y < BASELINE - boss.r - 6) boss.y += (boss.y < 400 ? 0.24 : 0.1) * (slowT > 0 ? 0.5 : 1);
+    if (boss.y < BASELINE - boss.r - 6) boss.y += (boss.y < 400 ? 0.24 : 0.1) * (mirrorT > 0 ? 0 : (slowT > 0 ? 0.5 : 1));
     else {
       boss.atkT++;
       if (boss.atkT >= 30){
@@ -880,9 +884,9 @@ function step(){
         boss2.tx = hsum2 / units.length;
       } else boss2.tx = baseX;
     }
-    boss2.x += Math.max(-0.85, Math.min(0.85, boss2.tx - boss2.x));
+    boss2.x += Math.max(-0.85, Math.min(0.85, boss2.tx - boss2.x)) * (mirrorT > 0 ? 0 : 1);
     boss2.x = Math.max(46, Math.min(W - 46, boss2.x));
-    if (boss2.y < BASELINE - boss2.r - 6) boss2.y += (boss2.y < 400 ? 0.24 : 0.1) * (slowT > 0 ? 0.5 : 1);
+    if (boss2.y < BASELINE - boss2.r - 6) boss2.y += (boss2.y < 400 ? 0.24 : 0.1) * (mirrorT > 0 ? 0 : (slowT > 0 ? 0.5 : 1));
     else {
       boss2.atkT++;
       if (boss2.atkT >= 30){
@@ -1113,6 +1117,9 @@ function step(){
       } else if (it2.kind === 'slow') {
         slowT = 600;
         floats.push({ x: baseX, y: H - 170, text: '敵が遅くなった！', life: 80 });
+      } else if (it2.kind === 'mirror') {
+        mirrorT = 180;
+        floats.push({ x: baseX, y: H - 170, text: '鏡！敵が止まった！', life: 80 });
       } else if (it2.kind === 'heal') {
         baseHP = Math.min(100, baseHP + 25);
         floats.push({ x: baseX, y: H - 170, text: '陣地 +25 回復', life: 80 });
@@ -1390,7 +1397,7 @@ function draw(){
       ctx.fillText(it.kind === 'clone' ? '分身' : '召喚', it.x, it.y + 29);
       ctx.textAlign = 'left';
     } else {
-      var conf = { heal: ['#57c84c', '回'], slow: ['#7ec8e3', '遅'], beam: ['#4fd8e3', '直'], rbeam: ['#4f9fe3', '反'], aura: ['#e0643c', '炎'], rapid: ['#ffd23e', '速'], badslow: ['#3a3a44', '✕'], cannon: ['#8a8f98', '砲'] }[it.kind];
+      var conf = { heal: ['#57c84c', '回'], slow: ['#7ec8e3', '遅'], beam: ['#4fd8e3', '直'], rbeam: ['#4f9fe3', '反'], aura: ['#e0643c', '炎'], rapid: ['#ffd23e', '速'], badslow: ['#3a3a44', '✕'], cannon: ['#8a8f98', '砲'], mirror: ['#d8e6ff', '鏡'] }[it.kind];
       ctx.fillStyle = conf[0];
       ctx.beginPath(); ctx.arc(it.x, it.y, 15, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.stroke();
@@ -1525,6 +1532,7 @@ function draw(){
   var hudLines = [];
   if (cloneT > 0) hudLines.push('分身中 あと' + Math.ceil(cloneT / 60) + '秒');
   if (slowT > 0) hudLines.push('スロー あと' + Math.ceil(slowT / 60) + '秒');
+  if (mirrorT > 0) hudLines.push('鏡で停止 あと' + Math.ceil(mirrorT / 60) + '秒');
   if (beamT > 0) hudLines.push('直線ビーム あと' + Math.ceil(beamT / 60) + '秒');
   if (rbeamT > 0) hudLines.push('反射ビーム あと' + Math.ceil(rbeamT / 60) + '秒');
   if (auraT > 0) hudLines.push('オーラ あと' + Math.ceil(auraT / 60) + '秒');
