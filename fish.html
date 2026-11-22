@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>魔王の釣り堀 | ミニゲーム | 魔王らてらる・魔王らて子 公式ファンサイト</title>
+<meta name="description" content="魔王の釣り堀　魔王城のお堀で釣りをするゲーム　魔界の魚を釣って集めて、ラテに換えよう">
+<link rel="stylesheet" href="style.css">
+<style>
+  .stage{max-width:560px;margin:0 auto;text-align:center}
+  #cv{width:100%;max-width:440px;height:auto;border:2px solid #a06cd5;border-radius:16px;background:#1b2a4a;touch-action:none;cursor:pointer}
+  .msg{min-height:2.6em;line-height:1.7;font-size:1.02rem;margin:8px 0;color:#ffe9a8}
+  .bigbtn{font-size:1.2rem;padding:14px 30px;border-radius:999px;border:2px solid var(--purple);background:#3d2a5e;color:#fff;cursor:pointer;margin:6px}
+  .bigbtn:active{transform:scale(.96)}
+  .bigbtn:disabled{opacity:.45;cursor:default}
+  .hookbtn{border-color:#e8b34b;background:#7a2a2a;font-size:1.4rem}
+  .subbtn{font-size:.95rem;padding:9px 16px;border-radius:999px;border:1px solid #a06cd5;background:#2a1f47;color:#fff;cursor:pointer;margin:4px}
+  .subbtn:disabled{opacity:.45;cursor:default}
+  .statusline{color:#bdb6d9;font-size:.95rem;line-height:1.8}
+  .statusline b{color:#fff}
+  .panel{border:1px solid #a06cd5;border-radius:12px;padding:14px;margin:16px auto;max-width:520px;text-align:left;line-height:1.8}
+  .panel h3{margin:2px 0 8px;text-align:center}
+  .dexgrid{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+  .dexcell{width:100px;border:1px solid #6b5595;border-radius:10px;padding:8px 4px;text-align:center;font-size:.8rem;line-height:1.5;background:#241a3d}
+  .dexcell .e{font-size:1.7rem;display:block}
+  .dexcell.off{opacity:.45}
+  .bagrow{display:flex;align-items:center;gap:8px;border-bottom:1px solid #3a2a63;padding:6px 0;font-size:.95rem}
+  .bagrow .nm{flex:1}
+  textarea{width:100%;box-sizing:border-box;background:#171130;color:#fff;border:1px solid #6b5595;border-radius:8px;padding:8px;font-size:.85rem}
+  .note{text-align:left;line-height:1.9;font-size:.92rem;color:#bdb6d9;max-width:480px;margin:14px auto}
+  .rare{color:#ffe9a8;font-weight:bold}
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="inner">
+    <a class="logo" href="index.html">魔王<span>らてらる</span> × 魔王<span style="color:#a06cd5">らて子</span></a>
+    <nav class="main">
+      <a href="index.html">ホーム</a>
+      <a href="index.html#news">お知らせ</a>
+      <a href="board.html">ファン掲示板</a>
+      <a href="chat.html">魔力SIチャット</a>
+      <a href="games.html" class="active">ミニゲーム</a>
+      <a href="secret.html">秘密基地</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="stage">
+<h1>魔王の釣り堀</h1>
+<p>魔王城のお堀で のんびり釣り<br>
+魔界の魚を集めて、ラテに換えよう</p>
+
+<div class="statusline" id="statusLine"></div>
+<canvas id="cv" width="540" height="420"></canvas>
+<div class="msg" id="msg">「つる」を押すと釣りが始まります</div>
+
+<div>
+  <button class="bigbtn" id="btnCast" type="button">🎣 つる</button>
+</div>
+<div>
+  <button class="subbtn" id="btnBait" type="button">🪱 高級エサを買う（50ラテ・10回分）</button>
+</div>
+<div>
+  <button class="subbtn" id="btnDex" type="button">📖 魚図鑑</button>
+  <button class="subbtn" id="btnBag" type="button">🧺 かご</button>
+  <button class="subbtn" id="btnSave" type="button">💾 きろく</button>
+</div>
+
+<div class="panel" id="dexPanel" style="display:none">
+  <h3>📖 魚図鑑</h3>
+  <div class="dexgrid" id="dexGrid"></div>
+  <p style="color:#bdb6d9;font-size:.88rem">釣った魚がここに残ります<br>大物を釣ると記録が更新されます</p>
+</div>
+
+<div class="panel" id="bagPanel" style="display:none">
+  <h3>🧺 かご</h3>
+  <div id="bagList"></div>
+  <div style="text-align:center;margin-top:10px">
+    <button class="subbtn" id="btnSellAll" type="button">全部売る</button>
+  </div>
+  <p style="color:#bdb6d9;font-size:.88rem">売るとラテになります<br>魚は将来、冒険にも持っていける予定です</p>
+</div>
+
+<div class="panel" id="savePanel" style="display:none">
+  <h3>💾 きろく</h3>
+  <p style="font-size:.92rem;line-height:1.8">ラテと釣り・カジノの記録は、ブラウザの中に保存されます<br>消えてしまったときのために、セーブコードを控えておけます<br>このコードは釣り・カジノ・ラテ共通の記録用です</p>
+  <button class="subbtn" id="btnExport" type="button">コードを出す</button>
+  <textarea id="codeOut" rows="3" readonly style="margin-top:8px" placeholder="ここにコードが出ます"></textarea>
+  <p style="font-size:.92rem;margin-top:12px">コードを読み込む（今の記録は上書きされます）</p>
+  <textarea id="codeIn" rows="3" placeholder="コードをここに貼る"></textarea>
+  <button class="subbtn" id="btnImport" type="button">読み込む</button>
+  <div id="saveMsg" style="color:#ffe9a8;font-size:.92rem;margin-top:6px"></div>
+</div>
+
+<div class="note">
+・遊び方<br>
+　「つる」を押して、ウキが沈んで「！」が出たら すかさず画面タップか「あわせる」<br>
+　タイミングが合うと釣れます　遅れると逃げられます<br>
+　釣った魚は かご に入ります　売るとラテになります<br>
+・高級エサ<br>
+　50ラテで10回分　大きな魚や珍しい魚が来やすくなります<br>
+・ラテについて<br>
+　ラテはこのサイトのゲーム共通のお金です　買うことも換金もできません<br>
+　カジノでも使えます<br>
+・記録について<br>
+　記録はあなたのブラウザの中にだけ保存されます
+</div>
+
+<div style="text-align:center;margin:22px 0 6px"><a href="games.html" style="color:#c9a227;font-weight:bold">ミニゲーム一覧に戻る</a></div>
+</div>
+</main>
+
+<footer class="site">
+  魔王らてらる・魔王らて子 公式ファンサイト（trailer-project.com）
+</footer>
+
+<script>
+/* ==== SHARED SAVE (DOM-free) ==== */
+var SH = (function(){
+  'use strict';
+  var KEY = 'maouSharedSaveV1';
+  function defaultShared(){
+    return { version:1, playerId:'p' + Math.random().toString(36).slice(2, 10), updatedAt:new Date().toISOString(),
+      wallet:{ late:0 }, items:[],
+      fishing:{ dex:[], records:{}, totalCaught:0, baitLeft:0 },
+      casino:{ totalBet:0, totalWon:0, dailyBet:{ date:'', amount:0 }, reliefDate:'' },
+      flags:{} };
+  }
+  function ensure(obj){
+    var d = defaultShared();
+    if (!obj || obj.version !== 1) return d;
+    if (!obj.wallet || typeof obj.wallet.late !== 'number') obj.wallet = d.wallet;
+    if (!Array.isArray(obj.items)) obj.items = [];
+    if (!obj.fishing) obj.fishing = d.fishing;
+    if (!Array.isArray(obj.fishing.dex)) obj.fishing.dex = [];
+    if (!obj.fishing.records) obj.fishing.records = {};
+    if (typeof obj.fishing.totalCaught !== 'number') obj.fishing.totalCaught = 0;
+    if (typeof obj.fishing.baitLeft !== 'number') obj.fishing.baitLeft = 0;
+    if (!obj.casino) obj.casino = d.casino;
+    if (!obj.casino.dailyBet) obj.casino.dailyBet = { date:'', amount:0 };
+    if (!obj.flags) obj.flags = {};
+    return obj;
+  }
+  function load(){
+    var obj = null;
+    try { obj = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {}
+    obj = ensure(obj);
+    persist(obj);
+    return obj;
+  }
+  function persist(obj){ try { obj.updatedAt = new Date().toISOString(); localStorage.setItem(KEY, JSON.stringify(obj)); } catch (e) {} }
+  function fnv(str){ var h = 0x811c9dc5; for (var i = 0; i < str.length; i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); }
+  function encode(obj){
+    var json = JSON.stringify({ version:1, shared:obj });
+    var b = btoa(unescape(encodeURIComponent(json)));
+    return b.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '') + '.' + fnv(json);
+  }
+  function decode(code){
+    try {
+      var parts = String(code).trim().split('.');
+      if (parts.length !== 2) return null;
+      var b = parts[0].replace(/-/g, '+').replace(/_/g, '/');
+      while (b.length % 4) b += '=';
+      var json = decodeURIComponent(escape(atob(b)));
+      if (fnv(json) !== parts[1]) return null;
+      var obj = JSON.parse(json);
+      if (!obj || obj.version !== 1 || !obj.shared || !obj.shared.wallet) return null;
+      return ensure(obj.shared);
+    } catch (e) { return null; }
+  }
+  function itemCount(obj, id){
+    for (var i = 0; i < obj.items.length; i++) if (obj.items[i].id === id) return obj.items[i].count;
+    return 0;
+  }
+  function itemAdd(obj, id, n){
+    for (var i = 0; i < obj.items.length; i++) if (obj.items[i].id === id){ obj.items[i].count += n; if (obj.items[i].count <= 0) obj.items.splice(i, 1); return; }
+    if (n > 0) obj.items.push({ id:id, count:n });
+  }
+  return { KEY:KEY, defaultShared:defaultShared, ensure:ensure, load:load, persist:persist, encode:encode, decode:decode, itemCount:itemCount, itemAdd:itemAdd };
+})();
+
+/* ==== FISHING LOGIC (DOM-free) ==== */
+var FS = (function(){
+  'use strict';
+  var FISH = [
+    { id:'medaka',   name:'まかいメダカ',         emoji:'🐟', min:3,  max:8,   base:3,   w:16 },
+    { id:'hone',     name:'ホネうお',             emoji:'💀', min:10, max:22,  base:6,   w:12 },
+    { id:'kinoko',   name:'毒キノコうお',         emoji:'🍄', min:8,  max:15,  base:7,   w:11 },
+    { id:'namazu',   name:'なまずもどき',         emoji:'🐟', min:20, max:40,  base:8,   w:11 },
+    { id:'koakuma',  name:'こあくまフィッシュ',   emoji:'😈', min:6,  max:12,  base:10,  w:10 },
+    { id:'jelly',    name:'夜光クラゲ',           emoji:'🪼', min:5,  max:14,  base:11,  w:9 },
+    { id:'koke',     name:'苔むしカレイ',         emoji:'🟢', min:18, max:32,  base:11,  w:8 },
+    { id:'akame',    name:'赤目ウナギ',           emoji:'👀', min:25, max:50,  base:12,  w:8 },
+    { id:'aotai',    name:'青鱗タイ',             emoji:'🐠', min:15, max:30,  base:13,  w:8 },
+    { id:'fugu',     name:'毒針フグ',             emoji:'🐡', min:10, max:18,  base:14,  w:6 },
+    { id:'lava',     name:'ようがん魚',           emoji:'🌋', min:15, max:30,  base:16,  w:7 },
+    { id:'tetsu',    name:'鉄皮魚',               emoji:'⚙️', min:12, max:25,  base:17,  w:6 },
+    { id:'chouchin', name:'深海ちょうちん魚',     emoji:'🏮', min:18, max:35,  base:18,  w:7 },
+    { id:'honoo',    name:'炎尾金魚',             emoji:'🔥', min:8,  max:16,  base:19,  w:5 },
+    { id:'kage',     name:'影縫い魚',             emoji:'🌑', min:10, max:20,  base:20,  w:5 },
+    { id:'koori',    name:'氷柱魚',               emoji:'🧊', min:14, max:26,  base:22,  w:5 },
+    { id:'ryu',      name:'小竜魚',               emoji:'🐉', min:25, max:45,  base:27,  w:4 },
+    { id:'mahou',    name:'魔法サケ',             emoji:'🪄', min:20, max:38,  base:33,  w:4 },
+    { id:'kogane',   name:'黄金マス',             emoji:'✨', min:15, max:28,  base:36,  w:4 },
+    { id:'krakenjr', name:'ベビークラーケン',     emoji:'🐙', min:20, max:50,  base:42,  w:3 },
+    { id:'ouja',     name:'沼の主',               emoji:'🐊', min:60, max:120, base:72,  w:2 },
+    { id:'ginga',    name:'銀河魚',               emoji:'🌌', min:12, max:24,  base:90,  w:1.5 },
+    { id:'niji',     name:'虹色ドラゴンフィッシュ', emoji:'🌈', min:30, max:60, base:120, w:1 },
+    { id:'shinden',  name:'神殿の守り魚',         emoji:'🏛️', min:40, max:80,  base:156, w:0.7 }
+  ];
+  var GAG = [
+    { id:'nagagutsu', name:'長靴',               emoji:'🥾', sell:1,  w:5 },
+    { id:'akikan',    name:'空き缶',             emoji:'🥫', sell:1,  w:4 },
+    { id:'eda',       name:'木の枝',             emoji:'🪵', sell:1,  w:3 },
+    { id:'manto',     name:'魔王のマントの切れ端', emoji:'🧣', sell:30, w:0.8 },
+    { id:'takara',    name:'宝箱',               emoji:'🗃️', sell:0,  w:1.2, treasure:true }
+  ];
+  var RARE_BASE = 27;
+  function fishById(id){ for (var i = 0; i < FISH.length; i++) if (FISH[i].id === id) return FISH[i]; return null; }
+  function gagById(id){ for (var i = 0; i < GAG.length; i++) if (GAG[i].id === id) return GAG[i]; return null; }
+  function rollCatch(rng, bait){
+    var entries = [], total = 0, i, w;
+    for (i = 0; i < FISH.length; i++){ w = FISH[i].w * (bait && FISH[i].base >= RARE_BASE ? 2.5 : 1); entries.push({ type:'fish', def:FISH[i], w:w }); total += w; }
+    for (i = 0; i < GAG.length; i++){ w = GAG[i].w * (bait ? 0.5 : 1); entries.push({ type:'gag', def:GAG[i], w:w }); total += w; }
+    var r = rng() * total;
+    for (i = 0; i < entries.length; i++){ r -= entries[i].w; if (r < 0) return entries[i]; }
+    return entries[entries.length - 1];
+  }
+  function rollSize(rng, fish){ return Math.round((fish.min + rng() * (fish.max - fish.min)) * 10) / 10; }
+  function applyCatch(shared, res, size, rng){
+    var out = { isNew:false, isRecord:false, bonus:0, treasureLate:0 };
+    if (res.type === 'fish'){
+      var f = res.def;
+      SH.itemAdd(shared, 'fish_' + f.id, 1);
+      shared.fishing.totalCaught++;
+      if (shared.fishing.dex.indexOf(f.id) < 0){ shared.fishing.dex.push(f.id); out.isNew = true; }
+      var prev = shared.fishing.records[f.id] || 0;
+      if (size > prev){
+        shared.fishing.records[f.id] = size;
+        out.isRecord = true;
+        if (!out.isNew) { out.bonus = Math.round(f.base * 0.5); shared.wallet.late += out.bonus; }
+      }
+    } else if (res.def.treasure){
+      out.treasureLate = 100 + Math.floor(rng() * 201);
+      shared.wallet.late += out.treasureLate;
+    } else {
+      SH.itemAdd(shared, 'gag_' + res.def.id, 1);
+    }
+    return out;
+  }
+  function itemDef(itemId){
+    if (itemId.indexOf('fish_') === 0){ var f = fishById(itemId.slice(5)); return f ? { name:f.name, emoji:f.emoji, sell:f.base } : null; }
+    if (itemId.indexOf('gag_') === 0){ var g = gagById(itemId.slice(4)); return g ? { name:g.name, emoji:g.emoji, sell:g.sell } : null; }
+    return null;
+  }
+  function sellOne(shared, itemId){
+    var def = itemDef(itemId); if (!def) return 0;
+    if (SH.itemCount(shared, itemId) <= 0) return 0;
+    SH.itemAdd(shared, itemId, -1);
+    shared.wallet.late += def.sell;
+    return def.sell;
+  }
+  function sellAll(shared){
+    var total = 0, ids = shared.items.map(function(it){ return it.id; });
+    ids.forEach(function(id){
+      var def = itemDef(id); if (!def) return;
+      var n = SH.itemCount(shared, id);
+      total += def.sell * n;
+      SH.itemAdd(shared, id, -n);
+    });
+    shared.wallet.late += total;
+    return total;
+  }
+  function expectedValue(bait){
+    var entries = [], total = 0, ev = 0, i, w;
+    for (i = 0; i < FISH.length; i++){ w = FISH[i].w * (bait && FISH[i].base >= RARE_BASE ? 2.5 : 1); total += w; ev += w * FISH[i].base; }
+    for (i = 0; i < GAG.length; i++){ w = GAG[i].w * (bait ? 0.5 : 1); total += w; ev += w * (GAG[i].treasure ? 200 : GAG[i].sell); }
+    return ev / total;
+  }
+  return { FISH:FISH, GAG:GAG, fishById:fishById, gagById:gagById, rollCatch:rollCatch, rollSize:rollSize,
+    applyCatch:applyCatch, itemDef:itemDef, sellOne:sellOne, sellAll:sellAll, expectedValue:expectedValue };
+})();
+</script>
+
+<script>
+/* ==== FISHING UI + DRAW ==== */
+(function(){
+  'use strict';
+  var $ = function(id){ return document.getElementById(id); };
+  var shared = SH.load();
+  var state = 'idle', biteAt = 0, biteEnd = 0, stateUntil = 0, castBait = false, resultDraw = null;
+  var cv = $('cv'), ctx = cv.getContext('2d');
+  function setMsg(t){ $('msg').textContent = t; }
+  function persist(){ SH.persist(shared); }
+
+  function cast(){
+    if (state !== 'idle') return;
+    castBait = shared.fishing.baitLeft > 0;
+    if (castBait){ shared.fishing.baitLeft--; persist(); }
+    state = 'wait';
+    biteAt = Date.now() + 1200 + Math.random() * 3000;
+    setMsg(castBait ? '高級エサで釣っています　ウキが沈むのを待とう' : 'ウキが沈むのを待とう');
+    render();
+  }
+  function hook(){
+    var res = FS.rollCatch(Math.random, castBait);
+    if (res.type === 'fish'){
+      var size = FS.rollSize(Math.random, res.def);
+      var out = FS.applyCatch(shared, res, size, Math.random);
+      resultDraw = { emoji:res.def.emoji, big:true };
+      var m = '🎣 ' + res.def.name + '　' + size + 'cm を釣りました';
+      if (out.isNew) m += '\n✨ 図鑑に新しい魚が増えました';
+      else if (out.isRecord) m += '\n🏆 大物記録を更新　ボーナス ' + out.bonus + 'ラテ';
+      setMsg(m);
+    } else if (res.def.treasure){
+      var out2 = FS.applyCatch(shared, res, 0, Math.random);
+      resultDraw = { emoji:'🗃️', big:true };
+      setMsg('🎣 宝箱を釣り上げました\n🎉 中から ' + out2.treasureLate + 'ラテ 出てきました');
+    } else {
+      FS.applyCatch(shared, res, 0, Math.random);
+      resultDraw = { emoji:res.def.emoji, big:false };
+      setMsg('🎣 ' + res.def.name + ' を釣ってしまいました　かごに入れておきます');
+    }
+    state = 'result'; stateUntil = Date.now() + 2300;
+    persist(); render();
+  }
+  function onTap(){
+    var now = Date.now();
+    if (state === 'idle') cast();
+    else if (state === 'bite') hook();
+    else if (state === 'wait'){
+      if (Math.random() < 0.3){ state = 'idle'; setMsg('あわてて動いたので 逃げられました'); render(); }
+      else setMsg('まだみたい　ウキが沈むまで待とう');
+    }
+  }
+  function buyBait(){
+    if (shared.wallet.late < 50){ setMsg('ラテが足りません　魚を売って貯めよう'); return; }
+    shared.wallet.late -= 50; shared.fishing.baitLeft += 10;
+    setMsg('高級エサを買いました　あと ' + shared.fishing.baitLeft + ' 回分あります');
+    persist(); render();
+  }
+
+  /* ---------- draw ---------- */
+  function draw(){
+    var t = Date.now();
+    if (state === 'wait' && t >= biteAt){
+      state = 'bite'; biteEnd = t + 900;
+      if (navigator.vibrate) navigator.vibrate(80);
+      render();
+    }
+    if (state === 'bite' && t > biteEnd){ state = 'escaped'; stateUntil = t + 1200; setMsg('逃げられました　タイミングが大事です'); }
+    if ((state === 'result' || state === 'escaped') && t > stateUntil){ state = 'idle'; resultDraw = null; render(); }
+    ctx.clearRect(0, 0, 540, 420);
+    var g = ctx.createLinearGradient(0, 0, 0, 420);
+    g.addColorStop(0, '#241a3d'); g.addColorStop(0.42, '#2c2150'); g.addColorStop(0.43, '#1d3a5f'); g.addColorStop(1, '#10233c');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, 540, 420);
+    ctx.fillStyle = '#171130';
+    ctx.fillRect(28, 84, 66, 96); ctx.fillRect(104, 108, 46, 72);
+    ctx.beginPath(); ctx.moveTo(22, 84); ctx.lineTo(61, 48); ctx.lineTo(100, 84); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(100, 108); ctx.lineTo(127, 82); ctx.lineTo(154, 108); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#ffe9a8'; ctx.fillRect(52, 116, 10, 12); ctx.fillRect(118, 132, 8, 10);
+    ctx.fillStyle = '#f5eeda'; ctx.beginPath(); ctx.arc(472, 52, 20, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#2c2150'; ctx.beginPath(); ctx.arc(462, 46, 17, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(160,200,255,0.25)'; ctx.lineWidth = 2;
+    for (var i = 0; i < 4; i++){
+      var sy = 208 + i * 48 + Math.sin(t / 700 + i * 2) * 3;
+      ctx.beginPath(); ctx.moveTo(30 + (i % 2) * 60, sy); ctx.lineTo(150 + (i % 2) * 90, sy); ctx.stroke();
+    }
+    var bx = state === 'idle' ? 128 : 348, by = 232;
+    if (state === 'wait' || state === 'bite'){
+      var prog = Math.min(1, Math.max(0, 1 - (biteAt - t) / 4200));
+      var fx = 60 + prog * 250, fy = 268 + Math.sin(t / 300) * 8;
+      ctx.fillStyle = 'rgba(6,16,30,0.55)';
+      ctx.beginPath(); ctx.ellipse(fx, fy, 30, 9, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(fx + 28, fy); ctx.lineTo(fx + 42, fy - 10); ctx.lineTo(fx + 42, fy + 10); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(180,220,255,0.5)';
+      ctx.beginPath(); ctx.ellipse(bx, 236, 16 + Math.sin(t / 200) * 3, 5, 0, 0, Math.PI * 2); ctx.stroke();
+    }
+    ctx.strokeStyle = '#8a6a3f'; ctx.lineWidth = 6; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(516, 18); ctx.lineTo(428, 128); ctx.stroke(); ctx.lineCap = 'butt';
+    ctx.strokeStyle = 'rgba(255,255,255,0.75)'; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(428, 128); ctx.lineTo(bx, by - 8); ctx.stroke();
+    var bobY = by + Math.sin(t / 420) * 3 + (state === 'bite' ? 11 : 0);
+    ctx.fillStyle = '#e84b4b'; ctx.beginPath(); ctx.arc(bx, bobY, 9, Math.PI, 0); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(bx, bobY, 9, 0, Math.PI); ctx.fill();
+    ctx.fillStyle = '#221a33'; ctx.fillRect(bx - 1.5, bobY - 16, 3, 8);
+    if (state === 'bite'){
+      ctx.fillStyle = '#ffdf4d'; ctx.beginPath(); ctx.arc(bx, bobY - 52, 17, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#7a2a2a'; ctx.font = 'bold 24px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('！', bx, bobY - 43);
+    }
+    if (state === 'result' && resultDraw){
+      ctx.fillStyle = 'rgba(180,220,255,0.7)';
+      for (var j = 0; j < 6; j++){ ctx.beginPath(); ctx.arc(bx + Math.sin(j * 2.3) * 34, 226 - Math.abs(Math.sin(t / 130 + j)) * 16, 4, 0, Math.PI * 2); ctx.fill(); }
+      ctx.font = (resultDraw.big ? '74px' : '56px') + ' sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(resultDraw.emoji, 270, 150 + Math.sin(t / 240) * 5);
+    }
+    if (state === 'escaped'){
+      ctx.fillStyle = '#bdb6d9'; ctx.font = '20px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('にげられた…', 270, 140);
+    }
+    requestAnimationFrame(draw);
+  }
+
+  /* ---------- render ---------- */
+  function escapeHtml(s){ return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function render(){
+    $('statusLine').innerHTML = '💰 ラテ <b>' + shared.wallet.late + '</b>　釣った数 ' + shared.fishing.totalCaught + '　図鑑 ' + shared.fishing.dex.length + '/' + FS.FISH.length +
+      (shared.fishing.baitLeft > 0 ? '　🪱 高級エサ あと ' + shared.fishing.baitLeft + ' 回' : '');
+    var btn = $('btnCast');
+    if (state === 'bite'){ btn.textContent = '‼ あわせる'; btn.classList.add('hookbtn'); btn.disabled = false; }
+    else if (state === 'wait'){ btn.textContent = '🎣 待っています…'; btn.classList.remove('hookbtn'); btn.disabled = false; }
+    else if (state === 'idle'){ btn.textContent = '🎣 つる'; btn.classList.remove('hookbtn'); btn.disabled = false; }
+    else { btn.textContent = '🎣 つる'; btn.classList.remove('hookbtn'); btn.disabled = true; }
+    $('btnBait').textContent = '🪱 高級エサを買う（50ラテ・10回分）　所持 ' + shared.fishing.baitLeft;
+    renderDex(); renderBag();
+  }
+  function renderDex(){
+    var html = '';
+    FS.FISH.forEach(function(f){
+      var got = shared.fishing.dex.indexOf(f.id) >= 0;
+      if (got) html += '<div class="dexcell"><span class="e">' + f.emoji + '</span>' + escapeHtml(f.name) + '<br>最大 ' + (shared.fishing.records[f.id] || 0) + 'cm</div>';
+      else html += '<div class="dexcell off"><span class="e">❔</span>？？？<br>' + f.min + '〜' + f.max + 'cm くらい</div>';
+    });
+    $('dexGrid').innerHTML = html;
+  }
+  function renderBag(){
+    var rows = '';
+    shared.items.forEach(function(it){
+      var def = FS.itemDef(it.id); if (!def) return;
+      rows += '<div class="bagrow"><span>' + def.emoji + '</span><span class="nm">' + escapeHtml(def.name) + ' × ' + it.count + '（' + def.sell + 'ラテ）</span>' +
+        '<button class="subbtn" data-sell="' + it.id + '" type="button">1つ売る</button></div>';
+    });
+    $('bagList').innerHTML = rows || '<p style="color:#bdb6d9">かごは空です　魚を釣ろう</p>';
+  }
+  $('bagList').addEventListener('click', function(ev){
+    var b = ev.target && ev.target.closest ? ev.target.closest('[data-sell]') : null;
+    if (!b) return;
+    var got = FS.sellOne(shared, b.getAttribute('data-sell'));
+    if (got > 0){ setMsg(got + 'ラテで売れました'); persist(); render(); }
+  });
+  $('btnSellAll').addEventListener('click', function(){
+    var total = FS.sellAll(shared);
+    setMsg(total > 0 ? '全部で ' + total + 'ラテになりました' : '売るものがありません');
+    persist(); render();
+  });
+  $('btnCast').addEventListener('click', onTap);
+  cv.addEventListener('pointerdown', function(){ onTap(); });
+  $('btnBait').addEventListener('click', buyBait);
+  $('btnDex').addEventListener('click', function(){ var p = $('dexPanel'); p.style.display = p.style.display === 'none' ? '' : 'none'; renderDex(); });
+  $('btnBag').addEventListener('click', function(){ var p = $('bagPanel'); p.style.display = p.style.display === 'none' ? '' : 'none'; renderBag(); });
+  $('btnSave').addEventListener('click', function(){ var p = $('savePanel'); p.style.display = p.style.display === 'none' ? '' : 'none'; });
+  $('btnExport').addEventListener('click', function(){
+    $('codeOut').value = SH.encode(shared);
+    $('saveMsg').textContent = 'コードを出しました　大事に控えておいてね';
+  });
+  $('btnImport').addEventListener('click', function(){
+    var obj = SH.decode($('codeIn').value);
+    if (!obj){ $('saveMsg').textContent = 'コードが違うか 壊れています'; return; }
+    shared = obj; persist();
+    $('saveMsg').textContent = '読み込みました';
+    setMsg('記録を読み込みました');
+    render();
+  });
+  window.addEventListener('beforeunload', persist);
+  render();
+  requestAnimationFrame(draw);
+})();
+</script>
+
+<script>
+/* 人気カウンター: デプロイ時に STATS_BASE へ接続先を設定（それまでは何もしません） */
+(function(){
+  var STATS_BASE = '';
+  if (!STATS_BASE) return;
+  try {
+    var slug = 'fish';
+    var today = new Date().toLocaleDateString('sv-SE');
+    var seen = {};
+    try { seen = JSON.parse(localStorage.getItem('maouHitV1') || '{}'); } catch (e) {}
+    if (seen[slug] === today) return;
+    seen[slug] = today;
+    try { localStorage.setItem('maouHitV1', JSON.stringify(seen)); } catch (e) {}
+    fetch(STATS_BASE + '/api/hit', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ game: slug }), keepalive:true }).catch(function(){});
+  } catch (e) {}
+})();
+</script>
+
+<script>
+/* 導線クリック記録: デプロイ時に STATS_BASE へ接続先を設定（それまでは何もしません） */
+(function(){
+  var STATS_BASE = '';
+  if (!STATS_BASE) return;
+  document.addEventListener('click', function(ev){
+    var a = (ev.target && ev.target.closest) ? ev.target.closest('a[href]') : null;
+    if (!a) return;
+    var href = a.getAttribute('href') || '';
+    var dest = '';
+    if (href.indexOf('store.line.me') >= 0) dest = 'line';
+    else if (href.indexOf('line.me/ti/g2') >= 0) dest = 'linechat';
+    else if (href.indexOf('YL26sVq0rjE') >= 0) dest = 'mv404';
+    else if (href.indexOf('6c3PI1Vy3Nc') >= 0) dest = 'healing';
+    else if (href.indexOf('youtube.com/@latemarined') >= 0) dest = 'youtube';
+    if (!dest) return;
+    fetch(STATS_BASE + '/api/click', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ to: dest }), keepalive:true }).catch(function(){});
+  }, true);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>魔王城カジノ | ミニゲーム | 魔王らてらる・魔王らて子 公式ファンサイト</title>
+<meta name="description" content="魔王城カジノ　ラテで遊ぶカジノ　スロットとルーレットとハイ＆ローで運試し">
+<link rel="stylesheet" href="style.css">
+<style>
+  .stage{max-width:560px;margin:0 auto;text-align:center}
+  .msg{min-height:2.6em;line-height:1.7;font-size:1.02rem;margin:8px 0;color:#ffe9a8}
+  .bigbtn{font-size:1.15rem;padding:13px 26px;border-radius:999px;border:2px solid var(--purple);background:#3d2a5e;color:#fff;cursor:pointer;margin:6px}
+  .bigbtn:active{transform:scale(.96)}
+  .bigbtn:disabled{opacity:.45;cursor:default}
+  .goldbtn{border-color:#e8b34b;background:#5e4a2a}
+  .subbtn{font-size:.95rem;padding:9px 16px;border-radius:999px;border:1px solid #a06cd5;background:#2a1f47;color:#fff;cursor:pointer;margin:4px}
+  .subbtn:disabled{opacity:.45;cursor:default}
+  .subbtn.sel{border-color:#e8b34b;background:#5e4a2a;color:#ffe9a8}
+  .statusline{color:#bdb6d9;font-size:.95rem;line-height:1.8}
+  .statusline b{color:#fff}
+  .panel{border:1px solid #a06cd5;border-radius:12px;padding:14px;margin:16px auto;max-width:520px;text-align:left;line-height:1.8}
+  .panel h3{margin:2px 0 8px;text-align:center}
+  .gamebox{border:2px solid #6b5595;border-radius:16px;padding:16px 10px;margin:16px auto;max-width:520px;background:#241a3d}
+  .reels{display:flex;gap:10px;justify-content:center;margin:12px 0}
+  .reel{width:86px;height:86px;border:2px solid #a06cd5;border-radius:14px;background:#171130;font-size:3rem;display:flex;align-items:center;justify-content:center}
+  .wheel{width:120px;height:120px;border-radius:50%;border:4px solid #e8b34b;background:#171130;margin:12px auto;font-size:2.6rem;font-weight:bold;display:flex;align-items:center;justify-content:center;color:#fff}
+  .wheel.red{color:#ff8a8a}.wheel.black{color:#e8e8f5}.wheel.green{color:#8affa0}
+  .carddisp{width:96px;height:132px;border:2px solid #a06cd5;border-radius:12px;background:#f5f2ff;color:#221a33;margin:12px auto;font-size:2rem;font-weight:bold;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.2}
+  .carddisp.red{color:#c22f4d}
+  .carddisp .suit{font-size:1.5rem}
+  textarea{width:100%;box-sizing:border-box;background:#171130;color:#fff;border:1px solid #6b5595;border-radius:8px;padding:8px;font-size:.85rem}
+  .note{text-align:left;line-height:1.9;font-size:.92rem;color:#bdb6d9;max-width:480px;margin:14px auto}
+  .paytable{font-size:.88rem;color:#bdb6d9;line-height:1.8;text-align:left;max-width:400px;margin:8px auto}
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="inner">
+    <a class="logo" href="index.html">魔王<span>らてらる</span> × 魔王<span style="color:#a06cd5">らて子</span></a>
+    <nav class="main">
+      <a href="index.html">ホーム</a>
+      <a href="index.html#news">お知らせ</a>
+      <a href="board.html">ファン掲示板</a>
+      <a href="chat.html">魔力SIチャット</a>
+      <a href="games.html" class="active">ミニゲーム</a>
+      <a href="secret.html">秘密基地</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="stage">
+<h1>魔王城カジノ</h1>
+<p>魔王城の地下にある 小さなカジノ<br>
+ラテで運試し　勝っても負けても自己責任です</p>
+
+<div class="statusline" id="statusLine"></div>
+<div id="reliefBox" style="display:none">
+  <p style="line-height:1.8">ラテが尽きましたね<br>魔王様からの救済があります（1日1回）</p>
+  <button class="bigbtn goldbtn" id="btnRelief" type="button">💰 救済の100ラテを受け取る</button>
+</div>
+
+<div>
+  <span style="color:#bdb6d9">掛け金</span>
+  <button class="subbtn betbtn sel" data-bet="10" type="button">10ラテ</button>
+  <button class="subbtn betbtn" data-bet="50" type="button">50ラテ</button>
+  <button class="subbtn betbtn" data-bet="100" type="button">100ラテ</button>
+</div>
+<div class="msg" id="msg">好きなゲームで遊んでください</div>
+
+<div class="gamebox">
+  <h3 style="margin:2px 0">🎰 魔王スロット</h3>
+  <div class="reels">
+    <div class="reel" id="reel0">👑</div>
+    <div class="reel" id="reel1">💎</div>
+    <div class="reel" id="reel2">⭐</div>
+  </div>
+  <button class="bigbtn" id="btnSlot" type="button">回す</button>
+  <div class="paytable">
+    3つそろうと当たり：👑200倍　💎80倍　⭐30倍　🔔15倍　🍋8倍　🍒5倍<br>
+    2つそろえば小当たり：掛け金の0.8倍
+  </div>
+</div>
+
+<div class="gamebox">
+  <h3 style="margin:2px 0">🎡 魔王ルーレット</h3>
+  <div class="wheel" id="wheel">?</div>
+  <div>
+    <button class="subbtn roulbtn sel" data-r="red" type="button">🔴 赤（2倍）</button>
+    <button class="subbtn roulbtn" data-r="black" type="button">⚫ 黒（2倍）</button>
+    <button class="subbtn roulbtn" data-r="even" type="button">偶数（2倍）</button>
+    <button class="subbtn roulbtn" data-r="odd" type="button">奇数（2倍）</button>
+  </div>
+  <div style="margin-top:6px">
+    <span style="color:#bdb6d9;font-size:.92rem">一点賭け（12倍）</span>
+    <select id="singleNum" style="background:#171130;color:#fff;border:1px solid #6b5595;border-radius:8px;padding:7px;font-size:1rem"></select>
+    <button class="subbtn" id="btnSingle" type="button">この数字に賭ける</button>
+  </div>
+  <button class="bigbtn" id="btnRoulette" type="button">回す</button>
+  <div class="paytable">数字は0〜12　0は緑で、赤・黒・偶数・奇数のどれにも入りません</div>
+</div>
+
+<div class="gamebox">
+  <h3 style="margin:2px 0">🃏 ハイ＆ロー</h3>
+  <div class="carddisp" id="cardDisp"><span>?</span><span class="suit">🂠</span></div>
+  <div class="statusline" id="hlStatus">「勝負を始める」でカードが出ます</div>
+  <div>
+    <button class="bigbtn" id="btnHLStart" type="button">勝負を始める</button>
+    <button class="bigbtn" id="btnHigh" type="button" style="display:none">⬆ 次は大きい</button>
+    <button class="bigbtn" id="btnLow" type="button" style="display:none">⬇ 次は小さい</button>
+    <button class="bigbtn goldbtn" id="btnCash" type="button" style="display:none">💰 もらって終わる</button>
+  </div>
+  <div class="paytable">
+    次のカードが今より大きいか小さいかを当てます　同じ数字は負けです<br>
+    配当は連勝で上がります（1連勝1.35倍、2連勝1.85倍、3連勝2.55倍、4連勝3.5倍、5連勝4.8倍）<br>
+    5連勝で自動的にもらえます<br>
+    途中で「もらって終わる」もできます
+  </div>
+</div>
+
+<div>
+  <button class="subbtn" id="btnStats" type="button">📊 戦績</button>
+  <button class="subbtn" id="btnSave" type="button">💾 きろく</button>
+</div>
+
+<div class="panel" id="statsPanel" style="display:none">
+  <h3>📊 戦績</h3>
+  <div id="statsBody" style="text-align:center"></div>
+</div>
+
+<div class="panel" id="savePanel" style="display:none">
+  <h3>💾 きろく</h3>
+  <p style="font-size:.92rem;line-height:1.8">ラテと釣り・カジノの記録は、ブラウザの中に保存されます<br>消えてしまったときのために、セーブコードを控えておけます<br>このコードは釣り・カジノ・ラテ共通の記録用です</p>
+  <button class="subbtn" id="btnExport" type="button">コードを出す</button>
+  <textarea id="codeOut" rows="3" readonly style="margin-top:8px" placeholder="ここにコードが出ます"></textarea>
+  <p style="font-size:.92rem;margin-top:12px">コードを読み込む（今の記録は上書きされます）</p>
+  <textarea id="codeIn" rows="3" placeholder="コードをここに貼る"></textarea>
+  <button class="subbtn" id="btnImport" type="button">読み込む</button>
+  <div id="saveMsg" style="color:#ffe9a8;font-size:.92rem;margin-top:6px"></div>
+</div>
+
+<div class="note">
+・遊び方<br>
+　掛け金を選んで、好きなゲームで遊びます<br>
+　ラテは釣りや魔王っちでも貯められます<br>
+・歯止め<br>
+　1日に賭けられるのは合計3,000ラテまでです<br>
+　ラテが0になったら、1日1回だけ救済の100ラテがもらえます<br>
+・ラテについて<br>
+　ラテはこのサイトのゲーム共通のお金です　買うことも換金もできません<br>
+　だからこそ、安心して全部賭けられます<br>
+・記録について<br>
+　記録はあなたのブラウザの中にだけ保存されます
+</div>
+
+<div style="text-align:center;margin:22px 0 6px"><a href="games.html" style="color:#c9a227;font-weight:bold">ミニゲーム一覧に戻る</a></div>
+</div>
+</main>
+
+<footer class="site">
+  魔王らてらる・魔王らて子 公式ファンサイト（trailer-project.com）
+</footer>
+
+<script>
+/* ==== SHARED SAVE (DOM-free) ==== */
+var SH = (function(){
+  'use strict';
+  var KEY = 'maouSharedSaveV1';
+  function defaultShared(){
+    return { version:1, playerId:'p' + Math.random().toString(36).slice(2, 10), updatedAt:new Date().toISOString(),
+      wallet:{ late:0 }, items:[],
+      fishing:{ dex:[], records:{}, totalCaught:0, baitLeft:0 },
+      casino:{ totalBet:0, totalWon:0, dailyBet:{ date:'', amount:0 }, reliefDate:'' },
+      flags:{} };
+  }
+  function ensure(obj){
+    var d = defaultShared();
+    if (!obj || obj.version !== 1) return d;
+    if (!obj.wallet || typeof obj.wallet.late !== 'number') obj.wallet = d.wallet;
+    if (!Array.isArray(obj.items)) obj.items = [];
+    if (!obj.fishing) obj.fishing = d.fishing;
+    if (!Array.isArray(obj.fishing.dex)) obj.fishing.dex = [];
+    if (!obj.fishing.records) obj.fishing.records = {};
+    if (typeof obj.fishing.totalCaught !== 'number') obj.fishing.totalCaught = 0;
+    if (typeof obj.fishing.baitLeft !== 'number') obj.fishing.baitLeft = 0;
+    if (!obj.casino) obj.casino = d.casino;
+    if (!obj.casino.dailyBet) obj.casino.dailyBet = { date:'', amount:0 };
+    if (!obj.flags) obj.flags = {};
+    return obj;
+  }
+  function load(){
+    var obj = null;
+    try { obj = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {}
+    obj = ensure(obj);
+    persist(obj);
+    return obj;
+  }
+  function persist(obj){ try { obj.updatedAt = new Date().toISOString(); localStorage.setItem(KEY, JSON.stringify(obj)); } catch (e) {} }
+  function fnv(str){ var h = 0x811c9dc5; for (var i = 0; i < str.length; i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); }
+  function encode(obj){
+    var json = JSON.stringify({ version:1, shared:obj });
+    var b = btoa(unescape(encodeURIComponent(json)));
+    return b.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '') + '.' + fnv(json);
+  }
+  function decode(code){
+    try {
+      var parts = String(code).trim().split('.');
+      if (parts.length !== 2) return null;
+      var b = parts[0].replace(/-/g, '+').replace(/_/g, '/');
+      while (b.length % 4) b += '=';
+      var json = decodeURIComponent(escape(atob(b)));
+      if (fnv(json) !== parts[1]) return null;
+      var obj = JSON.parse(json);
+      if (!obj || obj.version !== 1 || !obj.shared || !obj.shared.wallet) return null;
+      return ensure(obj.shared);
+    } catch (e) { return null; }
+  }
+  function itemCount(obj, id){
+    for (var i = 0; i < obj.items.length; i++) if (obj.items[i].id === id) return obj.items[i].count;
+    return 0;
+  }
+  function itemAdd(obj, id, n){
+    for (var i = 0; i < obj.items.length; i++) if (obj.items[i].id === id){ obj.items[i].count += n; if (obj.items[i].count <= 0) obj.items.splice(i, 1); return; }
+    if (n > 0) obj.items.push({ id:id, count:n });
+  }
+  return { KEY:KEY, defaultShared:defaultShared, ensure:ensure, load:load, persist:persist, encode:encode, decode:decode, itemCount:itemCount, itemAdd:itemAdd };
+})();
+
+</script>
+
+<script>
+/* ==== CASINO LOGIC (DOM-free) ==== */
+var CS = (function(){
+  'use strict';
+  var DAILY_BET_CAP = 3000, RELIEF_LATE = 100;
+  var SLOT = [
+    { sym:'🍒', w:30, mult:5 },
+    { sym:'🍋', w:26, mult:8 },
+    { sym:'🔔', w:20, mult:15 },
+    { sym:'⭐', w:13, mult:30 },
+    { sym:'💎', w:7,  mult:80 },
+    { sym:'👑', w:4,  mult:200 }
+  ];
+  var PAIR_MULT = 0.8;
+  var REDS = [1, 3, 5, 7, 9, 12];
+  function todayStr(now){ var d = new Date(now); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function pickSlot(rng){
+    var total = 0, i; for (i = 0; i < SLOT.length; i++) total += SLOT[i].w;
+    var r = rng() * total;
+    for (i = 0; i < SLOT.length; i++){ r -= SLOT[i].w; if (r < 0) return i; }
+    return SLOT.length - 1;
+  }
+  function spinSlot(rng){ return [pickSlot(rng), pickSlot(rng), pickSlot(rng)]; }
+  function slotMult(reels){
+    var a = reels[0], b = reels[1], c = reels[2];
+    if (a === b && b === c) return SLOT[a].mult;
+    if (a === b || b === c || a === c) return PAIR_MULT;
+    return 0;
+  }
+  function slotRTP(){
+    var total = 0, i; for (i = 0; i < SLOT.length; i++) total += SLOT[i].w;
+    var rtp = 0;
+    for (var a = 0; a < SLOT.length; a++) for (var b = 0; b < SLOT.length; b++) for (var c = 0; c < SLOT.length; c++){
+      var p = (SLOT[a].w / total) * (SLOT[b].w / total) * (SLOT[c].w / total);
+      rtp += p * slotMult([a, b, c]);
+    }
+    return rtp;
+  }
+  function rollRoulette(rng){ return Math.floor(rng() * 13); }
+  function rouletteMult(type, choice, num){
+    if (type === 'single') return num === choice ? 12 : 0;
+    if (num === 0) return 0;
+    if (type === 'red') return REDS.indexOf(num) >= 0 ? 2 : 0;
+    if (type === 'black') return REDS.indexOf(num) < 0 ? 2 : 0;
+    if (type === 'even') return num % 2 === 0 ? 2 : 0;
+    if (type === 'odd') return num % 2 === 1 ? 2 : 0;
+    return 0;
+  }
+  function rouletteRTP(){ return 12 / 13; }
+  function drawCard(rng){ return 1 + Math.floor(rng() * 13); }
+  function hlWin(cur, next, guess){
+    if (next === cur) return false;
+    return guess === 'high' ? next > cur : next < cur;
+  }
+  var HL_MULT = [0, 1.35, 1.85, 2.55, 3.5, 4.8];
+  function hlPayout(bet, streak){ return Math.floor(bet * (HL_MULT[Math.min(streak, 5)] || 0) + 1e-6); }
+  function betRoom(shared, amount, now){
+    var t = todayStr(now);
+    var used = shared.casino.dailyBet.date === t ? shared.casino.dailyBet.amount : 0;
+    return DAILY_BET_CAP - used >= amount;
+  }
+  function placeBet(shared, amount, now){
+    if (shared.wallet.late < amount) return { ok:false, code:'poor' };
+    if (!betRoom(shared, amount, now)) return { ok:false, code:'cap' };
+    var t = todayStr(now);
+    if (shared.casino.dailyBet.date !== t) shared.casino.dailyBet = { date:t, amount:0 };
+    shared.casino.dailyBet.amount += amount;
+    shared.casino.totalBet += amount;
+    shared.wallet.late -= amount;
+    return { ok:true };
+  }
+  function payOut(shared, amount){
+    if (amount > 0){ shared.wallet.late += amount; shared.casino.totalWon += amount; }
+  }
+  function canRelief(shared, now){ return shared.wallet.late === 0 && shared.casino.reliefDate !== todayStr(now); }
+  function claimRelief(shared, now){
+    if (!canRelief(shared, now)) return false;
+    shared.casino.reliefDate = todayStr(now);
+    shared.wallet.late += RELIEF_LATE;
+    return true;
+  }
+  function betToday(shared, now){
+    return shared.casino.dailyBet.date === todayStr(now) ? shared.casino.dailyBet.amount : 0;
+  }
+  return { SLOT:SLOT, DAILY_BET_CAP:DAILY_BET_CAP, RELIEF_LATE:RELIEF_LATE, REDS:REDS,
+    spinSlot:spinSlot, slotMult:slotMult, slotRTP:slotRTP,
+    rollRoulette:rollRoulette, rouletteMult:rouletteMult, rouletteRTP:rouletteRTP,
+    drawCard:drawCard, hlWin:hlWin, hlPayout:hlPayout,
+    placeBet:placeBet, payOut:payOut, betRoom:betRoom, betToday:betToday,
+    canRelief:canRelief, claimRelief:claimRelief, todayStr:todayStr };
+})();
+</script>
+
+<script>
+/* ==== CASINO UI ==== */
+(function(){
+  'use strict';
+  var $ = function(id){ return document.getElementById(id); };
+  var shared = SH.load();
+  var bet = 10, roulType = 'red', busy = false;
+  var hl = { active:false, bet:0, cur:0, streak:0 };
+  function setMsg(t){ $('msg').textContent = t; }
+  function persist(){ SH.persist(shared); }
+  function tryBet(){
+    var r = CS.placeBet(shared, bet, Date.now());
+    if (!r.ok){
+      setMsg(r.code === 'poor' ? 'ラテが足りません　釣りや魔王っちで貯めよう' : '今日の賭け金が上限（3,000ラテ）に達しました　また明日どうぞ');
+      render();
+      return false;
+    }
+    persist(); render();
+    return true;
+  }
+  function settle(amount, winMsg, loseMsg){
+    if (amount > 0){ CS.payOut(shared, amount); setMsg(winMsg); }
+    else setMsg(loseMsg);
+    persist(); render();
+  }
+
+  /* ---- slot ---- */
+  $('btnSlot').addEventListener('click', function(){
+    if (busy) return;
+    if (!tryBet()) return;
+    busy = true; render();
+    var reels = CS.spinSlot(Math.random);
+    var finals = reels.map(function(i){ return CS.SLOT[i].sym; });
+    var started = Date.now();
+    var iv = setInterval(function(){
+      for (var k = 0; k < 3; k++){
+        var el = $('reel' + k);
+        var stopAt = 500 + k * 280;
+        el.textContent = (Date.now() - started > stopAt) ? finals[k] : CS.SLOT[Math.floor(Math.random() * CS.SLOT.length)].sym;
+      }
+      if (Date.now() - started > 1100){
+        clearInterval(iv);
+        for (var j = 0; j < 3; j++) $('reel' + j).textContent = finals[j];
+        var mult = CS.slotMult(reels);
+        var amount = Math.floor(bet * mult + 1e-6);
+        busy = false;
+        if (mult >= 5) settle(amount, '🎉 大当たり　' + finals.join(' ') + '　' + amount + 'ラテ獲得です', '');
+        else if (amount > 0) settle(amount, '✨ 小当たり　' + amount + 'ラテ戻ってきました', '');
+        else settle(0, '', 'はずれです　' + finals.join(' '));
+      }
+    }, 70);
+  });
+
+  /* ---- roulette ---- */
+  function spinRoulette(type, choice){
+    if (busy) return;
+    if (!tryBet()) return;
+    busy = true; render();
+    var num = CS.rollRoulette(Math.random);
+    var ticks = 0;
+    var iv = setInterval(function(){
+      ticks++;
+      var w = $('wheel');
+      var n = Math.floor(Math.random() * 13);
+      w.textContent = n;
+      w.className = 'wheel ' + (n === 0 ? 'green' : (CS.REDS.indexOf(n) >= 0 ? 'red' : 'black'));
+      if (ticks > 14){
+        clearInterval(iv);
+        w.textContent = num;
+        w.className = 'wheel ' + (num === 0 ? 'green' : (CS.REDS.indexOf(num) >= 0 ? 'red' : 'black'));
+        var mult = CS.rouletteMult(type, choice, num);
+        var amount = bet * mult;
+        busy = false;
+        var colorName = num === 0 ? '緑の0' : (CS.REDS.indexOf(num) >= 0 ? '赤' : '黒');
+        if (amount > 0) settle(amount, '🎉 ' + num + '（' + colorName + '）　' + amount + 'ラテ獲得です', '');
+        else settle(0, '', num + '（' + colorName + '）でした　はずれです');
+      }
+    }, 80);
+  }
+  $('btnRoulette').addEventListener('click', function(){ spinRoulette(roulType, null); });
+  $('btnSingle').addEventListener('click', function(){ spinRoulette('single', Number($('singleNum').value)); });
+
+  /* ---- high & low ---- */
+  var RANKS = { 1:'A', 11:'J', 12:'Q', 13:'K' };
+  var SUITS = ['♠', '♥', '♦', '♣'];
+  function showCard(n){
+    var suit = SUITS[Math.floor(Math.random() * 4)];
+    var d = $('cardDisp');
+    d.innerHTML = '<span>' + (RANKS[n] || n) + '</span><span class="suit">' + suit + '</span>';
+    d.classList.toggle('red', suit === '♥' || suit === '♦');
+  }
+  function hlRender(){
+    $('btnHLStart').style.display = hl.active ? 'none' : '';
+    $('btnHigh').style.display = hl.active ? '' : 'none';
+    $('btnLow').style.display = hl.active ? '' : 'none';
+    $('btnCash').style.display = (hl.active && hl.streak >= 1) ? '' : 'none';
+    $('hlStatus').innerHTML = hl.active
+      ? '現在のカードは <b>' + (RANKS[hl.cur] || hl.cur) + '</b>　' + hl.streak + '連勝中<br>次に当たれば ' + CS.hlPayout(hl.bet, hl.streak + 1) + 'ラテ　外すと0です'
+      : '「勝負を始める」でカードが出ます';
+  }
+  function hlEnd(){
+    hl.active = false; hl.streak = 0;
+    render();
+  }
+  $('btnHLStart').addEventListener('click', function(){
+    if (busy || hl.active) return;
+    if (!tryBet()) return;
+    hl.active = true; hl.bet = bet; hl.streak = 0;
+    hl.cur = CS.drawCard(Math.random);
+    showCard(hl.cur);
+    setMsg('勝負開始　次のカードは大きいか小さいか');
+    render();
+  });
+  function hlGuess(guess){
+    if (!hl.active || busy) return;
+    var next = CS.drawCard(Math.random);
+    showCard(next);
+    if (CS.hlWin(hl.cur, next, guess)){
+      hl.streak++; hl.cur = next;
+      if (hl.streak >= 5){
+        var amount = CS.hlPayout(hl.bet, hl.streak);
+        CS.payOut(shared, amount);
+        setMsg('🎉 5連勝　' + amount + 'ラテ獲得です　自動で受け取りました');
+        hlEnd();
+      } else {
+        setMsg('✨ 当たり　' + hl.streak + '連勝中です　続けるか、もらうか');
+        render();
+      }
+    } else {
+      setMsg('💦 ' + (RANKS[next] || next) + ' でした　はずれて掛け金はなくなりました');
+      hlEnd();
+    }
+    persist(); render();
+  }
+  $('btnHigh').addEventListener('click', function(){ hlGuess('high'); });
+  $('btnLow').addEventListener('click', function(){ hlGuess('low'); });
+  $('btnCash').addEventListener('click', function(){
+    if (!hl.active || hl.streak < 1) return;
+    var amount = CS.hlPayout(hl.bet, hl.streak);
+    CS.payOut(shared, amount);
+    setMsg('💰 ' + hl.streak + '連勝で ' + amount + 'ラテ受け取りました');
+    hlEnd(); persist();
+  });
+
+  /* ---- common ---- */
+  document.querySelectorAll('.betbtn').forEach(function(b){
+    b.addEventListener('click', function(){
+      bet = Number(b.getAttribute('data-bet'));
+      document.querySelectorAll('.betbtn').forEach(function(x){ x.classList.toggle('sel', x === b); });
+    });
+  });
+  document.querySelectorAll('.roulbtn').forEach(function(b){
+    b.addEventListener('click', function(){
+      roulType = b.getAttribute('data-r');
+      document.querySelectorAll('.roulbtn').forEach(function(x){ x.classList.toggle('sel', x === b); });
+    });
+  });
+  var sel = $('singleNum');
+  for (var n = 0; n <= 12; n++){ var opt = document.createElement('option'); opt.value = n; opt.textContent = n; sel.appendChild(opt); }
+  sel.value = '7';
+  $('btnRelief').addEventListener('click', function(){
+    if (CS.claimRelief(shared, Date.now())){ setMsg('💰 救済の100ラテを受け取りました　大事に使ってね'); persist(); render(); }
+  });
+  $('btnStats').addEventListener('click', function(){
+    var p = $('statsPanel'); p.style.display = p.style.display === 'none' ? '' : 'none'; render();
+  });
+  $('btnSave').addEventListener('click', function(){ var p = $('savePanel'); p.style.display = p.style.display === 'none' ? '' : 'none'; });
+  $('btnExport').addEventListener('click', function(){
+    $('codeOut').value = SH.encode(shared);
+    $('saveMsg').textContent = 'コードを出しました　大事に控えておいてね';
+  });
+  $('btnImport').addEventListener('click', function(){
+    var obj = SH.decode($('codeIn').value);
+    if (!obj){ $('saveMsg').textContent = 'コードが違うか 壊れています'; return; }
+    shared = obj; hl.active = false; persist();
+    $('saveMsg').textContent = '読み込みました';
+    setMsg('記録を読み込みました');
+    render();
+  });
+  function render(){
+    $('statusLine').innerHTML = '💰 ラテ <b>' + shared.wallet.late + '</b>　今日の賭け金 ' + CS.betToday(shared, Date.now()) + ' / ' + CS.DAILY_BET_CAP + ' ラテ';
+    $('reliefBox').style.display = CS.canRelief(shared, Date.now()) ? '' : 'none';
+    $('btnSlot').disabled = busy;
+    $('btnRoulette').disabled = busy;
+    $('btnSingle').disabled = busy;
+    $('btnHLStart').disabled = busy;
+    $('statsBody').innerHTML = '今まで賭けた合計　' + shared.casino.totalBet + 'ラテ<br>今まで勝った合計　' + shared.casino.totalWon + 'ラテ<br>' +
+      (shared.casino.totalWon - shared.casino.totalBet >= 0 ? '通算で勝ち越しています　すごい' : '通算 ' + (shared.casino.totalBet - shared.casino.totalWon) + 'ラテ マイナスです　取り返そう');
+    hlRender();
+  }
+  window.addEventListener('beforeunload', persist);
+  render();
+})();
+</script>
+
+<script>
+/* 人気カウンター: デプロイ時に STATS_BASE へ接続先を設定（それまでは何もしません） */
+(function(){
+  var STATS_BASE = '';
+  if (!STATS_BASE) return;
+  try {
+    var slug = 'casino';
+    var today = new Date().toLocaleDateString('sv-SE');
+    var seen = {};
+    try { seen = JSON.parse(localStorage.getItem('maouHitV1') || '{}'); } catch (e) {}
+    if (seen[slug] === today) return;
+    seen[slug] = today;
+    try { localStorage.setItem('maouHitV1', JSON.stringify(seen)); } catch (e) {}
+    fetch(STATS_BASE + '/api/hit', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ game: slug }), keepalive:true }).catch(function(){});
+  } catch (e) {}
+})();
+</script>
+
+<script>
+/* 導線クリック記録: デプロイ時に STATS_BASE へ接続先を設定（それまでは何もしません） */
+(function(){
+  var STATS_BASE = '';
+  if (!STATS_BASE) return;
+  document.addEventListener('click', function(ev){
+    var a = (ev.target && ev.target.closest) ? ev.target.closest('a[href]') : null;
+    if (!a) return;
+    var href = a.getAttribute('href') || '';
+    var dest = '';
+    if (href.indexOf('store.line.me') >= 0) dest = 'line';
+    else if (href.indexOf('line.me/ti/g2') >= 0) dest = 'linechat';
+    else if (href.indexOf('YL26sVq0rjE') >= 0) dest = 'mv404';
+    else if (href.indexOf('6c3PI1Vy3Nc') >= 0) dest = 'healing';
+    else if (href.indexOf('youtube.com/@latemarined') >= 0) dest = 'youtube';
+    if (!dest) return;
+    fetch(STATS_BASE + '/api/click', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ to: dest }), keepalive:true }).catch(function(){});
+  }, true);
+})();
+</script>
+</body>
+</html>
