@@ -72,6 +72,7 @@ HPが0になるとゲームオーバーです　スコアは生存時間と撃�
 🦇 コウモリ　弱いけど速いです<br>
 👹 オニ　遅いけど固くて強いです<br>
 🐗 イノシシ　ときどき突進してきます<br>
+🧙 まほうつかい　5分すぎから出てきます　近づかず、赤い魔力弾を撃ってきます<br>
 時間がたつほど、敵は強く多くなります</p>
 <p><strong>強化の種類</strong><br>
 🔥 魔力弾・威力　✨ 魔力弾・連射数　💨 魔力弾・速射<br>
@@ -95,11 +96,21 @@ HPが満タンのときは使えません</p>
 <p><strong>魔王城の景色</strong><br>
 生き残るほど、背景の魔王城が次の城へと変わっていきます<br>
 城が変わるときは、お知らせが出ます</p>
+<p><strong>合体と大ボス</strong><br>
+3回目からのボス出現では、たまに中ボスが2体いっしょに出てきます<br>
+2体とも生き残ったまま12秒たつと、合体して大ボスになります<br>
+どちらか1体を先に倒せば、合体を防げます<br>
+大ボスは3方向の弾と、ぐるぐる回る弾幕を撃ってきます<br>
+倒すと魔力のかけらがたくさん落ちて、💖も必ず落ちます</p>
+<p><strong>終わらない危険</strong><br>
+時間がたつほど、敵は際限なく強く多くなります<br>
+60秒ごとに危険度が1つ上がります　画面上の表示で確認できます<br>
+レベルアップの強化は、ぜんぶ取りきっても新しい強化が続けて選べます</p>
 </div>
 </div>
 
 <div id="gamePanel" style="display:none">
-<div class="hudbar"><span id="hudTime">⏱ 0:00</span><span id="hudLv">Lv 1</span><span id="hudKill">💀 0</span></div>
+<div class="hudbar"><span id="hudTime">⏱ 0:00</span><span id="hudLv">Lv 1</span><span id="hudKill">💀 0</span><span id="hudDanger">⚠ 危険度 1</span></div>
 <div class="hpwrap"><div id="hpFill"></div></div>
 <div class="xpwrap"><div id="xpFill"></div></div>
 <div id="gameWrap">
@@ -187,7 +198,8 @@ var charKey = 'r';
 var state = 'select'; /* select | play | levelup | over */
 var frame = 0, timeF = 0, kills = 0, bossCount = 0;
 var player = null;
-var enemies = [], bolts = [], shards = [], floats = [], parts = [], rings = [], hearts = [];
+var enemies = [], bolts = [], eshots = [], shards = [], floats = [], parts = [], rings = [], hearts = [];
+var fusePair = null, bossEvents = 0;
 var weapons = null, upgLv = {};
 var choices = [];
 var spawnT = 0, bossT = 90 * 60, hitSfxT = 0;
@@ -197,7 +209,7 @@ var themeIdx = 0, themePrev = -1, themeFadeT = 0, castleAnn = null;
 var camX = 0, camY = 0;
 var keys = {};
 var joy = { active: false, id: -1, ox: 0, oy: 0, dx: 0, dy: 0 };
-var ENEMY_CAP = 220, BOLT_CAP = 300, SHARD_CAP = 400, HEART_CAP = 40;
+var ENEMY_CAP = 220, BOLT_CAP = 300, ESHOT_CAP = 240, SHARD_CAP = 400, HEART_CAP = 40;
 var HEART_LIFE = 1200, HEAL_DROP = 0.06, HEAL_ITEM = 20;
 var HEAL_SPELL = 30, HEAL_CD_MAX = 1800;
 
@@ -267,6 +279,27 @@ var UPGRADES = [
 ];
 
 function upgDef(id){ for (var i = 0; i < UPGRADES.length; i++) if (UPGRADES[i].id === id) return UPGRADES[i]; return null; }
+
+/* 有限の強化を取りきった後も選べる、繰り返し強化 */
+var REPEATABLES = [
+  { id: 'repDmg', icon: '⚔️', name: '全武器の威力アップ', rep: true,
+    can: function(){ return true; },
+    desc: function(){ return '全ての武器の威力が8%上がります　何回でも選べます'; },
+    apply: function(){
+      weapons.bolt.dmg = Math.max(1, Math.round(weapons.bolt.dmg * 1.08));
+      weapons.wave.dmg = Math.max(1, Math.round(weapons.wave.dmg * 1.08));
+      weapons.orbs.dmg = Math.max(1, Math.round(weapons.orbs.dmg * 1.08));
+      weapons.aura.dps = Math.max(1, Math.round(weapons.aura.dps * 1.08));
+    } },
+  { id: 'repHp', icon: '❤️', name: '体力アップ', rep: true,
+    can: function(){ return true; },
+    desc: function(){ return 'HPの上限が15増えて、15回復します　何回でも選べます'; },
+    apply: function(){ player.maxHp += 15; player.hp = Math.min(player.maxHp, player.hp + 15); } },
+  { id: 'repSpd', icon: '👢', name: '移動速度アップ', rep: true,
+    can: function(){ return true; },
+    desc: function(){ return '移動が3%速くなります　何回でも選べます'; },
+    apply: function(){ player.speed *= 1.03; } }
+];
 function fmtTime(sec){ var m = Math.floor(sec / 60), s = Math.floor(sec % 60); return m + ':' + (s < 10 ? '0' : '') + s; }
 function addFloat(x, y, text, col){ floats.push({ x: x, y: y, text: text, col: col || '#ffe27a', life: 70 }); if (floats.length > 40) floats.shift(); }
 function addParts(x, y, col, n){ for (var i = 0; i < n; i++){ if (parts.length > 260) break; var a = Math.random() * 6.283, sp = 0.6 + Math.random() * 2.4; parts.push({ x: x, y: y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 22 + Math.random() * 16, col: col, r: 2 + Math.random() * 3 }); } }
@@ -282,7 +315,8 @@ function startGame(){
   weapons = newWeapons();
   upgLv = {};
   player = { x: 0, y: 0, r: 20, hp: 100, maxHp: 100, speed: 2.6, level: 1, xp: 0, xpNext: 6, magnetR: 70, regen: 0, faceAng: 0, invulnT: 0 };
-  enemies = []; bolts = []; shards = []; floats = []; parts = []; rings = []; hearts = [];
+  enemies = []; bolts = []; eshots = []; shards = []; floats = []; parts = []; rings = []; hearts = [];
+  fusePair = null; bossEvents = 0;
   frame = 0; timeF = 0; kills = 0; bossCount = 0;
   spawnT = 30; bossT = 90 * 60; hitSfxT = 0;
   summon = null; summonCD = 0; healCD = 0;
@@ -302,8 +336,27 @@ var ETYPES = {
   imp:  { emoji: '👿', hp: 14, spd: 1.05, r: 16, dmg: 8,  xp: 1, col: '#8e6cc8' },
   fast: { emoji: '🦇', hp: 9,  spd: 1.9,  r: 13, dmg: 6,  xp: 1, col: '#6c8ec8' },
   tank: { emoji: '👹', hp: 55, spd: 0.62, r: 24, dmg: 14, xp: 3, col: '#c86c6c' },
-  dash: { emoji: '🐗', hp: 20, spd: 1.0,  r: 15, dmg: 10, xp: 2, col: '#c8a06c' }
+  dash: { emoji: '🐗', hp: 20, spd: 1.0,  r: 15, dmg: 10, xp: 2, col: '#c8a06c' },
+  caster: { emoji: '🧙', hp: 18, spd: 1.0, r: 15, dmg: 8,  xp: 2, col: '#7dd3fc' }
 };
+/* 時間経過スケーリング（秒単位、際限なく上昇する） */
+function enemyHpMul(t){
+  var m = 1 + Math.min(3, t / 75) * 0.85;
+  if (t > 225) m += (t - 225) * 0.012;
+  return m;
+}
+function enemySpdMul(t){
+  var m = 1 + Math.min(0.5, t / 300);
+  if (t > 600) m += (t - 600) * 0.0002;
+  return m;
+}
+function spawnInterval(t){
+  var floor = 11 - Math.min(4, Math.max(0, t - 600) / 150);
+  return Math.max(floor, 46 - t * 0.55);
+}
+function spawnBatch(t){
+  return 1 + Math.floor(Math.max(0, t - 300) / 300);
+}
 function spawnPos(){
   var a = Math.random() * 6.283, d = 620 + Math.random() * 160;
   return { x: player.x + Math.cos(a) * d, y: player.y + Math.sin(a) * d };
@@ -313,26 +366,64 @@ function spawnEnemy(){
   var t = timeF / 60;
   var roll = Math.random() * 100, type = 'imp';
   var tankW = 12 + Math.min(14, t / 18), dashW = 13, fastW = 25;
+  var casterW = t >= 300 ? 10 : 0;
   if (roll < tankW) type = 'tank';
   else if (roll < tankW + dashW) type = 'dash';
   else if (roll < tankW + dashW + fastW) type = 'fast';
+  else if (roll < tankW + dashW + fastW + casterW) type = 'caster';
   var b = ETYPES[type], p = spawnPos();
-  var hpMul = 1 + Math.min(3, t / 75) * 0.85, spdMul = 1 + Math.min(0.5, t / 300);
+  var hpMul = enemyHpMul(t), spdMul = enemySpdMul(t);
   enemies.push({ x: p.x, y: p.y, type: type, emoji: b.emoji, col: b.col,
     hp: b.hp * hpMul, maxHp: b.hp * hpMul, spd: b.spd * spdMul * (0.85 + Math.random() * 0.3),
-    r: b.r, dmg: b.dmg + Math.floor(t / 120), xp: b.xp, atkT: 0, orbT: 0, dashT: Math.floor(Math.random() * 120), boss: false, wob: Math.random() * 6.283 });
+    r: b.r, dmg: b.dmg + Math.floor(t / 120), xp: b.xp, atkT: 0, orbT: 0, dashT: Math.floor(Math.random() * 120), boss: false, wob: Math.random() * 6.283,
+    shotT: 60 + Math.floor(Math.random() * 120) });
 }
-function spawnBoss(){
+function spawnBoss(mid){
   var p = spawnPos();
   var t = timeF / 60;
   var hp = 380 * (1 + bossCount * 0.9) * (1 + t / 240);
+  if (mid) hp *= 0.75;
   var e = { x: p.x, y: p.y, type: 'boss', emoji: BOSS_EMOJI[bossCount % BOSS_EMOJI.length], col: '#e5c15c',
-    hp: hp, maxHp: hp, spd: 0.55, r: 46, dmg: 22, xp: 0, atkT: 0, orbT: 0, dashT: 0, boss: true, wob: 0 };
+    hp: hp, maxHp: hp, spd: 0.55, r: mid ? 40 : 46, dmg: mid ? 18 : 22, xp: 0, atkT: 0, orbT: 0, dashT: 0, boss: true, mid: !!mid, wob: 0, shotT: 0 };
   enemies.push(e);
   bossCount++;
-  addFloat(player.x, player.y - 70, '⚠ ボス出現 ⚠', '#ff8080');
+  addFloat(player.x, player.y - 70, mid ? '中ボス出現！' : '⚠ ボス出現 ⚠', '#ff8080');
   sfxBoss();
   return e;
+}
+function spawnMidPair(){
+  var a = spawnBoss(true);
+  var b = spawnBoss(true);
+  b.x = 2 * player.x - a.x;
+  b.y = 2 * player.y - a.y;
+  fusePair = { a: a, b: b, t: 720 };
+  addFloat(player.x, player.y - 100, '⚠ 合体まで12秒 ⚠', '#ffb0b0');
+  return fusePair;
+}
+function removeEnemyObj(e){
+  var i = enemies.indexOf(e);
+  if (i >= 0){ enemies[i] = enemies[enemies.length - 1]; enemies.pop(); }
+}
+function doFusion(){
+  var a = fusePair.a, b = fusePair.b;
+  var hp = (a.hp + b.hp) * 1.5;
+  var maxHp = (a.maxHp + b.maxHp) * 1.5;
+  var mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+  removeEnemyObj(b);
+  removeEnemyObj(a);
+  var e = { x: mx, y: my, type: 'bigboss', emoji: '👑', col: '#ffd34d',
+    hp: hp, maxHp: maxHp, spd: 0.5, r: 74, dmg: 30, xp: 0, atkT: 0, orbT: 0, dashT: 0, boss: true, bigboss: true, wob: 0,
+    shotT: 120, spiralT: 420, spiralAng: Math.random() * 6.283 };
+  enemies.push(e);
+  fusePair = null;
+  addFloat(mx, my - 90, '⚠ 大ボス誕生 ⚠', '#ff8080');
+  addParts(mx, my, '#ffd34d', 30);
+  sfxBoss();
+  return e;
+}
+function fireEShot(e, spd, dmg, ang){
+  if (eshots.length >= ESHOT_CAP) return;
+  eshots.push({ x: e.x, y: e.y, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, dmg: dmg, life: 320, r: 7 });
 }
 function dropShards(x, y, n, val){
   for (var i = 0; i < n; i++){
@@ -349,7 +440,8 @@ function killEnemy(idx){
   var e = enemies[idx];
   kills++;
   addParts(e.x, e.y, e.col, e.boss ? 26 : 8);
-  if (e.boss) { dropShards(e.x, e.y, 10, 2); addFloat(e.x, e.y - 40, 'ボス撃破！', '#ffe27a'); dropHeart(e.x, e.y); }
+  if (e.bigboss) { dropShards(e.x, e.y, 24, 2); addFloat(e.x, e.y - 40, '大ボス撃破！', '#ffe27a'); dropHeart(e.x, e.y); }
+  else if (e.boss) { dropShards(e.x, e.y, 10, 2); addFloat(e.x, e.y - 40, 'ボス撃破！', '#ffe27a'); dropHeart(e.x, e.y); }
   else { dropShards(e.x, e.y, e.xp, 1); if (Math.random() < HEAL_DROP) dropHeart(e.x, e.y); }
   enemies[idx] = enemies[enemies.length - 1];
   enemies.pop();
@@ -372,7 +464,7 @@ function gainXp(v){
 function levelUp(){
   player.level++;
   player.xp -= player.xpNext;
-  player.xpNext = 6 + player.level * 4;
+  player.xpNext = 6 + Math.floor(player.level * 2.5);
   sfxLevel();
   buildChoices();
   if (!choices.length){
@@ -405,6 +497,14 @@ function buildChoices(){
     var j = Math.floor(Math.random() * avail.length);
     choices.push(avail[j]);
     avail.splice(j, 1);
+  }
+  if (choices.length < 3){
+    var reps = REPEATABLES.slice();
+    while (choices.length < 3 && reps.length){
+      var rj = Math.floor(Math.random() * reps.length);
+      choices.push(reps[rj]);
+      reps.splice(rj, 1);
+    }
   }
   return choices;
 }
@@ -511,6 +611,17 @@ function step(){
     tone(392, 392, 0.12, 'square', 0.05); tone(523, 523, 0.12, 'square', 0.05, 0.1); tone(659, 659, 0.2, 'square', 0.05, 0.2);
   }
 
+  /* 中ボスの合体カウントダウン */
+  if (fusePair){
+    if (enemies.indexOf(fusePair.a) < 0 || enemies.indexOf(fusePair.b) < 0){
+      fusePair = null;
+      addFloat(player.x, player.y - 70, '合体を阻止した！', '#7ee787');
+    } else {
+      fusePair.t--;
+      if (fusePair.t <= 0) doFusion();
+    }
+  }
+
   /* 移動 */
   var mx = 0, my = 0;
   if (keys['KeyA'] || keys['ArrowLeft']) mx -= 1;
@@ -529,13 +640,21 @@ function step(){
   /* スポーン */
   spawnT--;
   if (spawnT <= 0){
-    spawnEnemy();
-    var interval = Math.max(11, 46 - t * 0.55);
+    var batch = spawnBatch(t);
+    for (var sbi = 0; sbi < batch; sbi++) spawnEnemy();
+    var interval = spawnInterval(t);
     if (t < 60) interval *= 1.33;
     spawnT = interval * (0.7 + Math.random() * 0.6);
   }
   bossT--;
-  if (bossT <= 0) { spawnBoss(); bossT = 90 * 60; }
+  if (bossT <= 0){
+    bossT = 90 * 60;
+    bossEvents++;
+    var hasBig = false;
+    for (var hbi = 0; hbi < enemies.length; hbi++) if (enemies[hbi].bigboss) hasBig = true;
+    if (bossEvents >= 3 && !fusePair && !hasBig && Math.random() < 0.5) spawnMidPair();
+    else spawnBoss();
+  }
 
   /* 武器タイマー */
   var wb = weapons.bolt;
@@ -572,8 +691,21 @@ function step(){
       var ph = e.dashT % 170;
       sp = (ph > 118) ? e.spd * 2.6 : e.spd * 0.55;
     }
-    e.x += dx / d * sp + Math.sin(frame * 0.05 + e.wob) * 0.22;
-    e.y += dy / d * sp;
+    if (e.type === 'caster'){
+      /* 距離を保ちながら、赤い魔力弾を撃つ */
+      if (d < 250){ e.x -= dx / d * sp; e.y -= dy / d * sp; }
+      else if (d > 350){ e.x += dx / d * sp; e.y += dy / d * sp; }
+      else { e.x += -dy / d * sp * 0.5 + Math.sin(frame * 0.05 + e.wob) * 0.22; e.y += dx / d * sp * 0.5; }
+      if (e.shotT > 0) e.shotT--;
+      if (e.shotT <= 0 && d < 580){
+        fireEShot(e, 3.2, 10, Math.atan2(dy, dx));
+        e.shotT = 180;
+        tone(300, 180, 0.08, 'sine', 0.02);
+      }
+    } else {
+      e.x += dx / d * sp + Math.sin(frame * 0.05 + e.wob) * 0.22;
+      e.y += dy / d * sp;
+    }
     if (e.atkT > 0) e.atkT--;
     if (e.orbT > 0) e.orbT--;
     if (d < e.r + player.r && e.atkT <= 0){
@@ -581,6 +713,20 @@ function step(){
       e.atkT = 40;
       e.x -= dx / d * 8; e.y -= dy / d * 8;
       if (state !== 'play') return;
+    }
+    if (e.bigboss){
+      if (e.shotT > 0) e.shotT--;
+      if (e.shotT <= 0){
+        var ba = Math.atan2(dy, dx);
+        for (var bsi = -1; bsi <= 1; bsi++) fireEShot(e, 3.4, 12, ba + bsi * 0.28);
+        e.shotT = 150;
+      }
+      if (e.spiralT > 0) e.spiralT--;
+      if (e.spiralT <= 0){
+        e.spiralAng += 0.55;
+        for (var spi = 0; spi < 14; spi++) fireEShot(e, 2.6, 10, e.spiralAng + spi * (6.283 / 14));
+        e.spiralT = 420;
+      }
     }
   }
 
@@ -619,6 +765,19 @@ function step(){
       }
     }
     if (hit || b.life <= 0) { bolts[bi] = bolts[bolts.length - 1]; bolts.pop(); }
+  }
+
+  /* 敵の弾 */
+  for (var qi = eshots.length - 1; qi >= 0; qi--){
+    var q = eshots[qi];
+    q.x += q.vx; q.y += q.vy; q.life--;
+    var qdx = player.x - q.x, qdy = player.y - q.y;
+    var qhit = qdx * qdx + qdy * qdy < (q.r + player.r) * (q.r + player.r);
+    if (qhit){
+      hurtPlayer(q.dmg);
+      if (state !== 'play') return;
+    }
+    if (qhit || q.life <= 0) { eshots[qi] = eshots[eshots.length - 1]; eshots.pop(); }
   }
 
   /* かけら */
@@ -829,6 +988,37 @@ function draw(){
     var b = bolts[i];
     ctx.beginPath(); ctx.arc(b.x - camX, b.y - camY, 6, 0, 6.283); ctx.fill();
   }
+  /* 敵の弾（赤い魔力弾） */
+  for (i = 0; i < eshots.length; i++){
+    var q2 = eshots[i];
+    var qx = q2.x - camX, qy = q2.y - camY;
+    if (qx < -20 || qy < -20 || qx > VW + 20 || qy > VH + 20) continue;
+    ctx.fillStyle = 'rgba(255,64,64,0.35)';
+    ctx.beginPath(); ctx.arc(qx, qy, 12, 0, 6.283); ctx.fill();
+    ctx.fillStyle = '#ff4040';
+    ctx.beginPath(); ctx.arc(qx, qy, 7, 0, 6.283); ctx.fill();
+    ctx.fillStyle = '#ffd9d4';
+    ctx.beginPath(); ctx.arc(qx, qy, 3, 0, 6.283); ctx.fill();
+  }
+  /* 合体カウントダウンの表示 */
+  if (fusePair){
+    var fax = fusePair.a.x - camX, fay = fusePair.a.y - camY;
+    var fbx = fusePair.b.x - camX, fby = fusePair.b.y - camY;
+    var prog = 1 - fusePair.t / 720;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,120,120,' + (0.45 + 0.4 * Math.sin(frame * 0.25)) + ')';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(fax, fay, fusePair.a.r + 8 + prog * 16, 0, 6.283); ctx.stroke();
+    ctx.beginPath(); ctx.arc(fbx, fby, fusePair.b.r + 8 + prog * 16, 0, 6.283); ctx.stroke();
+    ctx.setLineDash([6, 6]);
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(fax, fay); ctx.lineTo(fbx, fby); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font = 'bold 19px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#ffb0b0';
+    ctx.fillText('合体まで ' + Math.ceil(fusePair.t / 60) + ' 秒', (fax + fbx) / 2, Math.min(fay, fby) - 64);
+    ctx.restore();
+  }
   /* オーブ */
   if (weapons && weapons.orbs.count > 0){
     ctx.fillStyle = '#c4b5fd';
@@ -922,6 +1112,7 @@ function draw(){
     $('hudTime').textContent = '⏱ ' + fmtTime(timeF / 60);
     $('hudLv').textContent = 'Lv ' + player.level;
     $('hudKill').textContent = '💀 ' + kills;
+    $('hudDanger').textContent = '⚠ 危険度 ' + (1 + Math.floor(timeF / 3600));
     $('hpFill').style.width = Math.max(0, player.hp / player.maxHp * 100) + '%';
     $('hpFill').style.background = player.hp / player.maxHp < 0.3 ? '#e5383b' : '#57cc6a';
     $('xpFill').style.width = Math.min(100, player.xp / player.xpNext * 100) + '%';
@@ -1057,7 +1248,13 @@ if (typeof window !== 'undefined') window.__SV = {
   heal: doHeal,
   healCD: function(){ return healCD; },
   theme: function(){ return themeIdx; },
-  time: function(){ return timeF; }
+  time: function(){ return timeF; },
+  eshots: function(){ return eshots; },
+  fusePair: function(){ return fusePair; },
+  spawnPair: spawnMidPair,
+  bossEvents: function(){ return bossEvents; },
+  setTimeF: function(f){ timeF = f; },
+  scaling: function(sec){ return { hpMul: enemyHpMul(sec), interval: spawnInterval(sec), batch: spawnBatch(sec) }; }
 };
 </script>
 <script>
