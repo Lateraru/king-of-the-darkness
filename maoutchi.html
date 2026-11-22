@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>魔王っち | ミニゲーム | 魔王らてらる・魔王らて子 公式ファンサイト</title>
+<meta name="description" content="魔王っち　魔界のたまごを育てる育成ゲーム　ケルベロスやクラーケンやドラゴンなど、魔界の子たちをお世話して育てよう">
+<link rel="stylesheet" href="style.css">
+<style>
+  .stage{max-width:560px;margin:0 auto;text-align:center}
+  #cv{width:100%;max-width:440px;height:auto;border:2px solid #a06cd5;border-radius:16px;background:#241a3d;touch-action:none;cursor:pointer}
+  .bars{max-width:440px;margin:10px auto;text-align:left;font-size:.92rem}
+  .bar-row{display:flex;align-items:center;gap:8px;margin:4px 0}
+  .bar-row .lb{width:5.2em;color:#bdb6d9}
+  .bar-track{flex:1;height:12px;background:#171130;border-radius:6px;overflow:hidden}
+  .bar-fill{height:100%;border-radius:6px;transition:width .4s}
+  .msg{min-height:2.6em;line-height:1.7;font-size:1.02rem;margin:8px 0;color:#ffe9a8}
+  .carebtn{font-size:1.02rem;padding:11px 13px;border-radius:999px;border:2px solid var(--purple);background:#3d2a5e;color:#fff;cursor:pointer;margin:4px}
+  .carebtn:active{transform:scale(.95)}
+  .carebtn:disabled{opacity:.45;cursor:default}
+  .bigbtn{font-size:1.15rem;padding:13px 26px;border-radius:999px;border:2px solid var(--purple);background:#3d2a5e;color:#fff;cursor:pointer;margin:6px}
+  .bigbtn:active{transform:scale(.96)}
+  .goldbtn{border-color:#e8b34b;background:#5e4a2a}
+  .statusline{color:#bdb6d9;font-size:.95rem;line-height:1.8}
+  .statusline b{color:#fff}
+  .egggrid{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:14px 0}
+  .eggcard{width:142px;border:2px solid #6b5595;border-radius:14px;padding:12px 6px;background:#2a1f47;cursor:pointer;color:#fff;font-size:.95rem;line-height:1.6}
+  .eggcard:active{transform:scale(.96)}
+  .eggcard .e{font-size:2.4rem;display:block}
+  .eggcard .h{color:#bdb6d9;font-size:.78rem;display:block}
+  .panel{border:1px solid #a06cd5;border-radius:12px;padding:14px;margin:16px auto;max-width:520px;text-align:left;line-height:1.8}
+  .panel h3{margin:2px 0 8px;text-align:center}
+  .dexgrid{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+  .dexcell{width:100px;border:1px solid #6b5595;border-radius:10px;padding:8px 4px;text-align:center;font-size:.8rem;line-height:1.5;background:#241a3d}
+  .dexcell .e{font-size:1.7rem;display:block}
+  .dexcell.off{opacity:.45}
+  textarea{width:100%;box-sizing:border-box;background:#171130;color:#fff;border:1px solid #6b5595;border-radius:8px;padding:8px;font-size:.85rem}
+  input[type=text]{background:#171130;color:#fff;border:1px solid #6b5595;border-radius:8px;padding:9px;font-size:1rem;width:70%;box-sizing:border-box}
+  .note{text-align:left;line-height:1.9;font-size:.92rem;color:#bdb6d9;max-width:480px;margin:14px auto}
+  .subbtn{font-size:.95rem;padding:9px 16px;border-radius:999px;border:1px solid #a06cd5;background:#2a1f47;color:#fff;cursor:pointer;margin:4px}
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="inner">
+    <a class="logo" href="index.html">魔王<span>らてらる</span> × 魔王<span style="color:#a06cd5">らて子</span></a>
+    <nav class="main">
+      <a href="index.html">ホーム</a>
+      <a href="index.html#news">お知らせ</a>
+      <a href="board.html">ファン掲示板</a>
+      <a href="chat.html">魔力SIチャット</a>
+      <a href="games.html" class="active">ミニゲーム</a>
+      <a href="secret.html">秘密基地</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="stage">
+<h1>魔王っち</h1>
+<p>魔王城で拾った魔界のたまごを育てるゲームです<br>
+お世話して、タップで遊んで、立派な魔界の住人に育てよう</p>
+
+<div class="statusline" id="statusLine"></div>
+<div class="bars" id="bars" style="display:none">
+  <div class="bar-row"><span class="lb">🍖 おなか</span><div class="bar-track"><div class="bar-fill" id="barHunger" style="background:#e8873a"></div></div></div>
+  <div class="bar-row"><span class="lb">💗 ごきげん</span><div class="bar-track"><div class="bar-fill" id="barMood" style="background:#e86aa8"></div></div></div>
+  <div class="bar-row"><span class="lb">✨ きれいさ</span><div class="bar-track"><div class="bar-fill" id="barClean" style="background:#5aa8e8"></div></div></div>
+</div>
+
+<canvas id="cv" width="540" height="540"></canvas>
+<div class="msg" id="msg"></div>
+
+<div id="eggPanel" style="display:none">
+  <p style="font-weight:bold">どのたまごを育てますか<br><span style="color:#bdb6d9;font-size:.9rem">たまごで系統が決まって、中身はふ化までのお楽しみです</span></p>
+  <div class="egggrid" id="eggGrid"></div>
+</div>
+
+<div id="namePanel" style="display:none">
+  <p style="font-weight:bold">生まれました　名前をつけてあげよう</p>
+  <input type="text" id="nameInput" maxlength="8" placeholder="名前（8文字まで）">
+  <button class="bigbtn goldbtn" id="btnName" type="button">この名前にする</button>
+</div>
+
+<div id="carePanel" style="display:none">
+  <div>
+    <button class="carebtn" id="btnFood" type="button">🍖 ごはん</button>
+    <button class="carebtn" id="btnPlay" type="button">🎾 あそぶ</button>
+    <button class="carebtn" id="btnClean" type="button">🧹 そうじ</button>
+    <button class="carebtn" id="btnSpecial" type="button">⭐ とくぎ</button>
+  </div>
+  <p style="color:#bdb6d9;font-size:.88rem;margin:6px 0">画面の子をタップすると反応します　なぞると「なでる」になります</p>
+</div>
+
+<div id="awayPanel" style="display:none">
+  <p style="font-weight:bold;line-height:1.8">留守の間に家出してしまいました<br>でも魔王城のどこかにいます　呼べば帰ってきます</p>
+  <button class="bigbtn goldbtn" id="btnCall" type="button">📣 よびもどす</button>
+</div>
+
+<div id="gradPanel" style="display:none">
+  <p style="font-weight:bold;line-height:1.8">🎓 卒業できる立派さになりました<br>卒業すると図鑑に残って、魔王城の住人になります</p>
+  <button class="bigbtn goldbtn" id="btnGrad" type="button">🎓 卒業する</button>
+  <button class="bigbtn" id="btnStay" type="button">まだ一緒にいる</button>
+</div>
+
+<div>
+  <button class="subbtn" id="btnDex" type="button">📖 図鑑</button>
+  <button class="subbtn" id="btnSave" type="button">💾 きろく</button>
+</div>
+
+<div class="panel" id="dexPanel" style="display:none">
+  <h3>📖 魔界っ子図鑑</h3>
+  <div class="dexgrid" id="dexGrid"></div>
+  <p style="color:#bdb6d9;font-size:.88rem">卒業した子がここに残ります<br>卒業特典は1回500ラテです<br>図鑑コンプリートが長期目標です</p>
+  <div id="certList"></div>
+</div>
+
+<div class="panel" id="savePanel" style="display:none">
+  <h3>💾 きろく</h3>
+  <p style="font-size:.92rem;line-height:1.8">記録はブラウザの中に保存されます<br>消えてしまったときのために、セーブコードを控えておけます<br>コードを出すと、今の子の状態とラテが全部入ります</p>
+  <button class="subbtn" id="btnExport" type="button">コードを出す</button>
+  <textarea id="codeOut" rows="3" readonly style="margin-top:8px" placeholder="ここにコードが出ます"></textarea>
+  <p style="font-size:.92rem;margin-top:12px">コードを読み込む（今の記録は上書きされます）</p>
+  <textarea id="codeIn" rows="3" placeholder="コードをここに貼る"></textarea>
+  <button class="subbtn" id="btnImport" type="button">読み込む</button>
+  <div id="saveMsg" style="color:#ffe9a8;font-size:.92rem;margin-top:6px"></div>
+</div>
+
+<div class="note">
+・遊び方<br>
+　たまごを選ぶと、ふ化までタップで温めます<br>
+　生まれたら、ごはん・あそぶ・そうじ・とくぎでお世話します<br>
+　タップすると笑顔になったり、特技を見せてくれます　連打すると大技になります<br>
+　タップが貯まると成長が早くなって、節目でラテがもらえます（1つの段階で1回まで）<br>
+・時間の流れ<br>
+　閉じている間も時間が進んで、おなかが減ったりします<br>
+　この子たちは死ぬことはありません　長く留守にすると家出しますが、呼べば必ず帰ってきます<br>
+・ラテについて<br>
+　ラテはこのサイトのゲーム共通のお金です　買うことも換金もできません<br>
+・記録について<br>
+　記録はあなたのブラウザの中にだけ保存されます
+</div>
+
+<div style="text-align:center;margin:22px 0 6px"><a href="games.html" style="color:#c9a227;font-weight:bold">ミニゲーム一覧に戻る</a></div>
+</div>
+</main>
+
+<footer class="site">
+  魔王らてらる・魔王らて子 公式ファンサイト（trailer-project.com）
+</footer>
+
+<script>
+/* ==== LOGIC (DOM-free) ==== */
+var MT = (function(){
+  'use strict';
+  var GRAD_GP = 500, STAGE2_GP = 100, STAGE3_GP = 300;
+  var MILESTONE_TAPS = 100, MILESTONE_LATE = 100, GRAD_LATE = 500, DAILY_LATE_CAP = 300;
+  var SPECIAL_COOLDOWN = 600000;
+  var SPECIES = {
+    cerberus: { label:'ケルベロス', emoji:'🐶', baby:'ケルベロスの子犬', special:'おさんぽ',
+      adults:{ play:'疾風のケルベロス', gentle:'見守りケルベロス', royal:'獄門番ケルベロス' } },
+    kraken: { label:'クラーケン', emoji:'🐙', baby:'クラーケンの赤ちゃん', special:'水かえ',
+      adults:{ play:'荒波クラーケン', gentle:'穏やかクラーケン', royal:'深海王クラーケン' } },
+    zombie: { label:'ゾンビ', emoji:'🧟', baby:'ゾンビの赤ちゃん', special:'パーツ付け直し',
+      adults:{ play:'ゾンビロード', gentle:'おっとりミイラ', royal:'不死王ゾンビ' } },
+    dragon: { label:'ドラゴン', emoji:'🐲', baby:'ドラゴンの赤ちゃん', special:'稽古',
+      adults:{ fire:'紅蓮の炎竜', ice:'蒼氷の氷竜', thunder:'紫電の雷竜' } },
+    ghost: { label:'ゴースト', emoji:'👻', baby:'ゴーストの赤ちゃん', special:'夜のおさんぽ',
+      adults:{ play:'ポルターガイスト', gentle:'守り霊', royal:'幽霊王' } },
+    slime: { label:'スライム', emoji:'🟣', baby:'スライムの赤ちゃん', special:'ぷにぷにマッサージ',
+      adults:{ play:'大ぶよスライム', gentle:'まもりスライム', royal:'キングスライム' } }
+  };
+  var ALL_SPECIES = ['cerberus','kraken','zombie','dragon','ghost','slime'];
+  var EGGS = {
+    beast:   { label:'魔獣のたまご', species:'cerberus', hint:'元気な子犬の気配がする' },
+    sea:     { label:'海魔のたまご', species:'kraken',   hint:'水の音がする' },
+    undead:  { label:'不死のたまご', species:'zombie',   hint:'少しだけ動いた気がする' },
+    dragon:  { label:'竜のたまご',   species:'dragon',   hint:'温かくて硬い' },
+    spirit:  { label:'霊のたまご',   species:'ghost',    hint:'ひんやりして軽い' },
+    slime:   { label:'粘液のたまご', species:'slime',    hint:'ぷにぷにする' },
+    mystery: { label:'なぞのたまご', species:null,       hint:'何が出るかお楽しみ　レアが出やすい' }
+  };
+  function clamp100(v){ return Math.max(0, Math.min(100, v)); }
+  function todayStr(now){ var d = new Date(now); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function newSave(){ return { version:1, pet:null, pendingEgg:null, eggTaps:0, dex:{}, certs:[], graduates:0, lateDaily:{ date:'', earned:0 } }; }
+  function chooseEgg(save, eggId){ if (!EGGS[eggId]) return false; save.pendingEgg = eggId; save.eggTaps = 0; return true; }
+  function eggTap(save){ if (!save.pendingEgg) return { ok:false }; save.eggTaps++; return { ok:true, hatches: save.eggTaps >= 10 }; }
+  function hatch(save, rng, now){
+    var egg = EGGS[save.pendingEgg]; if (!egg) return null;
+    var sp = egg.species || ALL_SPECIES[Math.floor(rng() * ALL_SPECIES.length)];
+    var rareRate = save.pendingEgg === 'mystery' ? 0.20 : 0.10;
+    var rare = rng() < rareRate;
+    var variant = 'normal';
+    if (sp === 'dragon') variant = ['fire','ice','thunder'][Math.floor(rng() * 3)];
+    else if (sp === 'slime') variant = rare ? 'metal' : 'normal';
+    var pet = { species:sp, variant:variant, rare:(sp === 'slime' ? false : rare), name:'', stage:1, gp:0, bond:0, taps:0,
+      stageTaps:0, milestonePaid:false, hunger:80, mood:85, clean:80, colorIdx:0,
+      care:{ food:0, play:0, clean:0, stroke:0, special:0 }, lastSpecial:0, bornAt:now, away:false };
+    save.pet = pet; save.pendingEgg = null; save.eggTaps = 0;
+    return pet;
+  }
+  function checkGrowth(save){
+    var pet = save.pet; if (!pet) return;
+    if (pet.stage === 1 && pet.gp >= STAGE2_GP){ pet.stage = 2; pet.stageTaps = 0; pet.milestonePaid = false; }
+    else if (pet.stage === 2 && pet.gp >= STAGE3_GP){ pet.stage = 3; pet.stageTaps = 0; pet.milestonePaid = false; }
+  }
+  function grantLate(save, amount, now, exempt){
+    var t = todayStr(now);
+    if (save.lateDaily.date !== t){ save.lateDaily.date = t; save.lateDaily.earned = 0; }
+    var give = amount;
+    if (!exempt) give = Math.max(0, Math.min(amount, DAILY_LATE_CAP - save.lateDaily.earned));
+    save.lateDaily.earned += give;
+    return give;
+  }
+  function care(save, action, now){
+    var pet = save.pet; if (!pet) return { ok:false, code:'nopet' };
+    if (pet.away) return { ok:false, code:'away' };
+    var before = pet.stage;
+    function done(code){ return { ok:true, code:code, grew:(pet.stage > before ? pet.stage : null) }; }
+    if (action === 'food'){
+      if (pet.hunger >= 97) return { ok:false, code:'food_full' };
+      pet.hunger = clamp100(pet.hunger + 35); pet.care.food++;
+      if (pet.species === 'slime' && pet.variant === 'normal') pet.colorIdx = (pet.colorIdx + 1) % 4;
+      pet.gp += 6; checkGrowth(save); return done('food');
+    }
+    if (action === 'play'){
+      pet.mood = clamp100(pet.mood + 22); pet.hunger = clamp100(pet.hunger - 4); pet.care.play++;
+      pet.gp += 8; checkGrowth(save); return done('play');
+    }
+    if (action === 'clean'){
+      pet.clean = clamp100(pet.clean + 40); pet.care.clean++;
+      pet.gp += 6; checkGrowth(save); return done('clean');
+    }
+    if (action === 'stroke'){
+      pet.mood = clamp100(pet.mood + 7); pet.bond += 2; pet.care.stroke++;
+      pet.gp += 2; checkGrowth(save); return done('stroke');
+    }
+    if (action === 'special'){
+      if (now - pet.lastSpecial < SPECIAL_COOLDOWN) return { ok:false, code:'special_cool' };
+      pet.lastSpecial = now; pet.care.special++;
+      var gp = 8;
+      if (pet.species === 'cerberus'){ pet.mood = clamp100(pet.mood + 16); gp = 9; }
+      else if (pet.species === 'kraken'){ pet.clean = clamp100(pet.clean + 30); pet.mood = clamp100(pet.mood + 6); pet.care.clean++; gp = 8; }
+      else if (pet.species === 'zombie'){ pet.clean = clamp100(pet.clean + 20); pet.mood = clamp100(pet.mood + 10); gp = 8; }
+      else if (pet.species === 'dragon'){ pet.mood = clamp100(pet.mood + 8); gp = 13; }
+      else if (pet.species === 'ghost'){ pet.mood = clamp100(pet.mood + 16); gp = 9; var h = new Date(now).getHours(); if (h >= 20 || h < 4) gp += 4; }
+      else if (pet.species === 'slime'){ pet.mood = clamp100(pet.mood + 14); gp = 7; }
+      pet.gp += gp; checkGrowth(save); return done('special');
+    }
+    return { ok:false, code:'unknown' };
+  }
+  function tap(save, now){
+    var pet = save.pet; if (!pet) return { ok:false, code:'nopet' };
+    if (pet.away) return { ok:false, code:'away' };
+    var before = pet.stage;
+    pet.taps++; pet.stageTaps++; pet.bond++;
+    var ev = { ok:true, code:'tap', grew:null, milestone:false, late:0 };
+    if (!pet.milestonePaid && pet.stageTaps >= MILESTONE_TAPS){
+      pet.milestonePaid = true; ev.milestone = true;
+      ev.late = grantLate(save, MILESTONE_LATE, now, false);
+    }
+    pet.gp += 1; checkGrowth(save);
+    ev.grew = (pet.stage > before ? pet.stage : null);
+    return ev;
+  }
+  function tick(save, lastSeen, now){
+    var pet = save.pet; if (!pet) return { away:false, mins:0 };
+    var mins = Math.max(0, (now - lastSeen) / 60000);
+    var hours = mins / 60;
+    pet.hunger = Math.max(5, pet.hunger - hours * 6);
+    pet.mood = Math.max(5, pet.mood - hours * 4);
+    pet.clean = Math.max(5, pet.clean - hours * 3);
+    var gpGain = Math.min(30, Math.floor(mins / 30));
+    if (gpGain > 0){ pet.gp += gpGain; checkGrowth(save); }
+    if (hours > 48) pet.away = true;
+    return { away:pet.away, mins:mins };
+  }
+  function callBack(save){ if (save.pet){ save.pet.away = false; save.pet.mood = Math.max(5, save.pet.mood - 10); } }
+  function adultForm(pet){
+    var sp = SPECIES[pet.species];
+    if (pet.species === 'dragon') return sp.adults[pet.variant] || sp.adults.fire;
+    if (pet.species === 'slime' && pet.variant === 'metal') return 'メタルスライム';
+    var play = pet.care.play + pet.care.special, gentle = pet.care.stroke, royal = pet.care.food + pet.care.clean;
+    if (play > gentle && play > royal) return sp.adults.play;
+    if (gentle > royal) return sp.adults.gentle;
+    return sp.adults.royal;
+  }
+  function stageName(pet){
+    if (pet.stage === 1) return SPECIES[pet.species].baby;
+    if (pet.stage === 2) return SPECIES[pet.species].label + 'のこども';
+    return adultForm(pet);
+  }
+  function dexKey(pet){ return pet.species + '_' + pet.variant + (pet.rare ? '_rare' : ''); }
+  function allDexKeys(){
+    var keys = [];
+    ALL_SPECIES.forEach(function(sp){
+      if (sp === 'dragon'){ ['fire','ice','thunder'].forEach(function(v){ keys.push(sp + '_' + v); keys.push(sp + '_' + v + '_rare'); }); }
+      else if (sp === 'slime'){ keys.push('slime_normal'); keys.push('slime_metal'); }
+      else { keys.push(sp + '_normal'); keys.push(sp + '_normal_rare'); }
+    });
+    return keys;
+  }
+  function canGraduate(save){ return !!(save.pet && save.pet.stage === 3 && save.pet.gp >= GRAD_GP && !save.pet.away); }
+  function graduate(save, now){
+    if (!canGraduate(save)) return { ok:false };
+    var pet = save.pet, form = adultForm(pet), key = dexKey(pet);
+    save.dex[key] = { form:form, species:pet.species, variant:pet.variant, rare:!!pet.rare };
+    save.certs.push({ name: pet.name || SPECIES[pet.species].label, form:form, date: todayStr(now) });
+    save.graduates++;
+    var late = grantLate(save, GRAD_LATE, now, true);
+    save.pet = null;
+    return { ok:true, late:late, form:form };
+  }
+  function fnv(str){ var h = 0x811c9dc5; for (var i = 0; i < str.length; i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); }
+  function encodeSave(obj){
+    var json = JSON.stringify(obj);
+    var b = btoa(unescape(encodeURIComponent(json)));
+    return b.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '') + '.' + fnv(json);
+  }
+  function decodeSave(code){
+    try {
+      var parts = String(code).trim().split('.');
+      if (parts.length !== 2) return null;
+      var b = parts[0].replace(/-/g, '+').replace(/_/g, '/');
+      while (b.length % 4) b += '=';
+      var json = decodeURIComponent(escape(atob(b)));
+      if (fnv(json) !== parts[1]) return null;
+      var obj = JSON.parse(json);
+      if (!obj || obj.version !== 1 || !obj.tchi) return null;
+      return obj;
+    } catch (e) { return null; }
+  }
+  return { SPECIES:SPECIES, EGGS:EGGS, ALL_SPECIES:ALL_SPECIES, GRAD_GP:GRAD_GP, STAGE2_GP:STAGE2_GP, STAGE3_GP:STAGE3_GP,
+    MILESTONE_TAPS:MILESTONE_TAPS, SPECIAL_COOLDOWN:SPECIAL_COOLDOWN,
+    newSave:newSave, chooseEgg:chooseEgg, eggTap:eggTap, hatch:hatch, care:care, tap:tap, tick:tick, callBack:callBack,
+    adultForm:adultForm, stageName:stageName, dexKey:dexKey, allDexKeys:allDexKeys, canGraduate:canGraduate, graduate:graduate,
+    encodeSave:encodeSave, decodeSave:decodeSave, todayStr:todayStr };
+})();
+</script>
+
+<script>
+/* ==== UI + DRAW ==== */
+(function(){
+  'use strict';
+  var $ = function(id){ return document.getElementById(id); };
+  var TKEY = 'maouTchiV1', SKEY = 'maouSharedSaveV1';
+  var save = MT.newSave(), lastSeen = Date.now(), lastTick = Date.now();
+  var shared = null;
+  var anim = { type:'idle', until:0 };
+  var combo = 0, lastTapAt = 0, stayDismissed = false, particles = [];
+  function loadShared(){
+    try { shared = JSON.parse(localStorage.getItem(SKEY) || 'null'); } catch (e) { shared = null; }
+    if (!shared || shared.version !== 1 || !shared.wallet){
+      shared = { version:1, playerId:'p' + Math.random().toString(36).slice(2, 10), updatedAt:new Date().toISOString(), wallet:{ late:0 }, items:[], flags:{} };
+      persistShared();
+    }
+  }
+  function persistShared(){ try { shared.updatedAt = new Date().toISOString(); localStorage.setItem(SKEY, JSON.stringify(shared)); } catch (e) {} }
+  function persist(){ try { localStorage.setItem(TKEY, JSON.stringify({ save:save, lastSeen:Date.now() })); } catch (e) {} }
+  function load(){
+    loadShared();
+    try {
+      var rec = JSON.parse(localStorage.getItem(TKEY) || 'null');
+      if (rec && rec.save && rec.save.version === 1){ save = rec.save; lastSeen = rec.lastSeen || Date.now(); }
+    } catch (e) {}
+    var r = MT.tick(save, lastSeen, Date.now());
+    lastTick = Date.now();
+    if (r.away && save.pet) setMsg('留守の間に家出してしまったみたいです');
+    persist();
+  }
+  function addLate(n){ if (n > 0){ shared.wallet.late += n; persistShared(); } }
+  function setMsg(t){ $('msg').textContent = t; }
+  function setAnim(type, ms){ anim = { type:type, until:Date.now() + ms }; }
+
+  /* ---------- messages ---------- */
+  var TRICK_MSG = {
+    cerberus:'頭ごとに わんわん吠えてみせた',
+    kraken:'水しぶきを上げて 足を振ってみせた',
+    zombie:'頭がポロッと取れた　あわてて付け直した',
+    ghost:'消えたと思ったら 別の場所にひょっこり現れた',
+    slime:'分裂して 2つになってみせた'
+  };
+  function trickMsg(pet){
+    if (pet.species === 'dragon'){
+      return { fire:'小さな炎をはいてみせた', ice:'冷たい息をはいてみせた', thunder:'小さな雷を落としてみせた' }[pet.variant] || '炎をはいてみせた';
+    }
+    return TRICK_MSG[pet.species] || '特技を見せてくれた';
+  }
+  var HAPPY_MSG = ['笑顔になった', 'うれしそうにしている', 'こっちを見てニコッとした', '小さくジャンプした'];
+  var CARE_MSG = {
+    food:'魔界メシをもぐもぐ食べた', food_full:'おなかいっぱいで 食べられないみたい',
+    play:'いっしょに遊んで はしゃいでいる', clean:'きれいになって 気持ちよさそう',
+    stroke:'なでたら ごきげんになった', special_cool:'とくぎは休憩中です　少し待ってね'
+  };
+  var SPECIAL_MSG = {
+    cerberus:'おさんぽに行ってきた', kraken:'新しい水になって すっきりした',
+    zombie:'取れたパーツを付け直した', dragon:'稽古で特訓した',
+    ghost:'夜のおさんぽに行ってきた', slime:'マッサージで ぷにぷにになった'
+  };
+  function specialLabel(pet){
+    if (pet.species === 'dragon') return { fire:'炎の稽古', ice:'氷の稽古', thunder:'雷の稽古' }[pet.variant] || '稽古';
+    return MT.SPECIES[pet.species].special;
+  }
+
+  /* ---------- actions ---------- */
+  function afterAction(ev, baseMsg){
+    if (ev && ev.grew){
+      setMsg(baseMsg + '\n' + (ev.grew === 2 ? '🎉 こどもに成長しました' : '🎉 大人に成長しました'));
+    } else if (baseMsg) setMsg(baseMsg);
+    persist(); render();
+  }
+  function doCare(action){
+    var pet = save.pet; if (!pet) return;
+    var ev = MT.care(save, action, Date.now());
+    if (!ev.ok){ setMsg(CARE_MSG[ev.code] || '今はできないみたい'); return; }
+    if (action === 'play') setAnim('play', 700);
+    else if (action === 'food') setAnim('food', 700);
+    else if (action === 'clean' || (action === 'special' && pet.species === 'kraken')) setAnim('clean', 700);
+    else setAnim('happy', 600);
+    afterAction(ev, action === 'special' ? SPECIAL_MSG[pet.species] : CARE_MSG[ev.code]);
+  }
+  function doTap(){
+    var now = Date.now();
+    if (save.pendingEgg){
+      var er = MT.eggTap(save);
+      if (er.ok){
+        setAnim('eggshake', 300);
+        if (er.hatches){
+          var pet = MT.hatch(save, Math.random, now);
+          setAnim('happy', 900);
+          setMsg('🎉 ' + MT.SPECIES[pet.species].baby + ' が生まれました');
+        } else setMsg('たまごが ゆらゆら揺れた　あと ' + (10 - save.eggTaps) + ' 回でふ化しそう');
+        persist(); render();
+      }
+      return;
+    }
+    var pet = save.pet; if (!pet || pet.away) return;
+    if (pet.name === ''){ setMsg('先に名前をつけてあげよう'); return; }
+    combo = (now - lastTapAt < 1200) ? combo + 1 : 1;
+    lastTapAt = now;
+    var ev = MT.tap(save, now);
+    if (ev.late > 0) addLate(ev.late);
+    var msg;
+    if (combo >= 5){
+      combo = 0; setAnim('bigtrick', 1300); msg = '✨ 大技　' + trickMsg(pet);
+      spawnParticles(pet, 14);
+    } else if (Math.random() < 0.45){
+      setAnim('trick', 900); msg = trickMsg(pet); spawnParticles(pet, 6);
+    } else {
+      setAnim('happy', 600); msg = HAPPY_MSG[Math.floor(Math.random() * HAPPY_MSG.length)];
+    }
+    if (ev.milestone) msg += '\n🎁 タップの節目ボーナス　' + (ev.late > 0 ? ev.late + 'ラテもらいました' : '今日のラテは上限でした');
+    afterAction(ev, msg);
+  }
+  var strokeAcc = 0, strokeCool = 0;
+  function doStroke(){
+    var now = Date.now();
+    if (now - strokeCool < 450) return;
+    strokeCool = now;
+    var pet = save.pet; if (!pet || pet.away || pet.name === '') return;
+    var ev = MT.care(save, 'stroke', now);
+    if (ev.ok){ setAnim('happy', 500); spawnHearts(3); afterAction(ev, CARE_MSG.stroke); }
+  }
+
+  /* ---------- particles ---------- */
+  function petCenter(){ return { x:270, y:330 }; }
+  function spawnParticles(pet, n){
+    var c = petCenter();
+    for (var i = 0; i < n; i++) particles.push({ x:c.x + (Math.random() - 0.5) * 160, y:c.y - 60 - Math.random() * 60, vx:(Math.random() - 0.5) * 1.2, vy:-1 - Math.random() * 1.4, life:50 + Math.random() * 30, kind:'spark' });
+  }
+  function spawnHearts(n){
+    var c = petCenter();
+    for (var i = 0; i < n; i++) particles.push({ x:c.x + (Math.random() - 0.5) * 120, y:c.y - 90, vx:(Math.random() - 0.5) * 0.8, vy:-1.2 - Math.random(), life:55, kind:'heart' });
+  }
+
+  /* ---------- drawing ---------- */
+  var cv = $('cv'), ctx = cv.getContext('2d');
+  function exprNow(){
+    var pet = save.pet;
+    if (Date.now() < anim.until){
+      if (anim.type === 'happy' || anim.type === 'play' || anim.type === 'food') return 'happy';
+      if (anim.type === 'trick' || anim.type === 'bigtrick') return 'happy';
+    }
+    if (!pet) return 'normal';
+    var h = new Date().getHours();
+    if (h >= 23 || h < 5) return 'sleep';
+    if (pet.mood < 30 || pet.hunger < 25 || pet.clean < 20) return 'sulk';
+    return 'normal';
+  }
+  function drawRoom(pet){
+    var g = ctx.createLinearGradient(0, 0, 0, 540);
+    g.addColorStop(0, '#2c2150'); g.addColorStop(0.72, '#241a3d'); g.addColorStop(0.72, '#171130'); g.addColorStop(1, '#120c26');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, 540, 540);
+    ctx.fillStyle = '#3a2a63'; ctx.beginPath(); ctx.ellipse(270, 448, 190, 34, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#463473'; ctx.beginPath(); ctx.ellipse(270, 448, 150, 24, 0, 0, Math.PI * 2); ctx.fill();
+    if (pet && pet.species === 'ghost'){
+      ctx.fillStyle = '#0f0b24'; ctx.fillRect(392, 42, 96, 120);
+      ctx.strokeStyle = '#6b5595'; ctx.strokeRect(392, 42, 96, 120);
+      ctx.fillStyle = '#f5eeda'; ctx.beginPath(); ctx.arc(452, 84, 22, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#0f0b24'; ctx.beginPath(); ctx.arc(442, 78, 19, 0, Math.PI * 2); ctx.fill();
+    }
+    if (pet && pet.species === 'zombie'){
+      ctx.fillStyle = '#4a4360'; ctx.fillRect(56, 300, 54, 74);
+      ctx.beginPath(); ctx.arc(83, 300, 27, Math.PI, 0); ctx.fill();
+      ctx.fillStyle = '#6f678a'; ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('RIP', 83, 336);
+    }
+  }
+  function face(cx, cy, r, expr, dark){
+    ctx.fillStyle = dark || '#221a33';
+    if (expr === 'happy'){
+      ctx.lineWidth = 3; ctx.strokeStyle = dark || '#221a33';
+      [-0.38, 0.38].forEach(function(dx){
+        ctx.beginPath(); ctx.arc(cx + dx * r, cy - r * 0.1, r * 0.2, Math.PI * 1.08, Math.PI * 1.92); ctx.stroke();
+      });
+      ctx.beginPath(); ctx.arc(cx, cy + r * 0.28, r * 0.34, Math.PI * 0.15, Math.PI * 0.85); ctx.stroke();
+    } else if (expr === 'sleep'){
+      ctx.lineWidth = 3; ctx.strokeStyle = dark || '#221a33';
+      [-0.38, 0.38].forEach(function(dx){
+        ctx.beginPath(); ctx.moveTo(cx + dx * r - r * 0.16, cy - r * 0.08); ctx.lineTo(cx + dx * r + r * 0.16, cy - r * 0.08); ctx.stroke();
+      });
+      ctx.beginPath(); ctx.arc(cx, cy + r * 0.34, r * 0.13, 0, Math.PI * 2); ctx.stroke();
+    } else if (expr === 'sulk'){
+      ctx.beginPath(); ctx.arc(cx - r * 0.38, cy - r * 0.1, r * 0.09, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx + r * 0.38, cy - r * 0.1, r * 0.09, 0, Math.PI * 2); ctx.fill();
+      ctx.lineWidth = 3; ctx.strokeStyle = dark || '#221a33';
+      ctx.beginPath(); ctx.moveTo(cx - r * 0.2, cy + r * 0.38); ctx.lineTo(cx + r * 0.2, cy + r * 0.38); ctx.stroke();
+    } else {
+      ctx.beginPath(); ctx.arc(cx - r * 0.38, cy - r * 0.1, r * 0.1, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx + r * 0.38, cy - r * 0.1, r * 0.1, 0, Math.PI * 2); ctx.fill();
+      ctx.lineWidth = 3; ctx.strokeStyle = dark || '#221a33';
+      ctx.beginPath(); ctx.arc(cx, cy + r * 0.2, r * 0.22, Math.PI * 0.2, Math.PI * 0.8); ctx.stroke();
+    }
+  }
+  function ell(x, y, rx, ry, color){ ctx.fillStyle = color; ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); ctx.fill(); }
+  function stageScale(pet){ return [0, 0.62, 0.88, 1.18][pet.stage] || 1; }
+
+  function drawCerberus(pet, x, y, s, expr, t){
+    var body = pet.rare ? '#d9a83f' : '#a87f4e', dark = '#7d5a33';
+    ctx.strokeStyle = dark; ctx.lineWidth = 7 * s;
+    ctx.beginPath(); ctx.moveTo(x - 62 * s, y - 18 * s);
+    ctx.quadraticCurveTo(x - 92 * s, y - 44 * s + Math.sin(t / 130) * 7 * s, x - 80 * s, y - 6 * s); ctx.stroke();
+    ell(x, y, 68 * s, 46 * s, body);
+    ell(x + 6 * s, y + 12 * s, 44 * s, 28 * s, pet.rare ? '#ecca72' : '#c49a63');
+    ctx.fillStyle = dark;
+    [-44, -16, 22, 48].forEach(function(dx){ ctx.fillRect(x + dx * s - 6 * s, y + 34 * s, 12 * s, 20 * s); });
+    var heads = pet.stage;
+    var offs = heads === 1 ? [0] : (heads === 2 ? [-40, 40] : [-56, 0, 56]);
+    var barking = (anim.type === 'trick' || anim.type === 'bigtrick') && Date.now() < anim.until;
+    offs.forEach(function(dx, i){
+      var hx = x + dx * s, hy = y - 52 * s - (i === 1 && heads === 3 ? 10 * s : 0);
+      ctx.fillStyle = dark;
+      ctx.beginPath(); ctx.moveTo(hx - 24 * s, hy - 14 * s); ctx.lineTo(hx - 12 * s, hy - 36 * s); ctx.lineTo(hx - 2 * s, hy - 12 * s); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(hx + 24 * s, hy - 14 * s); ctx.lineTo(hx + 12 * s, hy - 36 * s); ctx.lineTo(hx + 2 * s, hy - 12 * s); ctx.fill();
+      ell(hx, hy, 27 * s, 24 * s, body);
+      ell(hx, hy + 11 * s, 13 * s, 9 * s, pet.rare ? '#ecca72' : '#c49a63');
+      ell(hx, hy + 6 * s, 5 * s, 4 * s, '#221a33');
+      if (barking){
+        ell(hx, hy + 17 * s, 7 * s, 5.5 * s, '#5e2f2f');
+        ctx.fillStyle = '#fff'; ctx.font = 'bold ' + Math.round(17 * s) + 'px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('ワン', hx, hy - 44 * s);
+      } else face(hx, hy - 2 * s, 20 * s, expr);
+    });
+  }
+  function drawKraken(pet, x, y, s, expr, t){
+    var col = pet.rare ? '#8a6fd6' : '#cf6ba3';
+    if (pet.stage === 1){ ctx.fillStyle = '#7d8894'; ctx.beginPath(); ctx.moveTo(x - 62 * s, y + 8 * s); ctx.lineTo(x + 62 * s, y + 8 * s); ctx.lineTo(x + 46 * s, y + 62 * s); ctx.lineTo(x - 46 * s, y + 62 * s); ctx.closePath(); ctx.fill(); }
+    else {
+      var w = pet.stage === 2 ? 96 : 140, hgt = pet.stage === 2 ? 74 : 96;
+      ctx.fillStyle = 'rgba(90,168,232,0.30)'; ctx.fillRect(x - w * s, y - 6 * s, w * 2 * s, hgt * s);
+      ctx.strokeStyle = '#9fd0f5'; ctx.lineWidth = 3; ctx.strokeRect(x - w * s, y - 6 * s, w * 2 * s, hgt * s);
+    }
+    var wave = (anim.type === 'trick' || anim.type === 'bigtrick') && Date.now() < anim.until;
+    ctx.strokeStyle = col; ctx.lineWidth = 11 * s; ctx.lineCap = 'round';
+    for (var i = -2; i <= 2; i++){
+      var tx = x + i * 26 * s, lift = wave ? Math.sin(t / 90 + i) * 16 * s - 10 * s : Math.sin(t / 300 + i * 1.3) * 4 * s;
+      ctx.beginPath(); ctx.moveTo(tx, y + 26 * s);
+      ctx.quadraticCurveTo(tx + 10 * s, y + 44 * s, tx + (i % 2 ? 14 : -14) * s, y + 52 * s + lift); ctx.stroke();
+    }
+    ctx.lineCap = 'butt';
+    ell(x, y - 8 * s, 52 * s, 44 * s, col);
+    ell(x - 18 * s, y - 30 * s, 16 * s, 10 * s, 'rgba(255,255,255,0.35)');
+    face(x, y - 10 * s, 34 * s, expr);
+    if (wave){
+      ctx.fillStyle = '#7ec3f7';
+      for (var j = 0; j < 7; j++){ var px = x + Math.sin(j * 2.4 + t / 60) * 70 * s, py = y - 78 * s + Math.abs(Math.sin(t / 120 + j)) * -18 * s; ctx.beginPath(); ctx.arc(px, py, 4.5 * s, 0, Math.PI * 2); ctx.fill(); }
+    }
+  }
+  function drawZombie(pet, x, y, s, expr, t){
+    var skin = pet.rare ? '#c9d175' : '#8fbf6f', cloth = pet.rare ? '#7a4a8c' : '#5a6e8c';
+    ctx.fillStyle = cloth; ctx.fillRect(x - 34 * s, y - 6 * s, 68 * s, 58 * s);
+    ctx.strokeStyle = skin; ctx.lineWidth = 13 * s; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(x - 36 * s, y + 8 * s); ctx.lineTo(x - 62 * s, y + 2 * s + Math.sin(t / 400) * 3 * s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x + 36 * s, y + 8 * s); ctx.lineTo(x + 62 * s, y + 2 * s - Math.sin(t / 400) * 3 * s); ctx.stroke();
+    ctx.lineCap = 'butt';
+    ctx.fillStyle = '#3d4457'; ctx.fillRect(x - 30 * s, y + 52 * s, 22 * s, 26 * s); ctx.fillRect(x + 8 * s, y + 52 * s, 22 * s, 26 * s);
+    var trick = (anim.type === 'trick' || anim.type === 'bigtrick') && Date.now() < anim.until;
+    var pop = trick ? Math.sin(Math.min(1, (anim.until - Date.now()) / 900) * Math.PI) * (anim.type === 'bigtrick' ? 74 : 46) * s : 0;
+    var hx = x, hy = y - 44 * s - pop;
+    ctx.save(); ctx.translate(hx, hy); ctx.rotate(pop > 4 ? Math.sin(t / 70) * 0.14 : 0);
+    ell(0, 0, 30 * s, 28 * s, skin);
+    ctx.fillStyle = '#4a3b2c';
+    [-16, 0, 16].forEach(function(dx){ ctx.fillRect(dx * s - 3 * s, -30 * s, 6 * s, 12 * s); });
+    ctx.strokeStyle = '#5d7a48'; ctx.lineWidth = 2; ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(-18 * s, 8 * s); ctx.lineTo(-6 * s, 16 * s); ctx.stroke(); ctx.setLineDash([]);
+    face(0, -2 * s, 22 * s, expr);
+    ctx.restore();
+  }
+  function drawDragon(pet, x, y, s, expr, t){
+    var cols = { fire:'#d95f4b', ice:'#6fb7d9', thunder:'#e0bd45' };
+    var col = cols[pet.variant] || cols.fire;
+    if (pet.rare) col = '#e8b34b';
+    var belly = 'rgba(255,240,200,0.85)';
+    ctx.strokeStyle = col; ctx.lineWidth = 10 * s; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(x - 58 * s, y + 16 * s); ctx.quadraticCurveTo(x - 96 * s, y + 4 * s, x - 84 * s, y - 26 * s); ctx.stroke(); ctx.lineCap = 'butt';
+    ctx.fillStyle = col;
+    var ws = (pet.stage === 1 ? 20 : pet.stage === 2 ? 36 : 54) * s, flap = Math.sin(t / 240) * 6 * s;
+    ctx.beginPath(); ctx.moveTo(x - 18 * s, y - 34 * s); ctx.lineTo(x - 18 * s - ws, y - 52 * s - flap); ctx.lineTo(x - 6 * s - ws * 0.4, y - 14 * s); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x + 18 * s, y - 34 * s); ctx.lineTo(x + 18 * s + ws, y - 52 * s - flap); ctx.lineTo(x + 6 * s + ws * 0.4, y - 14 * s); ctx.closePath(); ctx.fill();
+    ell(x, y + 6 * s, 52 * s, 44 * s, col);
+    ell(x, y + 16 * s, 30 * s, 28 * s, belly);
+    ell(x, y - 48 * s, 30 * s, 26 * s, col);
+    ctx.fillStyle = '#f5eeda';
+    ctx.beginPath(); ctx.moveTo(x - 18 * s, y - 66 * s); ctx.lineTo(x - 12 * s, y - 84 * s); ctx.lineTo(x - 5 * s, y - 66 * s); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x + 18 * s, y - 66 * s); ctx.lineTo(x + 12 * s, y - 84 * s); ctx.lineTo(x + 5 * s, y - 66 * s); ctx.fill();
+    face(x, y - 48 * s, 22 * s, expr);
+    var trick = (anim.type === 'trick' || anim.type === 'bigtrick') && Date.now() < anim.until;
+    if (trick){
+      var big = anim.type === 'bigtrick', bx = x + 34 * s, by = y - 40 * s, k;
+      if (pet.variant === 'thunder'){
+        ctx.strokeStyle = '#ffe95e'; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(bx, by);
+        for (k = 1; k <= 4; k++) ctx.lineTo(bx + k * (big ? 22 : 14) * s, by + (k % 2 ? -12 : 6) * s);
+        ctx.stroke();
+      } else {
+        var fc = pet.variant === 'ice' ? '#bfe8ff' : '#ff9a3d';
+        for (k = 0; k < (big ? 9 : 5); k++){
+          var fx = bx + k * (big ? 17 : 13) * s, fr = (big ? 15 : 10) * s - k * 1.1 * s;
+          if (fr <= 1) continue;
+          ell(fx, by + Math.sin(k * 1.7 + t / 60) * 4 * s, fr, fr * 0.8, fc);
+        }
+      }
+    }
+  }
+  function drawGhost(pet, x, y, s, expr, t){
+    var trick = (anim.type === 'trick' || anim.type === 'bigtrick') && Date.now() < anim.until;
+    var prog = trick ? Math.min(1, (anim.until - Date.now()) / 900) : 0;
+    var alpha = trick ? (prog > 0.55 ? 0.15 : 0.95) : 0.95;
+    var ox = trick && prog <= 0.55 ? Math.sin(pet.taps * 3.7) * 110 : 0;
+    ctx.save(); ctx.globalAlpha = alpha;
+    ell(x + ox, y + 66 * s, 44 * s, 9 * s, 'rgba(0,0,0,0.25)');
+    ctx.fillStyle = pet.rare ? '#ffe9a8' : '#eef0ff';
+    ctx.beginPath();
+    ctx.arc(x + ox, y - 16 * s, 42 * s, Math.PI, 0);
+    ctx.lineTo(x + ox + 42 * s, y + 34 * s);
+    for (var i = 0; i < 4; i++){
+      ctx.quadraticCurveTo(x + ox + 42 * s - (i * 21 + 10) * s, y + (i % 2 ? 22 : 46) * s, x + ox + 42 * s - (i + 1) * 21 * s, y + 34 * s);
+    }
+    ctx.closePath(); ctx.fill();
+    ell(x + ox - 52 * s, y + 2 * s, 10 * s, 16 * s, pet.rare ? '#ffe9a8' : '#eef0ff');
+    ell(x + ox + 52 * s, y + 2 * s, 10 * s, 16 * s, pet.rare ? '#ffe9a8' : '#eef0ff');
+    face(x + ox, y - 14 * s, 28 * s, expr);
+    ctx.restore();
+  }
+  var SLIME_COLORS = ['#7ed957', '#57b7d9', '#e86aa8', '#e8d957'];
+  function drawSlime(pet, x, y, s, expr, t){
+    var col = pet.variant === 'metal' ? '#c7d0d8' : SLIME_COLORS[pet.colorIdx % 4];
+    var trick = (anim.type === 'trick' || anim.type === 'bigtrick') && Date.now() < anim.until;
+    var split = trick ? Math.sin(Math.min(1, (anim.until - Date.now()) / 900) * Math.PI) * 52 * s : 0;
+    function blob(bx, bs){
+      var sq = 1 + Math.sin(t / 260 + bx) * 0.045;
+      ell(bx, y + 18 * s, 56 * bs * sq, 46 * bs / sq, col);
+      ell(bx - 18 * bs, y - 8 * bs, 13 * bs, 8 * bs, 'rgba(255,255,255,0.55)');
+      face(bx, y + 2 * bs, 30 * bs, expr);
+      if (pet.variant === 'metal'){ ctx.fillStyle = '#fff'; ctx.font = Math.round(16 * bs) + 'px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('✦', bx + 30 * bs, y - 20 * bs); }
+    }
+    if (split > 6){ blob(x - split, s * 0.78); blob(x + split, s * 0.78); }
+    else blob(x, s);
+    if (pet.stage === 3 && pet.variant !== 'metal'){
+      ctx.fillStyle = '#e8b34b';
+      ctx.beginPath();
+      [-26, 0, 26].forEach(function(dx){ ctx.moveTo(x + dx * s - 6 * s, y - 44 * s); ctx.lineTo(x + dx * s, y - 60 * s); ctx.lineTo(x + dx * s + 6 * s, y - 44 * s); });
+      ctx.fill(); ctx.fillRect(x - 32 * s, y - 44 * s, 64 * s, 7 * s);
+    }
+  }
+  function drawEgg(t){
+    var eggId = save.pendingEgg, egg = MT.EGGS[eggId];
+    var cols = { beast:'#c9a06a', sea:'#6fb7d9', undead:'#9db98a', dragon:'#d97a5f', spirit:'#cfd4f5', slime:'#9fe870', mystery:'#b48ae0' };
+    var x = 270, y = 320, wob = (anim.type === 'eggshake' && Date.now() < anim.until) ? Math.sin(t / 30) * 5 : Math.sin(t / 900) * 1.5;
+    ctx.save(); ctx.translate(x, y); ctx.rotate(wob * Math.PI / 180);
+    ell(0, 0, 74, 92, cols[eggId] || '#ccc');
+    ell(-22, -26, 15, 10, 'rgba(255,255,255,0.4)');
+    ctx.fillStyle = 'rgba(0,0,0,0.16)';
+    [[-30, 20, 13], [26, 38, 10], [12, -8, 8], [-8, 52, 7]].forEach(function(sp){ ctx.beginPath(); ctx.arc(sp[0], sp[1], sp[2], 0, Math.PI * 2); ctx.fill(); });
+    if (save.eggTaps >= 4){
+      ctx.strokeStyle = '#4a3b2c'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(-30, -30); ctx.lineTo(-12, -16); ctx.lineTo(-26, -2); ctx.lineTo(-6, 10);
+      if (save.eggTaps >= 7){ ctx.lineTo(-20, 24); ctx.lineTo(0, 34); }
+      ctx.stroke();
+    }
+    ctx.restore();
+    ctx.fillStyle = '#bdb6d9'; ctx.font = '17px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(egg ? egg.label : '', 270, 472);
+    ctx.fillText('タップで温めよう　あと ' + Math.max(0, 10 - save.eggTaps) + ' 回', 270, 500);
+  }
+  function drawAwayNote(){
+    ctx.fillStyle = '#f5eeda'; ctx.fillRect(196, 220, 148, 110);
+    ctx.fillStyle = '#8a7f63'; ctx.font = '15px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('おでかけ中', 270, 258);
+    ctx.fillText('かならず もどる', 270, 286);
+    ctx.fillText('まっててね', 270, 312);
+  }
+  function draw(){
+    var t = Date.now();
+    ctx.clearRect(0, 0, 540, 540);
+    var pet = save.pet;
+    drawRoom(pet);
+    if (save.pendingEgg){ drawEgg(t); }
+    else if (!pet){
+      ctx.fillStyle = '#bdb6d9'; ctx.font = '19px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('たまごを選んでね', 270, 280);
+    } else if (pet.away){ drawAwayNote(); }
+    else {
+      var s = stageScale(pet);
+      var jump = (anim.type === 'play' && Date.now() < anim.until) ? Math.abs(Math.sin(t / 90)) * 26 : 0;
+      var bob = pet.species === 'ghost' ? Math.sin(t / 600) * 10 : Math.sin(t / 700) * 3.5;
+      var x = 270, y = 356 + bob - jump;
+      var expr = exprNow();
+      ell(270, 452, 95 * s, 13 * s, 'rgba(0,0,0,0.3)');
+      if (pet.species === 'cerberus') drawCerberus(pet, x, y, s, expr, t);
+      else if (pet.species === 'kraken') drawKraken(pet, x, y, s, expr, t);
+      else if (pet.species === 'zombie') drawZombie(pet, x, y, s, expr, t);
+      else if (pet.species === 'dragon') drawDragon(pet, x, y, s, expr, t);
+      else if (pet.species === 'ghost') drawGhost(pet, x, y, s, expr, t);
+      else if (pet.species === 'slime') drawSlime(pet, x, y, s, expr, t);
+      if (expr === 'sleep'){
+        ctx.fillStyle = '#bdb6d9'; ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('Z', 352, 236 + Math.sin(t / 500) * 4);
+        ctx.font = 'bold 16px sans-serif'; ctx.fillText('z', 370, 218 + Math.sin(t / 500 + 1) * 4);
+      }
+      if (anim.type === 'food' && Date.now() < anim.until){
+        ctx.font = '30px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('🍖', 356, y - 30 + Math.sin(t / 80) * 4);
+      }
+      if (anim.type === 'clean' && Date.now() < anim.until){
+        ctx.fillStyle = '#bfe8ff'; ctx.font = '18px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('✦', 200 + Math.sin(t / 100) * 8, y - 70); ctx.fillText('✦', 344, y - 44 + Math.cos(t / 110) * 6);
+      }
+    }
+    particles = particles.filter(function(p){ return p.life > 0; });
+    particles.forEach(function(p){
+      p.x += p.vx; p.y += p.vy; p.life--;
+      ctx.globalAlpha = Math.min(1, p.life / 30);
+      if (p.kind === 'heart'){ ctx.fillStyle = '#e86aa8'; ctx.font = '17px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('♥', p.x, p.y); }
+      else { ctx.fillStyle = '#ffe9a8'; ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fill(); }
+      ctx.globalAlpha = 1;
+    });
+    requestAnimationFrame(draw);
+  }
+
+  /* ---------- render ---------- */
+  function nextGpText(pet){
+    if (pet.stage === 1) return '次の成長まで あと ' + Math.max(0, MT.STAGE2_GP - pet.gp) + ' ポイント';
+    if (pet.stage === 2) return '次の成長まで あと ' + Math.max(0, MT.STAGE3_GP - pet.gp) + ' ポイント';
+    if (MT.canGraduate(save)) return '卒業できます';
+    return '卒業まで あと ' + Math.max(0, MT.GRAD_GP - pet.gp) + ' ポイント';
+  }
+  function render(){
+    var pet = save.pet;
+    $('eggPanel').style.display = (!pet && !save.pendingEgg) ? '' : 'none';
+    $('namePanel').style.display = (pet && pet.name === '' && !pet.away) ? '' : 'none';
+    $('carePanel').style.display = (pet && pet.name !== '' && !pet.away) ? '' : 'none';
+    $('awayPanel').style.display = (pet && pet.away) ? '' : 'none';
+    $('bars').style.display = pet ? '' : 'none';
+    $('gradPanel').style.display = (MT.canGraduate(save) && !stayDismissed) ? '' : 'none';
+    if (pet){
+      $('barHunger').style.width = Math.round(pet.hunger) + '%';
+      $('barMood').style.width = Math.round(pet.mood) + '%';
+      $('barClean').style.width = Math.round(pet.clean) + '%';
+      $('statusLine').innerHTML = '<b>' + escapeHtml(pet.name || 'なまえ未定') + '</b>（' + MT.stageName(pet) + (pet.rare ? '　✨レア' : '') + '）<br>' +
+        nextGpText(pet) + '<br>なかよし ' + pet.bond + '　タップ ' + pet.taps + ' 回<br>💰 ラテ ' + shared.wallet.late + '　卒業した子 ' + save.graduates + ' 人';
+      $('btnSpecial').textContent = '⭐ ' + specialLabel(pet);
+      var remain = MT.SPECIAL_COOLDOWN - (Date.now() - pet.lastSpecial);
+      $('btnSpecial').disabled = remain > 0;
+      $('btnSpecial').style.opacity = remain > 0 ? 0.45 : 1;
+    } else if (save.pendingEgg){
+      $('statusLine').innerHTML = MT.EGGS[save.pendingEgg].label + ' を温めています<br>' + MT.EGGS[save.pendingEgg].hint;
+    } else {
+      $('statusLine').innerHTML = '💰 ラテ ' + shared.wallet.late + '　卒業した子 ' + save.graduates + ' 人';
+    }
+    renderDex();
+  }
+  function escapeHtml(s){ return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function renderDex(){
+    var grid = $('dexGrid'); if (!grid) return;
+    var html = '';
+    MT.allDexKeys().forEach(function(key){
+      var d = save.dex[key];
+      var spKey = key.split('_')[0];
+      var sp = MT.SPECIES[spKey];
+      if (d) html += '<div class="dexcell"><span class="e">' + sp.emoji + '</span>' + escapeHtml(d.form) + (d.rare ? '<br>✨レア' : '') + '</div>';
+      else html += '<div class="dexcell off"><span class="e">❔</span>？？？<br>' + sp.label + 'のなかま</div>';
+    });
+    html += '<div class="dexcell off"><span class="e">🔒</span>？？？<br>まだ見ぬ2人</div>';
+    html += '<div class="dexcell off"><span class="e">🔒</span>？？？<br>お楽しみに</div>';
+    grid.innerHTML = html;
+    var certs = save.certs.map(function(c){ return '🎓 ' + escapeHtml(c.name) + '（' + escapeHtml(c.form) + '）　' + c.date; });
+    $('certList').innerHTML = certs.length ? '<p style="margin-top:10px">' + certs.join('<br>') + '</p>' : '';
+  }
+
+  /* ---------- wiring ---------- */
+  var eggGrid = $('eggGrid');
+  Object.keys(MT.EGGS).forEach(function(id){
+    var e = MT.EGGS[id];
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'eggcard';
+    b.innerHTML = '<span class="e">🥚</span>' + e.label + '<span class="h">' + e.hint + '</span>';
+    b.addEventListener('click', function(){
+      if (MT.chooseEgg(save, id)){ setMsg(e.label + ' を選びました　タップで温めよう'); persist(); render(); }
+    });
+    eggGrid.appendChild(b);
+  });
+  $('btnName').addEventListener('click', function(){
+    var pet = save.pet; if (!pet) return;
+    var v = $('nameInput').value.trim().slice(0, 8);
+    pet.name = v || MT.SPECIES[pet.species].label;
+    setMsg(pet.name + ' と名付けました　大事に育てよう');
+    persist(); render();
+  });
+  $('btnFood').addEventListener('click', function(){ doCare('food'); });
+  $('btnPlay').addEventListener('click', function(){ doCare('play'); });
+  $('btnClean').addEventListener('click', function(){ doCare('clean'); });
+  $('btnSpecial').addEventListener('click', function(){ doCare('special'); });
+  $('btnCall').addEventListener('click', function(){
+    MT.callBack(save); setMsg('呼んだら 元気に戻ってきました'); setAnim('happy', 700); persist(); render();
+  });
+  $('btnGrad').addEventListener('click', function(){
+    var pet = save.pet; if (!pet) return;
+    var nm = pet.name;
+    var ev = MT.graduate(save, Date.now());
+    if (ev.ok){
+      addLate(ev.late); stayDismissed = false;
+      setMsg('🎓 ' + nm + ' は卒業して 魔王城の住人になりました\n記念に ' + ev.late + 'ラテ もらいました');
+      persist(); render();
+    }
+  });
+  $('btnStay').addEventListener('click', function(){ stayDismissed = true; render(); });
+  $('btnDex').addEventListener('click', function(){
+    var p = $('dexPanel'); p.style.display = p.style.display === 'none' ? '' : 'none'; renderDex();
+  });
+  $('btnSave').addEventListener('click', function(){
+    var p = $('savePanel'); p.style.display = p.style.display === 'none' ? '' : 'none';
+  });
+  $('btnExport').addEventListener('click', function(){
+    $('codeOut').value = MT.encodeSave({ version:1, tchi:save, late:shared.wallet.late });
+    $('saveMsg').textContent = 'コードを出しました　大事に控えておいてね';
+  });
+  $('btnImport').addEventListener('click', function(){
+    var obj = MT.decodeSave($('codeIn').value);
+    if (!obj || !obj.tchi || !obj.tchi.dex || !obj.tchi.certs){ $('saveMsg').textContent = 'コードが違うか 壊れています'; return; }
+    save = obj.tchi;
+    if (typeof obj.late === 'number' && obj.late >= 0){ shared.wallet.late = obj.late; persistShared(); }
+    lastTick = Date.now(); stayDismissed = false;
+    $('saveMsg').textContent = '読み込みました';
+    setMsg('記録を読み込みました');
+    persist(); render();
+  });
+  var pDown = null;
+  cv.addEventListener('pointerdown', function(ev){ pDown = { x:ev.clientX, y:ev.clientY, t:Date.now(), acc:0, lx:ev.clientX, ly:ev.clientY }; });
+  cv.addEventListener('pointermove', function(ev){
+    if (!pDown) return;
+    var dx = ev.clientX - pDown.lx, dy = ev.clientY - pDown.ly;
+    pDown.acc += Math.sqrt(dx * dx + dy * dy); pDown.lx = ev.clientX; pDown.ly = ev.clientY;
+    if (pDown.acc > 130){ pDown.acc = 0; doStroke(); }
+  });
+  cv.addEventListener('pointerup', function(ev){
+    if (!pDown) return;
+    var moved = Math.sqrt(Math.pow(ev.clientX - pDown.x, 2) + Math.pow(ev.clientY - pDown.y, 2));
+    var dt = Date.now() - pDown.t;
+    pDown = null;
+    if (moved < 12 && dt < 400) doTap();
+  });
+  cv.addEventListener('pointercancel', function(){ pDown = null; });
+  setInterval(function(){
+    var now = Date.now();
+    MT.tick(save, lastTick, now); lastTick = now; persist(); render();
+  }, 30000);
+  window.addEventListener('beforeunload', persist);
+  load(); render();
+  if (save.pet && save.pet.away) setMsg('留守の間に家出してしまったみたいです');
+  else if (save.pet) setMsg('おかえりなさい　' + (save.pet.name || 'この子') + ' が待っていました');
+  requestAnimationFrame(draw);
+})();
+</script>
+
+<script>
+/* 人気カウンター: デプロイ時に STATS_BASE へ接続先を設定（それまでは何もしません） */
+(function(){
+  var STATS_BASE = '';
+  if (!STATS_BASE) return;
+  try {
+    var slug = 'maoutchi';
+    var today = new Date().toLocaleDateString('sv-SE');
+    var seen = {};
+    try { seen = JSON.parse(localStorage.getItem('maouHitV1') || '{}'); } catch (e) {}
+    if (seen[slug] === today) return;
+    seen[slug] = today;
+    try { localStorage.setItem('maouHitV1', JSON.stringify(seen)); } catch (e) {}
+    fetch(STATS_BASE + '/api/hit', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ game: slug }), keepalive:true }).catch(function(){});
+  } catch (e) {}
+})();
+</script>
+
+<script>
+/* 導線クリック記録: デプロイ時に STATS_BASE へ接続先を設定（それまでは何もしません） */
+(function(){
+  var STATS_BASE = '';
+  if (!STATS_BASE) return;
+  document.addEventListener('click', function(ev){
+    var a = (ev.target && ev.target.closest) ? ev.target.closest('a[href]') : null;
+    if (!a) return;
+    var href = a.getAttribute('href') || '';
+    var dest = '';
+    if (href.indexOf('store.line.me') >= 0) dest = 'line';
+    else if (href.indexOf('line.me/ti/g2') >= 0) dest = 'linechat';
+    else if (href.indexOf('YL26sVq0rjE') >= 0) dest = 'mv404';
+    else if (href.indexOf('6c3PI1Vy3Nc') >= 0) dest = 'healing';
+    else if (href.indexOf('youtube.com/@latemarined') >= 0) dest = 'youtube';
+    if (!dest) return;
+    fetch(STATS_BASE + '/api/click', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ to: dest }), keepalive:true }).catch(function(){});
+  }, true);
+})();
+</script>
+</body>
+</html>
