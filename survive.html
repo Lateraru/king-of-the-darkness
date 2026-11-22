@@ -84,6 +84,14 @@ HPが0になるとゲームオーバーです　スコアは生存時間と撃�
 召喚ボタンかSキーで呼ぶと、相方が現れて画面の敵を全て破壊します<br>
 ボスには大きなダメージを与えますが、倒しきることはできません<br>
 一度使うと、45秒たつまで再び呼ぶことはできません</p>
+<p><strong>回復アイテム</strong><br>
+敵を倒すと、たまに💖が落ちます<br>
+ふれるとHPが20回復します　約20秒で消えてしまうので、早めに拾ってください<br>
+ボスを倒すと、必ず1つ落ちます</p>
+<p><strong>回復魔法</strong><br>
+回復ボタンかHキーで、HPを30回復できます<br>
+一度使うと、30秒たつまで再び使うことはできません<br>
+HPが満タンのときは使えません</p>
 <p><strong>魔王城の景色</strong><br>
 生き残るほど、背景の魔王城が次の城へと変わっていきます<br>
 城が変わるときは、お知らせが出ます</p>
@@ -107,7 +115,8 @@ HPが0になるとゲームオーバーです　スコアは生存時間と撃�
 <button type="button" class="act" id="btnChar">キャラを選び直す</button></p>
 </div>
 </div>
-<p><button type="button" class="act" id="btnSummon" style="display:none">💜 らて子召喚</button></p>
+<p><button type="button" class="act" id="btnSummon" style="display:none">💜 らて子召喚</button>
+<button type="button" class="act" id="btnHeal" style="display:none">💚 回復魔法</button></p>
 <p class="small">スマホはドラッグで移動　パソコンはWASDか矢印キーで移動します</p>
 </div>
 
@@ -178,16 +187,19 @@ var charKey = 'r';
 var state = 'select'; /* select | play | levelup | over */
 var frame = 0, timeF = 0, kills = 0, bossCount = 0;
 var player = null;
-var enemies = [], bolts = [], shards = [], floats = [], parts = [], rings = [];
+var enemies = [], bolts = [], shards = [], floats = [], parts = [], rings = [], hearts = [];
 var weapons = null, upgLv = {};
 var choices = [];
 var spawnT = 0, bossT = 90 * 60, hitSfxT = 0;
 var summon = null, summonCD = 0;
+var healCD = 0;
 var themeIdx = 0, themePrev = -1, themeFadeT = 0, castleAnn = null;
 var camX = 0, camY = 0;
 var keys = {};
 var joy = { active: false, id: -1, ox: 0, oy: 0, dx: 0, dy: 0 };
-var ENEMY_CAP = 220, BOLT_CAP = 300, SHARD_CAP = 400;
+var ENEMY_CAP = 220, BOLT_CAP = 300, SHARD_CAP = 400, HEART_CAP = 40;
+var HEART_LIFE = 1200, HEAL_DROP = 0.06, HEAL_ITEM = 20;
+var HEAL_SPELL = 30, HEAL_CD_MAX = 1800;
 
 var CHARS = {
   r: { name: '魔王らてらる', col: '#e5383b', desc: '最初の武器は魔力弾　近くの敵を自動でねらって撃ちます' },
@@ -270,10 +282,10 @@ function startGame(){
   weapons = newWeapons();
   upgLv = {};
   player = { x: 0, y: 0, r: 20, hp: 100, maxHp: 100, speed: 2.6, level: 1, xp: 0, xpNext: 6, magnetR: 70, regen: 0, faceAng: 0, invulnT: 0 };
-  enemies = []; bolts = []; shards = []; floats = []; parts = []; rings = [];
+  enemies = []; bolts = []; shards = []; floats = []; parts = []; rings = []; hearts = [];
   frame = 0; timeF = 0; kills = 0; bossCount = 0;
   spawnT = 30; bossT = 90 * 60; hitSfxT = 0;
-  summon = null; summonCD = 0;
+  summon = null; summonCD = 0; healCD = 0;
   themeIdx = 0; themePrev = -1; themeFadeT = 0; castleAnn = null;
   camX = player.x - VW / 2; camY = player.y - VH / 2;
   state = 'play';
@@ -329,12 +341,16 @@ function dropShards(x, y, n, val){
     shards.push({ x: x, y: y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, val: val, mag: false });
   }
 }
+function dropHeart(x, y){
+  if (hearts.length >= HEART_CAP) return;
+  hearts.push({ x: x, y: y, life: HEART_LIFE });
+}
 function killEnemy(idx){
   var e = enemies[idx];
   kills++;
   addParts(e.x, e.y, e.col, e.boss ? 26 : 8);
-  if (e.boss) { dropShards(e.x, e.y, 10, 2); addFloat(e.x, e.y - 40, 'ボス撃破！', '#ffe27a'); }
-  else dropShards(e.x, e.y, e.xp, 1);
+  if (e.boss) { dropShards(e.x, e.y, 10, 2); addFloat(e.x, e.y - 40, 'ボス撃破！', '#ffe27a'); dropHeart(e.x, e.y); }
+  else { dropShards(e.x, e.y, e.xp, 1); if (Math.random() < HEAL_DROP) dropHeart(e.x, e.y); }
   enemies[idx] = enemies[enemies.length - 1];
   enemies.pop();
 }
@@ -457,6 +473,18 @@ function summonBlast(){
   tone(1200, 2400, 0.2, 'sine', 0.04);
 }
 
+/* ===== 回復魔法 ===== */
+function doHeal(){
+  if (state !== 'play' || !player || healCD > 0) return;
+  if (player.hp >= player.maxHp) return;
+  var amt = Math.min(HEAL_SPELL, player.maxHp - player.hp);
+  player.hp += amt;
+  healCD = HEAL_CD_MAX;
+  addFloat(player.x, player.y - 46, '💚 回復 +' + amt, '#7ee787');
+  addParts(player.x, player.y, '#7ee787', 10);
+  tone(740, 1180, 0.15, 'sine', 0.05);
+}
+
 /* ===== メインステップ ===== */
 function step(){
   frame++;
@@ -468,6 +496,7 @@ function step(){
   /* 無敵・召喚・テーマ */
   if (player.invulnT > 0) player.invulnT--;
   if (summonCD > 0) summonCD--;
+  if (healCD > 0) healCD--;
   if (summon){
     summon.t++;
     if (!summon.blasted && summon.t >= 30){ summon.blasted = true; summonBlast(); }
@@ -609,6 +638,21 @@ function step(){
     }
   }
 
+  /* 回復アイテム（引き寄せはされず、その場に残る） */
+  for (var hi = hearts.length - 1; hi >= 0; hi--){
+    var hh2 = hearts[hi];
+    hh2.life--;
+    if (hh2.life <= 0){ hearts.splice(hi, 1); continue; }
+    var hdx = player.x - hh2.x, hdy = player.y - hh2.y;
+    if (hdx * hdx + hdy * hdy < (player.r + 12) * (player.r + 12)){
+      hearts.splice(hi, 1);
+      var hamt = Math.min(HEAL_ITEM, player.maxHp - player.hp);
+      player.hp += hamt;
+      addFloat(player.x, player.y - 46, '💖 回復 +' + hamt, '#7ee787');
+      tone(660, 990, 0.1, 'sine', 0.04);
+    }
+  }
+
   /* エフェクト */
   for (var fi = floats.length - 1; fi >= 0; fi--){ floats[fi].y -= 0.7; floats[fi].life--; if (floats[fi].life <= 0) floats.splice(fi, 1); }
   for (var pi = parts.length - 1; pi >= 0; pi--){ var pp = parts[pi]; pp.x += pp.vx; pp.y += pp.vy; pp.life--; if (pp.life <= 0) { parts[pi] = parts[parts.length - 1]; parts.pop(); } }
@@ -721,6 +765,22 @@ function draw(){
     ctx.save(); ctx.translate(sx, sy); ctx.rotate(0.785);
     var sz = s.val >= 2 ? 7 : 5;
     ctx.fillRect(-sz / 2, -sz / 2, sz, sz);
+    ctx.restore();
+  }
+  /* 回復アイテム */
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (i = 0; i < hearts.length; i++){
+    var hh = hearts[i]; sx = hh.x - camX; sy = hh.y - camY;
+    if (sx < -30 || sy < -30 || sx > VW + 30 || sy > VH + 30) continue;
+    if (hh.life < 180 && Math.floor(frame / 6) % 2 === 0) continue;
+    var hpulse = 1 + Math.sin(frame * 0.12) * 0.12;
+    ctx.save();
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = '#ff8fab';
+    ctx.beginPath(); ctx.arc(sx, sy, 17 * hpulse, 0, 6.283); ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.font = Math.round(23 * hpulse) + 'px serif';
+    ctx.fillText('💖', sx, sy + 1);
     ctx.restore();
   }
   /* オーラ */
@@ -871,6 +931,12 @@ function draw(){
       bs.disabled = summonCD > 0 || !!summon;
       bs.textContent = summonCD > 0 ? '召喚 あと' + Math.ceil(summonCD / 60) + '秒' : (charKey === 'r' ? '💜 らて子召喚' : '❤️ らてらる召喚');
     } else bs.style.display = 'none';
+    var bh = $('btnHeal');
+    if (state === 'play'){
+      bh.style.display = '';
+      bh.disabled = healCD > 0 || player.hp >= player.maxHp;
+      bh.textContent = healCD > 0 ? '回復 あと' + Math.ceil(healCD / 60) + '秒' : '💚 回復魔法';
+    } else bh.style.display = 'none';
   }
 }
 
@@ -902,6 +968,7 @@ function showBest(){
 document.addEventListener('keydown', function(ev){
   keys[ev.code] = true;
   if (ev.code === 'KeyS' && !ev.repeat) doSummon();
+  if (ev.code === 'KeyH' && !ev.repeat) doHeal();
   if (state === 'play' && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space'].indexOf(ev.code) >= 0) ev.preventDefault();
 });
 document.addEventListener('keyup', function(ev){ keys[ev.code] = false; });
@@ -931,6 +998,7 @@ $('selL').addEventListener('click', function(){ selectChar('l'); });
 $('btnStart').addEventListener('click', function(){ startGame(); });
 $('btnRetry').addEventListener('click', function(){ startGame(); });
 $('btnSummon').addEventListener('click', function(){ doSummon(); });
+$('btnHeal').addEventListener('click', function(){ doHeal(); });
 $('btnChar').addEventListener('click', function(){
   state = 'select';
   $('overPanel').style.display = 'none';
@@ -983,6 +1051,11 @@ if (typeof window !== 'undefined') window.__SV = {
   summon: doSummon,
   summonState: function(){ return summon; },
   summonCD: function(){ return summonCD; },
+  hearts: function(){ return hearts; },
+  dropHeart: dropHeart,
+  killEnemy: killEnemy,
+  heal: doHeal,
+  healCD: function(){ return healCD; },
   theme: function(){ return themeIdx; },
   time: function(){ return timeF; }
 };
