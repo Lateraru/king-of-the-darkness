@@ -45,7 +45,7 @@ h2{font-size:1.35rem;margin:0 0 16px;padding-left:12px;border-left:4px solid var
 
 /* ヒーロー */
 .hero{margin:24px -16px 0}
-.hero img{width:100%;height:auto;display:block;border-bottom:2px solid var(--line)}
+.hero img,.hero video{width:100%;height:auto;display:block;border-bottom:2px solid var(--line)}
 .hero .catch{
   text-align:center;padding:28px 16px 4px;
 }
