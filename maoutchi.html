@@ -27,6 +27,16 @@
   .eggcard{width:142px;border:2px solid #6b5595;border-radius:14px;padding:12px 6px;background:#2a1f47;cursor:pointer;color:#fff;font-size:.95rem;line-height:1.6}
   .eggcard:active{transform:scale(.96)}
   .eggcard .e{font-size:2.4rem;display:block}
+  .eggvis{width:44px;height:56px;margin:2px auto 6px;border-radius:50% 50% 50% 50%/58% 58% 42% 42%;position:relative;box-shadow:inset -6px -8px 0 rgba(0,0,0,.12)}
+  .egg-beast{background:radial-gradient(circle at 30% 38%, rgba(90,60,20,.45) 0 7px, transparent 8px),radial-gradient(circle at 68% 62%, rgba(90,60,20,.4) 0 6px, transparent 7px),radial-gradient(circle at 55% 22%, rgba(90,60,20,.35) 0 5px, transparent 6px),linear-gradient(160deg,#dcb87e,#b98d4f)}
+  .egg-sea{background:repeating-linear-gradient(168deg,#7cc3ee 0 10px,#5aa8dd 10px 20px)}
+  .egg-undead{background:linear-gradient(150deg,#cfe3b8,#9db98a)}
+  .egg-undead::after{content:'';position:absolute;left:6px;right:6px;top:26px;border-top:3px dashed rgba(70,90,50,.55)}
+  .egg-dragon{background:radial-gradient(circle at 30% 30%, rgba(255,210,140,.55) 0 8px, transparent 9px),repeating-linear-gradient(0deg, rgba(120,40,10,.16) 0 3px, transparent 3px 12px),linear-gradient(160deg,#eda06a,#cf6a3d)}
+  .egg-spirit{background:linear-gradient(160deg,#eef0ff,#b9bfe8);box-shadow:inset -6px -8px 0 rgba(0,0,0,.08),0 0 14px rgba(200,205,255,.75)}
+  .egg-slime{background:radial-gradient(circle at 32% 28%, rgba(255,255,255,.75) 0 7px, transparent 8px),linear-gradient(160deg,#b6f58d,#6fce4e)}
+  .egg-mystery{background:linear-gradient(160deg,#cfaef2,#8a5fc0)}
+  .egg-mystery::after{content:'?';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:1.5rem;color:#fff}
   .eggcard .h{color:#bdb6d9;font-size:.78rem;display:block}
   .panel{border:1px solid #a06cd5;border-radius:12px;padding:14px;margin:16px auto;max-width:520px;text-align:left;line-height:1.8}
   .panel h3{margin:2px 0 8px;text-align:center}
@@ -690,8 +700,44 @@ var MT = (function(){
     ctx.save(); ctx.translate(x, y); ctx.rotate(wob * Math.PI / 180);
     ell(0, 0, 74, 92, cols[eggId] || '#ccc');
     ell(-22, -26, 15, 10, 'rgba(255,255,255,0.4)');
-    ctx.fillStyle = 'rgba(0,0,0,0.16)';
-    [[-30, 20, 13], [26, 38, 10], [12, -8, 8], [-8, 52, 7]].forEach(function(sp){ ctx.beginPath(); ctx.arc(sp[0], sp[1], sp[2], 0, Math.PI * 2); ctx.fill(); });
+    if (eggId === 'beast'){
+      ctx.fillStyle = 'rgba(90,60,20,0.42)';
+      [[-26, 8], [24, 34]].forEach(function(pw){
+        ctx.beginPath(); ctx.ellipse(pw[0], pw[1] + 6, 9, 7, 0, 0, Math.PI * 2); ctx.fill();
+        [-9, 0, 9].forEach(function(dx){ ctx.beginPath(); ctx.arc(pw[0] + dx, pw[1] - 4, 3.4, 0, Math.PI * 2); ctx.fill(); });
+      });
+    } else if (eggId === 'sea'){
+      ctx.strokeStyle = 'rgba(255,255,255,0.65)'; ctx.lineWidth = 3.5;
+      [-34, -4, 26].forEach(function(yy){
+        ctx.beginPath();
+        for (var wx = -52; wx <= 52; wx += 26){ ctx.arc(wx + 13, yy, 13, Math.PI * 1.08, Math.PI * 1.92); }
+        ctx.stroke();
+      });
+    } else if (eggId === 'undead'){
+      ctx.strokeStyle = 'rgba(70,90,50,0.6)'; ctx.lineWidth = 2.5; ctx.setLineDash([6, 4]);
+      ctx.beginPath(); ctx.moveTo(-56, 2); ctx.lineTo(56, -8); ctx.stroke(); ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(18, 30); ctx.lineTo(34, 46); ctx.moveTo(34, 30); ctx.lineTo(18, 46); ctx.stroke();
+    } else if (eggId === 'dragon'){
+      ctx.strokeStyle = 'rgba(120,40,10,0.30)'; ctx.lineWidth = 2.5;
+      for (var ry = -44; ry <= 56; ry += 20){
+        for (var rx = -56; rx <= 56; rx += 24){
+          ctx.beginPath(); ctx.arc(rx + ((ry / 20) % 2 ? 12 : 0), ry, 12, Math.PI * 0.15, Math.PI * 0.85); ctx.stroke();
+        }
+      }
+      ctx.fillStyle = 'rgba(255,140,50,0.5)'; ctx.beginPath(); ctx.arc(0, 58, 17, 0, Math.PI * 2); ctx.fill();
+    } else if (eggId === 'spirit'){
+      ctx.strokeStyle = 'rgba(110,110,190,0.55)'; ctx.lineWidth = 3;
+      ctx.beginPath();
+      for (var a = 0; a < Math.PI * 5; a += 0.25){ var rr = 3 + a * 3.4, px = Math.cos(a) * rr, py = Math.sin(a) * rr - 4; if (a === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py); }
+      ctx.stroke();
+    } else if (eggId === 'slime'){
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      [[-30, 66, 9], [-4, 76, 11], [24, 68, 8]].forEach(function(dp){ ctx.beginPath(); ctx.arc(dp[0], dp[1], dp[2], 0, Math.PI * 2); ctx.fill(); });
+      ell(-24, -30, 13, 8, 'rgba(255,255,255,0.65)');
+    } else if (eggId === 'mystery'){
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 52px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('?', 0, 20);
+      ctx.font = '16px sans-serif'; ctx.fillText('✦', -42, -34); ctx.fillText('✦', 44, -14); ctx.fillText('✦', 30, 52);
+    }
     if (save.eggTaps >= 4){
       ctx.strokeStyle = '#4a3b2c'; ctx.lineWidth = 2.5;
       ctx.beginPath(); ctx.moveTo(-30, -30); ctx.lineTo(-12, -16); ctx.lineTo(-26, -2); ctx.lineTo(-6, 10);
@@ -813,7 +859,7 @@ var MT = (function(){
     var e = MT.EGGS[id];
     var b = document.createElement('button');
     b.type = 'button'; b.className = 'eggcard';
-    b.innerHTML = '<span class="e">🥚</span>' + e.label + '<span class="h">' + e.hint + '</span>';
+    b.innerHTML = '<div class="eggvis egg-' + id + '"></div>' + e.label + '<span class="h">' + e.hint + '</span>';
     b.addEventListener('click', function(){
       if (MT.chooseEgg(save, id)){ setMsg(e.label + ' を選びました　タップで温めよう'); persist(); render(); }
     });
