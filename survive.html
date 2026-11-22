@@ -79,6 +79,14 @@ HPが0になるとゲームオーバーです　スコアは生存時間と撃�
 🔮 守りのオーブ　🟣 魔法陣オーラ　👢 俊足のブーツ<br>
 ❤️ 魔王の体力　🧲 引き寄せの指輪　💚 癒しの魔力<br>
 相方の武器も、強化で覚えることができます</p>
+<p><strong>相方召喚</strong><br>
+ピンチのときは、相方を呼ぶことができます<br>
+召喚ボタンかSキーで呼ぶと、相方が現れて画面の敵を全て破壊します<br>
+ボスには大きなダメージを与えますが、倒しきることはできません<br>
+一度使うと、45秒たつまで再び呼ぶことはできません</p>
+<p><strong>魔王城の景色</strong><br>
+生き残るほど、背景の魔王城が次の城へと変わっていきます<br>
+城が変わるときは、お知らせが出ます</p>
 </div>
 </div>
 
@@ -99,6 +107,7 @@ HPが0になるとゲームオーバーです　スコアは生存時間と撃�
 <button type="button" class="act" id="btnChar">キャラを選び直す</button></p>
 </div>
 </div>
+<p><button type="button" class="act" id="btnSummon" style="display:none">💜 らて子召喚</button></p>
 <p class="small">スマホはドラッグで移動　パソコンはWASDか矢印キーで移動します</p>
 </div>
 
@@ -173,6 +182,8 @@ var enemies = [], bolts = [], shards = [], floats = [], parts = [], rings = [];
 var weapons = null, upgLv = {};
 var choices = [];
 var spawnT = 0, bossT = 90 * 60, hitSfxT = 0;
+var summon = null, summonCD = 0;
+var themeIdx = 0, themePrev = -1, themeFadeT = 0, castleAnn = null;
 var camX = 0, camY = 0;
 var keys = {};
 var joy = { active: false, id: -1, ox: 0, oy: 0, dx: 0, dy: 0 };
@@ -258,10 +269,12 @@ function selectChar(k){
 function startGame(){
   weapons = newWeapons();
   upgLv = {};
-  player = { x: 0, y: 0, r: 20, hp: 100, maxHp: 100, speed: 2.6, level: 1, xp: 0, xpNext: 6, magnetR: 70, regen: 0, faceAng: 0 };
+  player = { x: 0, y: 0, r: 20, hp: 100, maxHp: 100, speed: 2.6, level: 1, xp: 0, xpNext: 6, magnetR: 70, regen: 0, faceAng: 0, invulnT: 0 };
   enemies = []; bolts = []; shards = []; floats = []; parts = []; rings = [];
   frame = 0; timeF = 0; kills = 0; bossCount = 0;
   spawnT = 30; bossT = 90 * 60; hitSfxT = 0;
+  summon = null; summonCD = 0;
+  themeIdx = 0; themePrev = -1; themeFadeT = 0; castleAnn = null;
   camX = player.x - VW / 2; camY = player.y - VH / 2;
   state = 'play';
   $('startPanel').style.display = 'none';
@@ -292,7 +305,7 @@ function spawnEnemy(){
   else if (roll < tankW + dashW) type = 'dash';
   else if (roll < tankW + dashW + fastW) type = 'fast';
   var b = ETYPES[type], p = spawnPos();
-  var hpMul = 1 + Math.min(3, t / 75), spdMul = 1 + Math.min(0.5, t / 300);
+  var hpMul = 1 + Math.min(3, t / 75) * 0.85, spdMul = 1 + Math.min(0.5, t / 300);
   enemies.push({ x: p.x, y: p.y, type: type, emoji: b.emoji, col: b.col,
     hp: b.hp * hpMul, maxHp: b.hp * hpMul, spd: b.spd * spdMul * (0.85 + Math.random() * 0.3),
     r: b.r, dmg: b.dmg + Math.floor(t / 120), xp: b.xp, atkT: 0, orbT: 0, dashT: Math.floor(Math.random() * 120), boss: false, wob: Math.random() * 6.283 });
@@ -327,7 +340,9 @@ function killEnemy(idx){
 }
 function hurtPlayer(n){
   if (state !== 'play' || !player) return;
+  if (player.invulnT > 0) return;
   player.hp -= n;
+  player.invulnT = 45;
   addParts(player.x, player.y, '#ff6060', 6);
   if (hitSfxT <= 0) { sfxHit(); hitSfxT = 18; }
   if (player.hp <= 0) { player.hp = 0; gameOver(); }
@@ -422,6 +437,26 @@ function doWave(){
   tone(880, 1400, 0.08, 'sine', 0.03);
 }
 
+/* ===== 相方召喚 ===== */
+function doSummon(){
+  if (state !== 'play' || !player || summon || summonCD > 0) return;
+  summon = { who: charKey === 'r' ? 'l' : 'r', t: 0, blasted: false };
+  summonCD = 2700;
+  tone(660, 990, 0.12, 'sine', 0.05);
+}
+function summonBlast(){
+  for (var i = enemies.length - 1; i >= 0; i--){
+    var e = enemies[i];
+    if (e.boss){
+      e.hp = Math.max(1, e.hp - e.maxHp * 0.2);
+      addParts(e.x, e.y, '#ffe27a', 14);
+    } else killEnemy(i);
+  }
+  addFloat(player.x, player.y - 64, '全て破壊！', '#ffe27a');
+  tone(160, 40, 0.35, 'sawtooth', 0.07);
+  tone(1200, 2400, 0.2, 'sine', 0.04);
+}
+
 /* ===== メインステップ ===== */
 function step(){
   frame++;
@@ -429,6 +464,23 @@ function step(){
   timeF++;
   if (hitSfxT > 0) hitSfxT--;
   var t = timeF / 60;
+
+  /* 無敵・召喚・テーマ */
+  if (player.invulnT > 0) player.invulnT--;
+  if (summonCD > 0) summonCD--;
+  if (summon){
+    summon.t++;
+    if (!summon.blasted && summon.t >= 30){ summon.blasted = true; summonBlast(); }
+    if (summon.t > 62) summon = null;
+  }
+  if (themeFadeT > 0){ themeFadeT--; if (themeFadeT <= 0) themePrev = -1; }
+  if (castleAnn){ castleAnn.t--; if (castleAnn.t <= 0) castleAnn = null; }
+  var thNow = Math.floor(t / 75) % CASTLES.length;
+  if (thNow !== themeIdx){
+    themePrev = themeIdx; themeIdx = thNow; themeFadeT = 60;
+    castleAnn = { text: '🏰 第' + (themeIdx + 1) + 'の魔王城「' + CASTLES[themeIdx].name + '」に到着！', t: 200 };
+    tone(392, 392, 0.12, 'square', 0.05); tone(523, 523, 0.12, 'square', 0.05, 0.1); tone(659, 659, 0.2, 'square', 0.05, 0.2);
+  }
 
   /* 移動 */
   var mx = 0, my = 0;
@@ -450,6 +502,7 @@ function step(){
   if (spawnT <= 0){
     spawnEnemy();
     var interval = Math.max(11, 46 - t * 0.55);
+    if (t < 60) interval *= 1.33;
     spawnT = interval * (0.7 + Math.random() * 0.6);
   }
   bossT--;
@@ -563,24 +616,97 @@ function step(){
 }
 
 /* ===== 描画 ===== */
-function drawBG(){
-  ctx.fillStyle = '#12102a';
-  ctx.fillRect(0, 0, VW, VH);
+/* ===== 背景：魔王城テーマ ===== */
+var CASTLE_HY = 208, CASTLE_GW = 780;
+var CASTLES = [
+  { name: '黒の魔王城', sky0: '#0a0820', sky1: '#1c1747', ground: '#141126', grid: 'rgba(96,84,180,0.22)', sil: '#060514', accent: '#9d8cff', moon: '#e8e4ff',
+    towers: [ {dx: 30, w: 54, h: 92, roof: 'point'}, {dx: 120, w: 70, h: 138, roof: 'point'}, {dx: 225, w: 46, h: 76, roof: 'flat'}, {dx: 330, w: 84, h: 178, roof: 'spire'}, {dx: 455, w: 52, h: 104, roof: 'point'}, {dx: 545, w: 66, h: 128, roof: 'dome'}, {dx: 650, w: 48, h: 84, roof: 'flat'} ] },
+  { name: '紫の魔王城', sky0: '#1d0b33', sky1: '#472064', ground: '#1e1030', grid: 'rgba(150,90,220,0.20)', sil: '#10051f', accent: '#f0a6ff', moon: '#ffd7fb',
+    towers: [ {dx: 40, w: 64, h: 110, roof: 'dome'}, {dx: 150, w: 52, h: 84, roof: 'dome'}, {dx: 250, w: 92, h: 158, roof: 'dome'}, {dx: 390, w: 56, h: 96, roof: 'point'}, {dx: 490, w: 72, h: 132, roof: 'dome'}, {dx: 610, w: 50, h: 78, roof: 'flat'}, {dx: 690, w: 58, h: 118, roof: 'dome'} ] },
+  { name: '赤の魔王城', sky0: '#20060a', sky1: '#571b1e', ground: '#22090d', grid: 'rgba(220,90,80,0.18)', sil: '#12030a', accent: '#ffb066', moon: '#ffd9b0',
+    towers: [ {dx: 20, w: 48, h: 128, roof: 'point'}, {dx: 95, w: 44, h: 96, roof: 'point'}, {dx: 165, w: 60, h: 150, roof: 'flat'}, {dx: 260, w: 44, h: 88, roof: 'point'}, {dx: 340, w: 78, h: 168, roof: 'point'}, {dx: 455, w: 46, h: 102, roof: 'flat'}, {dx: 540, w: 58, h: 138, roof: 'point'}, {dx: 640, w: 44, h: 92, roof: 'point'}, {dx: 700, w: 52, h: 120, roof: 'flat'} ] },
+  { name: '氷の魔王城', sky0: '#061627', sky1: '#17456e', ground: '#0b1e33', grid: 'rgba(110,190,255,0.20)', sil: '#030c18', accent: '#8fe8ff', moon: '#e6fbff',
+    towers: [ {dx: 50, w: 40, h: 120, roof: 'spire'}, {dx: 130, w: 30, h: 84, roof: 'spire'}, {dx: 210, w: 52, h: 168, roof: 'spire'}, {dx: 320, w: 34, h: 96, roof: 'spire'}, {dx: 420, w: 46, h: 190, roof: 'spire'}, {dx: 520, w: 32, h: 88, roof: 'spire'}, {dx: 610, w: 44, h: 140, roof: 'spire'}, {dx: 700, w: 30, h: 100, roof: 'spire'} ] },
+  { name: '翠の魔王城', sky0: '#04170f', sky1: '#0f4630', ground: '#081f16', grid: 'rgba(80,220,160,0.18)', sil: '#020d08', accent: '#7dffc9', moon: '#dcffef',
+    towers: [ {dx: 35, w: 66, h: 96, roof: 'dome'}, {dx: 140, w: 50, h: 130, roof: 'point'}, {dx: 235, w: 74, h: 104, roof: 'dome'}, {dx: 350, w: 56, h: 152, roof: 'point'}, {dx: 450, w: 68, h: 92, roof: 'flat'}, {dx: 560, w: 52, h: 124, roof: 'dome'}, {dx: 660, w: 60, h: 100, roof: 'point'} ] }
+];
+function drawTheme(th, alpha){
+  ctx.save();
+  if (alpha < 1) ctx.globalAlpha = alpha;
+  var g = ctx.createLinearGradient(0, 0, 0, CASTLE_HY + 40);
+  g.addColorStop(0, th.sky0);
+  g.addColorStop(1, th.sky1);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, VW, CASTLE_HY + 1);
+  ctx.fillStyle = th.ground;
+  ctx.fillRect(0, CASTLE_HY, VW, VH - CASTLE_HY);
+  ctx.fillStyle = th.moon;
+  ctx.globalAlpha = alpha * 0.9;
+  ctx.beginPath(); ctx.arc(VW - 104, 54, 24, 0, 6.283); ctx.fill();
+  ctx.globalAlpha = alpha * 0.16;
+  ctx.beginPath(); ctx.arc(VW - 104, 54, 42, 0, 6.283); ctx.fill();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  for (var si2 = 0; si2 < 42; si2++){
+    var sh = Math.sin(si2 * 127.1) * 43758.5;
+    var sxp = (sh - Math.floor(sh)) * VW, syp = Math.abs(Math.sin(si2 * 311.7)) * (CASTLE_HY - 46);
+    ctx.fillRect(sxp, syp, 2, 2);
+  }
+  var off = (-Math.floor(camX * 0.06)) % CASTLE_GW;
+  if (off > 0) off -= CASTLE_GW;
+  ctx.fillStyle = th.sil;
+  for (var gx = off; gx < VW; gx += CASTLE_GW){
+    ctx.fillRect(gx, CASTLE_HY - 22, CASTLE_GW, 22);
+    for (var ti = 0; ti < th.towers.length; ti++){
+      var tw = th.towers[ti], tx = gx + tw.dx, ty = CASTLE_HY - tw.h;
+      ctx.fillRect(tx, ty, tw.w, tw.h);
+      if (tw.roof === 'point'){
+        ctx.beginPath(); ctx.moveTo(tx - 4, ty); ctx.lineTo(tx + tw.w / 2, ty - 30); ctx.lineTo(tx + tw.w + 4, ty); ctx.closePath(); ctx.fill();
+      } else if (tw.roof === 'spire'){
+        ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(tx + tw.w / 2, ty - 52); ctx.lineTo(tx + tw.w, ty); ctx.closePath(); ctx.fill();
+      } else if (tw.roof === 'dome'){
+        ctx.beginPath(); ctx.arc(tx + tw.w / 2, ty, tw.w / 2, Math.PI, 0); ctx.fill();
+      } else {
+        ctx.fillRect(tx - 3, ty - 8, tw.w + 6, 8);
+      }
+      ctx.fillStyle = th.accent;
+      ctx.globalAlpha = alpha * 0.85;
+      for (var wy = ty + 16; wy < CASTLE_HY - 30; wy += 26){
+        var wh = Math.sin((tx + wy) * 12.9898) * 43758.5453;
+        if (wh - Math.floor(wh) > 0.45) ctx.fillRect(tx + tw.w / 2 - 2, wy, 4, 6);
+      }
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = th.sil;
+    }
+  }
+  ctx.save();
+  ctx.beginPath(); ctx.rect(0, CASTLE_HY, VW, VH - CASTLE_HY); ctx.clip();
   var gs = 90;
   var x0 = Math.floor(camX / gs) * gs, y0 = Math.floor(camY / gs) * gs;
-  ctx.strokeStyle = 'rgba(90,80,160,0.25)';
+  ctx.strokeStyle = th.grid;
   ctx.lineWidth = 1;
   ctx.beginPath();
   for (var x = x0; x < camX + VW + gs; x += gs){ ctx.moveTo(x - camX, 0); ctx.lineTo(x - camX, VH); }
   for (var y = y0; y < camY + VH + gs; y += gs){ ctx.moveTo(0, y - camY); ctx.lineTo(VW, y - camY); }
   ctx.stroke();
-  ctx.fillStyle = 'rgba(200,190,255,0.35)';
-  for (var cx = x0; cx < camX + VW + gs; cx += gs){
-    for (var cy = y0; cy < camY + VH + gs; cy += gs){
-      var h = Math.sin(cx * 12.9898 + cy * 78.233) * 43758.5453;
-      var fx = cx + (h - Math.floor(h)) * 60 + 12, fy = cy + (Math.abs(Math.sin(h)) * 60) + 10;
-      ctx.fillRect(fx - camX, fy - camY, 2, 2);
+  ctx.fillStyle = th.accent;
+  ctx.globalAlpha = alpha * 0.30;
+  for (var cx2 = x0; cx2 < camX + VW + gs; cx2 += gs){
+    for (var cy2 = y0; cy2 < camY + VH + gs; cy2 += gs){
+      var h2 = Math.sin(cx2 * 12.9898 + cy2 * 78.233) * 43758.5453;
+      var fx = cx2 + (h2 - Math.floor(h2)) * 60 + 12, fy = cy2 + (Math.abs(Math.sin(h2)) * 60) + 10;
+      if (fy - camY > CASTLE_HY + 4) ctx.fillRect(fx - camX, fy - camY, 2, 2);
     }
+  }
+  ctx.restore();
+  ctx.restore();
+}
+function drawBG(){
+  if (themePrev >= 0 && themeFadeT > 0){
+    drawTheme(CASTLES[themePrev], 1);
+    drawTheme(CASTLES[themeIdx], 1 - themeFadeT / 60);
+  } else {
+    drawTheme(CASTLES[themeIdx], 1);
   }
 }
 function draw(){
@@ -665,6 +791,7 @@ function draw(){
   ctx.setLineDash([]);
   var img = charKey === 'r' ? imgFR : imgFL;
   ctx.save();
+  if (player.invulnT > 0 && Math.floor(frame / 4) % 2 === 0) ctx.globalAlpha = 0.3;
   ctx.beginPath(); ctx.arc(ppx, ppy, 21, 0, 6.283); ctx.clip();
   if (img && img.complete && img.naturalWidth > 0) ctx.drawImage(img, ppx - 21, ppy - 21, 42, 42);
   else { ctx.fillStyle = CHARS[charKey].col; ctx.fillRect(ppx - 21, ppy - 21, 42, 42); }
@@ -672,6 +799,27 @@ function draw(){
   ctx.strokeStyle = CHARS[charKey].col;
   ctx.lineWidth = 2;
   ctx.beginPath(); ctx.arc(ppx, ppy, 21, 0, 6.283); ctx.stroke();
+  /* 召喚した相方 */
+  if (summon){
+    if (summon.blasted && summon.t >= 30 && summon.t <= 34){
+      ctx.fillStyle = 'rgba(255,255,255,' + (0.28 * (1 - (summon.t - 30) / 5)) + ')';
+      ctx.fillRect(0, 0, VW, VH);
+    }
+    var spx = player.x + 60 - camX, spy2 = player.y - 8 - camY;
+    if (summon.t < 8) spy2 += -130 * (1 - summon.t / 8);
+    else if (summon.t >= 38) spy2 += -160 * (summon.t - 38) / 24;
+    var simg = summon.who === 'r' ? imgFR : imgFL;
+    ctx.save();
+    ctx.beginPath(); ctx.arc(spx, spy2, 19, 0, 6.283); ctx.clip();
+    if (simg && simg.complete && simg.naturalWidth > 0) ctx.drawImage(simg, spx - 19, spy2 - 19, 38, 38);
+    else { ctx.fillStyle = CHARS[summon.who].col; ctx.fillRect(spx - 19, spy2 - 19, 38, 38); }
+    ctx.restore();
+    ctx.strokeStyle = CHARS[summon.who].col;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(spx, spy2, 19, 0, 6.283); ctx.stroke();
+    ctx.font = '20px serif';
+    ctx.fillText(summon.who === 'l' ? '🪄' : '🗡️', spx + 22, spy2 + 14);
+  }
   /* パーティクル */
   for (i = 0; i < parts.length; i++){
     var pp = parts[i];
@@ -697,6 +845,18 @@ function draw(){
     ctx.fillStyle = 'rgba(255,255,255,0.45)';
     ctx.beginPath(); ctx.arc(joy.ox + joy.dx * 30, joy.oy + joy.dy * 30, 20, 0, 6.283); ctx.fill();
   }
+  /* 魔王城の到着お知らせ */
+  if (castleAnn){
+    ctx.save();
+    ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.globalAlpha = Math.min(1, castleAnn.t / 40);
+    var aw = ctx.measureText(castleAnn.text).width + 30;
+    ctx.fillStyle = 'rgba(11,8,23,0.65)';
+    ctx.fillRect(VW / 2 - aw / 2, 12, aw, 38);
+    ctx.fillStyle = '#ffe9a8';
+    ctx.fillText(castleAnn.text, VW / 2, 32);
+    ctx.restore();
+  }
   /* HUD */
   if (frame % 5 === 0 && state !== 'select'){
     $('hudTime').textContent = '⏱ ' + fmtTime(timeF / 60);
@@ -705,6 +865,12 @@ function draw(){
     $('hpFill').style.width = Math.max(0, player.hp / player.maxHp * 100) + '%';
     $('hpFill').style.background = player.hp / player.maxHp < 0.3 ? '#e5383b' : '#57cc6a';
     $('xpFill').style.width = Math.min(100, player.xp / player.xpNext * 100) + '%';
+    var bs = $('btnSummon');
+    if (state === 'play'){
+      bs.style.display = '';
+      bs.disabled = summonCD > 0 || !!summon;
+      bs.textContent = summonCD > 0 ? '召喚 あと' + Math.ceil(summonCD / 60) + '秒' : (charKey === 'r' ? '💜 らて子召喚' : '❤️ らてらる召喚');
+    } else bs.style.display = 'none';
   }
 }
 
@@ -735,6 +901,7 @@ function showBest(){
 /* ===== 入力 ===== */
 document.addEventListener('keydown', function(ev){
   keys[ev.code] = true;
+  if (ev.code === 'KeyS' && !ev.repeat) doSummon();
   if (state === 'play' && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space'].indexOf(ev.code) >= 0) ev.preventDefault();
 });
 document.addEventListener('keyup', function(ev){ keys[ev.code] = false; });
@@ -763,6 +930,7 @@ $('selR').addEventListener('click', function(){ selectChar('r'); });
 $('selL').addEventListener('click', function(){ selectChar('l'); });
 $('btnStart').addEventListener('click', function(){ startGame(); });
 $('btnRetry').addEventListener('click', function(){ startGame(); });
+$('btnSummon').addEventListener('click', function(){ doSummon(); });
 $('btnChar').addEventListener('click', function(){
   state = 'select';
   $('overPanel').style.display = 'none';
@@ -811,7 +979,12 @@ if (typeof window !== 'undefined') window.__SV = {
   spawnBoss: spawnBoss,
   hurt: hurtPlayer,
   gainXp: gainXp,
-  setKey: function(code, on){ keys[code] = on; }
+  setKey: function(code, on){ keys[code] = on; },
+  summon: doSummon,
+  summonState: function(){ return summon; },
+  summonCD: function(){ return summonCD; },
+  theme: function(){ return themeIdx; },
+  time: function(){ return timeF; }
 };
 </script>
 <script>
