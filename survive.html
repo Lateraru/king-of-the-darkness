@@ -70,7 +70,11 @@ HPが0になるとゲームオーバーです　スコアは生存時間と撃�
 ボスには制限時間があります　時間内に倒せないと、去ってしまいます<br>
 ボスを倒すと、討伐報酬のラテが手に入ります<br>
 金色に光るエリートの敵は、とても固いかわりに経験値が4倍です<br>
-HPが残り少なくなると「魔王の意地」で、攻撃が3割強くなります</p>
+HPが残り少なくなると「魔王の意地」で、攻撃が3割強くなります<br>
+ボスが何度も来るようになると、中ボスが総出で襲ってくることもあります<br>
+☠️ 死霊王ネクロス　死霊を呼び続けます　緑の輪が広がりきると、結界を貫く一撃が来ます<br>
+🌋 熔岩巨神イフリート　熔岩だまりを残します　踏むと熱いです　全方位の弾幕にも注意<br>
+⚡ 雷霆の魔女ヴァルキリア　雷の予告円から逃げてください　当たると結界を貫きます</p>
 <p><strong>敵の種類</strong><br>
 👿 ノーマル　まっすぐ向かってきます<br>
 🦇 コウモリ　弱いけど速いです<br>
@@ -237,6 +241,7 @@ var keys = {};
 var joy = { active: false, id: -1, ox: 0, oy: 0, dx: 0, dy: 0 };
 var ENEMY_CAP = 280, BOLT_CAP = 300, ESHOT_CAP = 240, SHARD_CAP = 400, HEART_CAP = 40;
 var webs = [], vampWinT = 0, vampWinHeal = 0;
+var lavas = [], zapMarks = [];
 var HEART_LIFE = 1200, HEAL_DROP = 0.06, HEAL_ITEM = 20;
 var HEAL_SPELL = 30, HEAL_CD_MAX = 1800;
 
@@ -440,6 +445,7 @@ function startGame(){
   player = { x: 0, y: 0, r: 20, hp: 100, maxHp: 100, speed: 2.6, level: 1, xp: 0, xpNext: 6, magnetR: 70, regen: 0, faceAng: 0, invulnT: 0, xpMul: 1, dmgCut: 0 };
   enemies = []; bolts = []; eshots = []; shards = []; floats = []; parts = []; rings = []; hearts = []; zaps = [];
   webs = []; vampWinT = 0; vampWinHeal = 0;
+  lavas = []; zapMarks = [];
   fusePair = null; bossEvents = 0;
   timeStopT = 0; marks = []; flashT = 0; shakeT = 0;
   frame = 0; timeF = 0; kills = 0; bossCount = 0;
@@ -518,10 +524,11 @@ function createEnemy(type){
     fuseT: -1, warpT: 200 + Math.floor(Math.random() * 80), warpTeleT: 0, warpX: 0, warpY: 0, lungeT: 0,
     slowT: 0, slowPct: 0, tiredT: 0,
     carry: 0, carryVal: 0, fleeing: false, buffed: false, baseR: b.r, absorbed: false };
-  /* エリート（金色）：5分すぎからまれに出る　固いが、倒すと経験値4倍 */
-  if (t >= 300 && Math.random() < 0.012){
+  /* エリート（金色）：5分すぎからまれに出る　固いが、倒すと経験値4倍　25分すぎは少し増える */
+  if (t >= 300 && Math.random() < (t >= 1500 ? 0.025 : 0.012)){
     ne.elite = true;
     ne.hp *= 8; ne.maxHp *= 8; ne.xp *= 4;
+    ne.dmg = Math.round(ne.dmg * 1.5);
     ne.r = Math.round(ne.r * 1.35); ne.baseR = ne.r;
     ne.col = '#ffd34d';
   }
@@ -557,6 +564,27 @@ function countAliveType(type){
   var n = 0;
   for (var i = 0; i < enemies.length; i++) if (enemies[i].type === type) n++;
   return n;
+}
+/* ボスの出現間隔：20分すぎで75秒、30分すぎで60秒に短くなる */
+function bossInterval(t){
+  if (t > 1800) return 60 * 60;
+  if (t > 1200) return 75 * 60;
+  return 90 * 60;
+}
+/* ボスイベント：6回目からは中ボス総出が混ざる */
+function fireBossEvent(){
+  bossEvents++;
+  var hasBig = false;
+  for (var hbi = 0; hbi < enemies.length; hbi++) if (enemies[hbi].bigboss) hasBig = true;
+  var swarmN = 0;
+  if (bossEvents >= 6 && !fusePair && Math.random() < 0.4) swarmN = bossEvents >= 10 ? 4 : 3;
+  if (swarmN > 0){
+    for (var swi = 0; swi < swarmN; swi++) spawnBoss(true);
+    addFloat(player.x, player.y - 140, '⚠ 中ボス総出 ⚠', '#ff8080');
+    tone(120, 60, 0.4, 'sawtooth', 0.07);
+  }
+  else if (bossEvents >= 3 && !fusePair && !hasBig && Math.random() < 0.5) spawnMidPair();
+  else spawnBoss();
 }
 /* ボスの体力は10分すぎから時間とともに大きく伸びる */
 function bossHpLate(t){ return 1 + Math.max(0, t - 600) / 300; }
@@ -606,15 +634,19 @@ var MECH_BOSSES = [
   { kind: 'commander', name: '魔軍指揮官', emoji: '🦹', col: '#ef4444' },
   { kind: 'dragon', name: '古龍ドラグニール', emoji: '🐉', col: '#4ade80' },
   { kind: 'spider', name: '糸縫いの女王', emoji: '🕷️', col: '#d8b4fe' },
-  { kind: 'raven', name: '魔剣士レイヴン', emoji: '🦅', col: '#94a3b8' }
+  { kind: 'raven', name: '魔剣士レイヴン', emoji: '🦅', col: '#94a3b8' },
+  { kind: 'necros', name: '死霊王ネクロス', emoji: '☠️', col: '#a3e635' },
+  { kind: 'ifrit', name: '熔岩巨神イフリート', emoji: '🌋', col: '#fb923c' },
+  { kind: 'valkyrie', name: '雷霆の魔女ヴァルキリア', emoji: '⚡', col: '#fde047' }
 ];
 /* ランダム抽選の重み（終末の大魔導士は3回目のボス出現以降だけ、低確率で混ざる） */
-var MECH_WEIGHTS = { slimeking: 3, warpmage: 3, statue: 3, boar: 3, timestop: 3, eater: 3, commander: 3, doomsday: 1, dragon: 3, spider: 3, raven: 3 };
+var MECH_WEIGHTS = { slimeking: 3, warpmage: 3, statue: 3, boar: 3, timestop: 3, eater: 3, commander: 3, doomsday: 1, dragon: 3, spider: 3, raven: 3, necros: 2, ifrit: 2, valkyrie: 2 };
 function pickMechKind(){
   var pool = [], total = 0;
   for (var i = 0; i < MECH_BOSSES.length; i++){
     var k = MECH_BOSSES[i].kind;
     if (k === 'doomsday' && bossEvents < 3) continue;
+    if ((k === 'necros' || k === 'ifrit' || k === 'valkyrie') && bossEvents < 4) continue;
     pool.push(k);
     total += MECH_WEIGHTS[k] || 1;
   }
@@ -638,11 +670,15 @@ function spawnMechBoss(kind){
   if (def.kind === 'eater') hp *= 1.25;
   if (def.kind === 'dragon') hp *= 1.3;
   if (def.kind === 'raven') hp *= 0.8;
-  var SPD_BY_KIND = { statue: 0.35, boar: 0.85, doomsday: 0.4, eater: 0.45, commander: 0.85, timestop: 0.6, dragon: 0.5, spider: 0.55, raven: 0.95 };
+  if (def.kind === 'necros') hp *= 1.6;
+  if (def.kind === 'ifrit') hp *= 1.8;
+  if (def.kind === 'valkyrie') hp *= 1.3;
+  var SPD_BY_KIND = { statue: 0.35, boar: 0.85, doomsday: 0.4, eater: 0.45, commander: 0.85, timestop: 0.6, dragon: 0.5, spider: 0.55, raven: 0.95, necros: 0.45, ifrit: 0.4, valkyrie: 0.8 };
   var bspd = SPD_BY_KIND[def.kind] !== undefined ? SPD_BY_KIND[def.kind] : 0.55;
-  var br = def.kind === 'eater' ? 52 : (def.kind === 'doomsday' ? 50 : (def.kind === 'dragon' ? 54 : (def.kind === 'spider' ? 48 : (def.kind === 'raven' ? 42 : 46))));
+  var BR_BY_KIND = { eater: 52, doomsday: 50, dragon: 54, spider: 48, raven: 42, ifrit: 56, necros: 50, valkyrie: 44 };
+  var br = BR_BY_KIND[def.kind] !== undefined ? BR_BY_KIND[def.kind] : 46;
   var e = { x: p.x, y: p.y, type: 'boss', emoji: def.emoji, col: def.col,
-    hp: hp, maxHp: hp, spd: bspd, r: br, dmg: def.kind === 'boar' ? 26 : (def.kind === 'commander' ? 18 : (def.kind === 'raven' ? 26 : 22)), xp: 0,
+    hp: hp, maxHp: hp, spd: bspd, r: br, dmg: def.kind === 'boar' ? 26 : (def.kind === 'commander' ? 18 : (def.kind === 'raven' ? 26 : (def.kind === 'ifrit' ? 28 : 22))), xp: 0,
     atkT: 0, orbT: 0, dashT: 0, boss: true, mid: false, wob: 0, shotT: 0,
     fuseT: -1, warpT: def.kind === 'warpmage' ? 300 : 0, warpTeleT: 0, warpX: 0, warpY: 0, lungeT: 0,
     slowT: 0, slowPct: 0, tiredT: 0,
@@ -653,6 +689,9 @@ function spawnMechBoss(kind){
     inhaleCD: 420, inhaleT: 0, absorbN: 0, absorbHeal: 0,
     rallyT: 480,
     dragCD: 460, dragT: 0, ringT: 200,
+    necCD: 500, necRingCD: 700, necRingT: 0,
+    ifritCD: 520, ifritLavCD: 380, ifritRingCD: 640,
+    valkCD: 420, valkShotT: 150,
     webCD: 300, spawnCD: 420,
     ravCD: 320, ravTeleT: 0,
     leaveT: bossLeaveFrames(false, false) };
@@ -1082,6 +1121,25 @@ function step(){
   if (vampWinT > 0) vampWinT--;
   if (vampWinT <= 0){ vampWinT = 60; vampWinHeal = 0; }
   for (var wti = webs.length - 1; wti >= 0; wti--){ webs[wti].life--; if (webs[wti].life <= 0) webs.splice(wti, 1); }
+  /* 落雷マーカー：予告のあと、範囲内にいると回避不能のダメージ */
+  for (var zti = zapMarks.length - 1; zti >= 0; zti--){
+    var zm = zapMarks[zti];
+    zm.t--;
+    if (zm.t <= 0){
+      rings.push({ x: zm.x, y: zm.y, r: 8, maxR: 58, life: 10, col: '#fde047' });
+      addParts(zm.x, zm.y, '#fde047', 12);
+      var zdx = player.x - zm.x, zdy = player.y - zm.y;
+      if (zdx * zdx + zdy * zdy < 58 * 58) hurtPlayerTrue(18);
+      zapMarks.splice(zti, 1);
+      if (state !== 'play') return;
+    }
+  }
+  /* 熔岩だまり：寿命と、立っている間のダメージ */
+  for (var lti = lavas.length - 1; lti >= 0; lti--){ lavas[lti].life--; if (lavas[lti].life <= 0) lavas.splice(lti, 1); }
+  for (var ldi = 0; ldi < lavas.length; ldi++){
+    var ldx2 = player.x - lavas[ldi].x, ldy2 = player.y - lavas[ldi].y;
+    if (ldx2 * ldx2 + ldy2 * ldy2 < lavas[ldi].r * lavas[ldi].r){ hurtPlayer(12); break; }
+  }
   if (player.regen > 0) player.hp = Math.min(player.maxHp, player.hp + player.regen / 60);
   camX = player.x - VW / 2; camY = player.y - VH / 2;
 
@@ -1096,12 +1154,8 @@ function step(){
   }
   bossT--;
   if (bossT <= 0){
-    bossT = 90 * 60;
-    bossEvents++;
-    var hasBig = false;
-    for (var hbi = 0; hbi < enemies.length; hbi++) if (enemies[hbi].bigboss) hasBig = true;
-    if (bossEvents >= 3 && !fusePair && !hasBig && Math.random() < 0.5) spawnMidPair();
-    else spawnBoss();
+    bossT = bossInterval(t);
+    fireBossEvent();
   }
 
   /* 武器タイマー */
@@ -1479,6 +1533,71 @@ function step(){
         if (e.ravCD <= 0){ e.ravTeleT = 30; e.chargeDx = dx / d; e.chargeDy = dy / d; tone(500, 900, 0.12, 'sawtooth', 0.04); }
       }
     }
+    if (e.mech === 'necros'){
+      if (e.necRingT > 0){
+        stay = true;
+        e.necRingT--;
+        if (e.necRingT <= 0){
+          rings.push({ x: e.x, y: e.y, r: 40, maxR: 300, life: 16, col: '#a3e635' });
+          var ndx = player.x - e.x, ndy = player.y - e.y;
+          if (ndx * ndx + ndy * ndy < 300 * 300) hurtPlayerTrue(25);
+          e.necRingCD = 700;
+          if (state !== 'play') return;
+        }
+      } else {
+        if (e.necRingCD > 0) e.necRingCD--;
+        if (e.necRingCD <= 0){ e.necRingT = 90; addFloat(e.x, e.y - e.r - 24, '死の輪が広がる！', '#d9f99d'); tone(110, 55, 0.4, 'sawtooth', 0.06); }
+      }
+      if (e.necCD > 0) e.necCD--;
+      if (e.necCD <= 0){
+        e.necCD = 500;
+        for (var nci = 0; nci < 4; nci++){
+          if (enemies.length >= ENEMY_CAP) break;
+          var nm = createEnemy(nci % 2 ? 'fast' : 'imp');
+          nm.x = e.x + Math.cos(nci * 1.571) * 70; nm.y = e.y + Math.sin(nci * 1.571) * 70;
+          enemies.push(nm);
+        }
+        addFloat(e.x, e.y - e.r - 16, '死霊召喚！', '#d9f99d');
+      }
+      if (e.shotT > 0) e.shotT--;
+      if (e.shotT <= 0 && d < 620){ for (var nsi = 0; nsi < 8; nsi++) fireEShot(e, 3.0, 13, nsi * 0.785 + e.wob); e.shotT = 260; }
+    }
+    if (e.mech === 'ifrit'){
+      if (e.bmode === 'tele'){ stay = true; e.bT--; if (e.bT <= 0){ e.bmode = 'charge'; e.bT = 58; } }
+      else if (e.bmode === 'charge'){
+        e.x += e.chargeDx * 5.2; e.y += e.chargeDy * 5.2;
+        stay = true; e.bT--;
+        if (e.bT <= 0){ e.bmode = 'tired'; e.bT = 80; e.tiredT = 80; lavas.push({ x: e.x, y: e.y, r: 85, life: 480 }); }
+      }
+      else if (e.bmode === 'tired'){ stay = true; e.bT--; e.tiredT = e.bT; if (e.bT <= 0){ e.bmode = 'roam'; e.ifritCD = 520; e.tiredT = 0; } }
+      else {
+        if (e.ifritCD > 0) e.ifritCD--;
+        if (e.ifritCD <= 0){ e.bmode = 'tele'; e.bT = 50; e.chargeDx = dx / d; e.chargeDy = dy / d; tone(90, 45, 0.3, 'sawtooth', 0.06); }
+      }
+      if (e.ifritLavCD > 0) e.ifritLavCD--;
+      if (e.ifritLavCD <= 0){ e.ifritLavCD = 380; lavas.push({ x: e.x, y: e.y, r: 80, life: 480 }); }
+      if (e.ifritRingCD > 0) e.ifritRingCD--;
+      if (e.ifritRingCD <= 0){ e.ifritRingCD = 640; for (var iri = 0; iri < 16; iri++) fireEShot(e, 3.1, 14, iri * 0.393 + e.wob); tone(150, 70, 0.25, 'sawtooth', 0.05); }
+    }
+    if (e.mech === 'valkyrie'){
+      if (e.valkCD > 0) e.valkCD--;
+      if (e.valkCD <= 0){
+        e.valkCD = 420;
+        zapMarks.push({ x: player.x, y: player.y, t: 45 });
+        zapMarks.push({ x: player.x + 90, y: player.y + 40, t: 52 });
+        zapMarks.push({ x: player.x - 80, y: player.y - 60, t: 59 });
+        addFloat(player.x, player.y - 84, '⚡ 雷が落ちる！', '#fde047');
+        tone(880, 220, 0.2, 'square', 0.04);
+        var va = Math.random() * 6.283;
+        e.x = player.x + Math.cos(va) * 210; e.y = player.y + Math.sin(va) * 210;
+        addParts(e.x, e.y, '#fde047', 10);
+      }
+      if (e.valkShotT > 0) e.valkShotT--;
+      if (e.valkShotT <= 0 && d < 580){
+        for (var vsi = -1; vsi <= 1; vsi++) fireEShot(e, 3.8, 13, Math.atan2(dy, dx) + vsi * 0.3);
+        e.valkShotT = 210;
+      }
+    }
     if (e.slowT > 0){ e.slowT--; sp *= (1 - e.slowPct); }
     if (e.buffed) sp *= 1.25;
     /* かけら泥棒：落ちたかけらを拾って逃げる */
@@ -1832,6 +1951,25 @@ function draw(){
     ctx.beginPath(); ctx.arc(wb2.x - camX, wb2.y - camY, wb2.r, 0, 6.283); ctx.stroke();
     ctx.beginPath(); ctx.arc(wb2.x - camX, wb2.y - camY, wb2.r * 0.55, 0, 6.283); ctx.stroke();
   }
+  /* 熔岩だまり */
+  for (i = 0; i < lavas.length; i++){
+    var lv2 = lavas[i];
+    ctx.fillStyle = 'rgba(251,146,60,0.30)';
+    ctx.beginPath(); ctx.arc(lv2.x - camX, lv2.y - camY, lv2.r, 0, 6.283); ctx.fill();
+    ctx.strokeStyle = 'rgba(234,88,12,0.8)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(lv2.x - camX, lv2.y - camY, lv2.r * (0.7 + 0.1 * Math.sin(frame * 0.1 + i)), 0, 6.283); ctx.stroke();
+  }
+  /* 落雷の予告 */
+  for (i = 0; i < zapMarks.length; i++){
+    var zmk = zapMarks[i];
+    ctx.strokeStyle = 'rgba(253,224,71,' + (0.5 + 0.4 * Math.sin(frame * 0.4)) + ')';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(zmk.x - camX, zmk.y - camY, 58, 0, 6.283); ctx.stroke();
+    ctx.font = 'bold 20px sans-serif';
+    ctx.fillStyle = '#fde047';
+    ctx.fillText('⚡', zmk.x - camX, zmk.y - camY + 2);
+  }
   /* 衝撃波リング */
   for (i = 0; i < rings.length; i++){
     var rg = rings[i];
@@ -1899,6 +2037,11 @@ function draw(){
       ctx.font = 'bold 12px sans-serif';
       ctx.fillStyle = e.leaveT <= 1800 ? '#ff8080' : '#fde68a';
       ctx.fillText('⏰ ' + Math.ceil(e.leaveT / 60), sx, sy - e.r - 36);
+    }
+    if (e.mech === 'necros' && e.necRingT > 0){
+      ctx.strokeStyle = 'rgba(163,230,53,0.7)';
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(sx, sy, (90 - e.necRingT) / 90 * 300, 0, 6.283); ctx.stroke();
     }
     if (e.mech === 'statue' && e.chargeT > 0){
       ctx.strokeStyle = 'rgba(255,64,64,' + (0.5 + 0.4 * Math.sin(frame * 0.35)) + ')';
@@ -2315,6 +2458,10 @@ if (typeof window !== 'undefined') window.__SV = {
   spawnBoss: spawnBoss,
   spawnMech: spawnMechBoss,
   webs: function(){ return webs; },
+  lavas: function(){ return lavas; },
+  zapMarks: function(){ return zapMarks; },
+  fireBossEvent: fireBossEvent,
+  setBossEvents: function(n){ bossEvents = n; },
   hurt: hurtPlayer,
   gainXp: gainXp,
   setKey: function(code, on){ keys[code] = on; },
