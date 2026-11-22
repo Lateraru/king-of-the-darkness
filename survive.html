@@ -66,7 +66,11 @@
 倒した敵は魔力のかけらを落とします　近くに行くと吸い寄せられます<br>
 かけらを集めてレベルアップすると、強化を3つの中から1つ選べます<br>
 HPが0になるとゲームオーバーです　スコアは生存時間と撃破数で決まります<br>
-約90秒ごとに、大きなネタボスが出てきます</p>
+約90秒ごとに、大きなネタボスが出てきます<br>
+ボスには制限時間があります　時間内に倒せないと、去ってしまいます<br>
+ボスを倒すと、討伐報酬のラテが手に入ります<br>
+金色に光るエリートの敵は、とても固いかわりに経験値が4倍です<br>
+HPが残り少なくなると「魔王の意地」で、攻撃が3割強くなります</p>
 <p><strong>敵の種類</strong><br>
 👿 ノーマル　まっすぐ向かってきます<br>
 🦇 コウモリ　弱いけど速いです<br>
@@ -87,6 +91,8 @@ HPが0になるとゲームオーバーです　スコアは生存時間と撃�
 🔮 貫通の魔力弾　⚡ 連鎖の稲妻　❄️ 凍結の衝撃波<br>
 🧲 かけら収穫　🛡️ 守護結界　結界は、取るほど輪が増えて見た目も固くなります<br>
 💥 爆裂コア　🧛 吸血の牙　🌟 星屑の加護　🛰️ 衛星ブースター<br>
+🌀 混沌の渦　⚔️ 残影斬　🧿 呪いの眼　💨 疾風の陣　🪞 反射の鏡　🌠 流星召喚<br>
+繰り返しの強化は、それぞれ最大30回までです　取りきると、ごちそうやラテ袋が出てきます<br>
 🔮 守りのオーブは8個以上で円のバリアのようになります　ただし敵の弾は防げません　弾はオーブをすり抜けてきます<br>
 相方の武器も、強化で覚えることができます</p>
 <p><strong>相方召喚</strong><br>
@@ -229,7 +235,8 @@ var themeIdx = 0, themePrev = -1, themeFadeT = 0, castleAnn = null;
 var camX = 0, camY = 0;
 var keys = {};
 var joy = { active: false, id: -1, ox: 0, oy: 0, dx: 0, dy: 0 };
-var ENEMY_CAP = 220, BOLT_CAP = 300, ESHOT_CAP = 240, SHARD_CAP = 400, HEART_CAP = 40;
+var ENEMY_CAP = 280, BOLT_CAP = 300, ESHOT_CAP = 240, SHARD_CAP = 400, HEART_CAP = 40;
+var webs = [], vampWinT = 0, vampWinHeal = 0;
 var HEART_LIFE = 1200, HEAL_DROP = 0.06, HEAL_ITEM = 20;
 var HEAL_SPELL = 30, HEAL_CD_MAX = 1800;
 
@@ -244,7 +251,10 @@ function newWeapons(){
     wave: { on: charKey === 'l', dmg: 10, r: 120, rate: 60, timer: 30 },
     orbs: { count: 0, dmg: 10, dist: 105, ang: 0 },
     aura: { on: false, r: 95, dps: 14 },
-    chain: { lv: 0, dmg: 0, rate: 150, timer: 90 }
+    chain: { lv: 0, dmg: 0, rate: 150, timer: 90 },
+    vortex: { on: false, r: 100, dps: 0, lv: 0 },
+    slash: { lv: 0, dmg: 0, rate: 270, timer: 120, r: 150 },
+    meteor: { lv: 0, dmg: 0, rate: 660, timer: 300 }
   };
 }
 
@@ -332,7 +342,31 @@ var UPGRADES = [
   { id: 'satBoost', icon: '🛰️', name: '衛星ブースター', max: 3,
     can: function(){ return true; },
     desc: function(){ return 'オーブの回る半径と速さが上がります　オーブがなくても先に取れます'; },
-    apply: function(){} }
+    apply: function(){} },
+  { id: 'vortex', icon: '🌀', name: '混沌の渦', max: 5,
+    can: function(){ return true; },
+    desc: function(){ return weapons.vortex.on ? '渦の範囲と威力が上がります' : '自分の周りに、敵を削り続ける渦が生まれます　オーラとは別に重なります'; },
+    apply: function(){ var v = weapons.vortex; v.on = true; v.lv += 1; v.r += 12; v.dps = 10 + v.lv * 9; } },
+  { id: 'slash', icon: '⚔️', name: '残影斬', max: 5,
+    can: function(){ return true; },
+    desc: function(){ return '数秒ごとに、周りの敵を一気に斬ります　取るほど速く、強くなります'; },
+    apply: function(){ var s = weapons.slash; s.lv += 1; s.dmg = 18 + s.lv * 14; s.rate = Math.max(150, 270 - s.lv * 24); } },
+  { id: 'curseEye', icon: '🧿', name: '呪いの眼', max: 5,
+    can: function(){ return true; },
+    desc: function(){ return '全ての攻撃が、敵に6%ずつ通りやすくなります'; },
+    apply: function(){} },
+  { id: 'haste', icon: '💨', name: '疾風の陣', max: 5,
+    can: function(){ return true; },
+    desc: function(){ return '移動が5%速くなり、魔力弾と衝撃波の間隔が短くなります'; },
+    apply: function(){ player.speed *= 1.05; weapons.bolt.rate = Math.max(12, Math.round(weapons.bolt.rate * 0.94)); weapons.wave.rate = Math.max(24, Math.round(weapons.wave.rate * 0.94)); } },
+  { id: 'mirror', icon: '🪞', name: '反射の鏡', max: 3,
+    can: function(){ return true; },
+    desc: function(){ return 'ダメージを受けたとき、一部を近くの敵へ反射します'; },
+    apply: function(){} },
+  { id: 'meteor', icon: '🌠', name: '流星召喚', max: 3,
+    can: function(){ return true; },
+    desc: function(){ return 'ときどき、敵が一番集まっている場所に流星が落ちます'; },
+    apply: function(){ var m = weapons.meteor; m.lv += 1; m.dmg = 60 + m.lv * 55; m.rate = Math.max(420, 660 - m.lv * 90); } }
 ];
 var FREEZE_PCT = [0, 0.3, 0.45, 0.6];
 
@@ -345,9 +379,9 @@ function upgDef(id){ for (var i = 0; i < UPGRADES.length; i++) if (UPGRADES[i].i
 
 /* 有限の強化を取りきった後も選べる、繰り返し強化 */
 var REPEATABLES = [
-  { id: 'repDmg', icon: '⚔️', name: '全武器の威力アップ', rep: true,
+  { id: 'repDmg', icon: '⚔️', name: '全武器の威力アップ', rep: true, max: 30,
     can: function(){ return true; },
-    desc: function(){ return '全ての武器の威力が8%上がります　何回でも選べます'; },
+    desc: function(){ return '全ての武器の威力が8%上がります　最大30回まで選べます'; },
     apply: function(){
       weapons.bolt.dmg = Math.max(1, Math.round(weapons.bolt.dmg * 1.08));
       weapons.wave.dmg = Math.max(1, Math.round(weapons.wave.dmg * 1.08));
@@ -355,14 +389,39 @@ var REPEATABLES = [
       weapons.aura.dps = Math.max(1, Math.round(weapons.aura.dps * 1.08));
       if (weapons.chain.lv > 0) weapons.chain.dmg = Math.max(1, Math.round(weapons.chain.dmg * 1.08));
     } },
-  { id: 'repHp', icon: '❤️', name: '体力アップ', rep: true,
+  { id: 'repHp', icon: '❤️', name: '体力アップ', rep: true, max: 30,
     can: function(){ return true; },
-    desc: function(){ return 'HPの上限が15増えて、15回復します　何回でも選べます'; },
+    desc: function(){ return 'HPの上限が15増えて、15回復します　最大30回まで選べます'; },
     apply: function(){ player.maxHp += 15; player.hp = Math.min(player.maxHp, player.hp + 15); } },
-  { id: 'repSpd', icon: '👢', name: '移動速度アップ', rep: true,
+  { id: 'repSpd', icon: '👢', name: '移動速度アップ', rep: true, max: 30,
     can: function(){ return true; },
-    desc: function(){ return '移動が3%速くなります　何回でも選べます'; },
+    desc: function(){ return '移動が3%速くなります　最大30回まで選べます'; },
     apply: function(){ player.speed *= 1.03; } }
+];
+/* 強化を取りきった後に残る、消費アイテムの選択肢（力は増えず、しのぐためのもの） */
+function addLateFromSurvive(n){
+  try {
+    var o = JSON.parse(localStorage.getItem('maouSharedSaveV1') || 'null');
+    if (!o || o.version !== 1 || !o.wallet) o = { version:1, playerId:'p' + Math.random().toString(36).slice(2, 10), updatedAt:'', wallet:{ late:0 }, items:[], flags:{} };
+    if (typeof o.wallet.late !== 'number') o.wallet.late = 0;
+    o.wallet.late += n;
+    o.updatedAt = new Date().toISOString();
+    localStorage.setItem('maouSharedSaveV1', JSON.stringify(o));
+  } catch (e) {}
+}
+var CONSUMABLES = [
+  { id: 'consHeal', icon: '🍖', name: '魔王のごちそう', cons: true,
+    can: function(){ return true; },
+    desc: function(){ return 'HPが60回復します'; },
+    apply: function(){ player.hp = Math.min(player.maxHp, player.hp + 60); } },
+  { id: 'consLate', icon: '💰', name: 'ラテ袋', cons: true,
+    can: function(){ return true; },
+    desc: function(){ return 'ラテが30手に入ります　カジノや釣りで使えます'; },
+    apply: function(){ addLateFromSurvive(30); addFloat(player.x, player.y - 46, '💰 ラテ +30', '#ffe27a'); } },
+  { id: 'consXp', icon: '⭐', name: '経験のお守り', cons: true,
+    can: function(){ return true; },
+    desc: function(){ return '次のレベルまでの経験値が、半分入ります'; },
+    apply: function(){ gainXp(player.xpNext * 0.5); } }
 ];
 function fmtTime(sec){ var m = Math.floor(sec / 60), s = Math.floor(sec % 60); return m + ':' + (s < 10 ? '0' : '') + s; }
 function addFloat(x, y, text, col){ floats.push({ x: x, y: y, text: text, col: col || '#ffe27a', life: 70 }); if (floats.length > 40) floats.shift(); }
@@ -380,6 +439,7 @@ function startGame(){
   upgLv = {};
   player = { x: 0, y: 0, r: 20, hp: 100, maxHp: 100, speed: 2.6, level: 1, xp: 0, xpNext: 6, magnetR: 70, regen: 0, faceAng: 0, invulnT: 0, xpMul: 1, dmgCut: 0 };
   enemies = []; bolts = []; eshots = []; shards = []; floats = []; parts = []; rings = []; hearts = []; zaps = [];
+  webs = []; vampWinT = 0; vampWinHeal = 0;
   fusePair = null; bossEvents = 0;
   timeStopT = 0; marks = []; flashT = 0; shakeT = 0;
   frame = 0; timeF = 0; kills = 0; bossCount = 0;
@@ -415,28 +475,33 @@ function enemyHpMul(t){
   var m = 1 + Math.min(3, t / 75) * 0.85;
   if (t > 225) m += (t - 225) * 0.012;
   if (t > 600) m += (t - 600) * 0.016;
+  if (t > 1200) m += (t - 1200) * 0.03;
   return m;
 }
 function enemySpdMul(t){
   var m = 1 + Math.min(0.5, t / 300);
   if (t > 600) m += (t - 600) * 0.0002;
   if (t > 900) m += (t - 900) * 0.0003;
+  if (t > 1200) m += (t - 1200) * 0.0002;
   return m;
 }
 function spawnInterval(t){
   var floor = 11 - Math.min(4, Math.max(0, t - 600) / 150);
   if (t > 1200) floor -= Math.min(2, (t - 1200) / 300);
+  if (t > 1800) floor -= Math.min(1, (t - 1800) / 600);
   return Math.max(floor, 46 - t * 0.55);
 }
 function spawnBatch(t){
   var b = 1 + Math.floor(Math.max(0, t - 300) / 300);
   if (t > 900) b += Math.floor((t - 900) / 300);
-  return b;
+  if (t > 1200) b += Math.floor((t - 1200) / 300);
+  return Math.min(b, 12);
 }
-/* 接触ダメージの時間ボーナス（600秒までは120秒ごとに+1、以降は90秒ごとに+1） */
+/* 接触ダメージの時間ボーナス（600秒までは120秒ごとに+1、1200秒までは90秒ごとに+1、以降は60秒ごとに+1） */
 function contactBonus(t){
   if (t <= 600) return Math.floor(t / 120);
-  return 5 + Math.floor((t - 600) / 90);
+  if (t <= 1200) return 5 + Math.floor((t - 600) / 90);
+  return 11 + Math.floor((t - 1200) / 60);
 }
 function spawnPos(){
   var a = Math.random() * 6.283, d = 620 + Math.random() * 160;
@@ -446,13 +511,21 @@ function createEnemy(type){
   var t = timeF / 60;
   var b = ETYPES[type], p = spawnPos();
   var hpMul = enemyHpMul(t), spdMul = enemySpdMul(t);
-  return { x: p.x, y: p.y, type: type, emoji: b.emoji, col: b.col,
+  var ne = { x: p.x, y: p.y, type: type, emoji: b.emoji, col: b.col,
     hp: b.hp * hpMul, maxHp: b.hp * hpMul, spd: b.spd * spdMul * (0.85 + Math.random() * 0.3),
     r: b.r, dmg: b.dmg + contactBonus(t), xp: b.xp, atkT: 0, orbT: 0, dashT: Math.floor(Math.random() * 120), boss: false, wob: Math.random() * 6.283,
     shotT: 60 + Math.floor(Math.random() * 120),
     fuseT: -1, warpT: 200 + Math.floor(Math.random() * 80), warpTeleT: 0, warpX: 0, warpY: 0, lungeT: 0,
     slowT: 0, slowPct: 0, tiredT: 0,
     carry: 0, carryVal: 0, fleeing: false, buffed: false, baseR: b.r, absorbed: false };
+  /* エリート（金色）：5分すぎからまれに出る　固いが、倒すと経験値4倍 */
+  if (t >= 300 && Math.random() < 0.012){
+    ne.elite = true;
+    ne.hp *= 8; ne.maxHp *= 8; ne.xp *= 4;
+    ne.r = Math.round(ne.r * 1.35); ne.baseR = ne.r;
+    ne.col = '#ffd34d';
+  }
+  return ne;
 }
 function spawnEnemy(){
   if (enemies.length >= ENEMY_CAP) return;
@@ -475,19 +548,40 @@ function spawnEnemy(){
   else if (roll < (acc += bomberW)) type = 'bomber';
   else if (roll < (acc += splitW)) type = 'split';
   else if (roll < (acc += warpW)) type = 'warp';
+  /* 遠距離型が溜まって出現枠を塞がないよう、種類ごとの同時出現数に上限を設ける */
+  if (type === 'caster' && countAliveType('caster') >= 22) type = 'dash';
+  if (type === 'warp' && countAliveType('warp') >= 18) type = 'fast';
   enemies.push(createEnemy(type));
+}
+function countAliveType(type){
+  var n = 0;
+  for (var i = 0; i < enemies.length; i++) if (enemies[i].type === type) n++;
+  return n;
+}
+/* ボスの体力は10分すぎから時間とともに大きく伸びる */
+function bossHpLate(t){ return 1 + Math.max(0, t - 600) / 300; }
+/* ボスの制限時間（フレーム数）：過ぎると去ってしまう */
+function bossLeaveFrames(mid, big){ return big ? 120 * 60 : (mid ? 75 * 60 : 90 * 60); }
+function bossLeaves(e){
+  if (e.mech === 'statue') clearStatueOrbs(e);
+  if (fusePair && (fusePair.a === e || fusePair.b === e)) fusePair = null;
+  addFloat(e.x, e.y - e.r - 30, '去っていった…', '#bdb6d9');
+  addParts(e.x, e.y, '#bdb6d9', 16);
+  removeEnemyObj(e);
 }
 function spawnBoss(mid){
   if (!mid && bossEvents >= 2 && Math.random() < 0.55) return spawnMechBoss();
   var p = spawnPos();
   var t = timeF / 60;
-  var hp = 380 * (1 + bossCount * 0.9) * (1 + t / 240);
+  var hp = 380 * (1 + bossCount * 0.9) * (1 + t / 240) * bossHpLate(t);
   if (mid) hp *= 0.75;
   var e = { x: p.x, y: p.y, type: 'boss', emoji: BOSS_EMOJI[bossCount % BOSS_EMOJI.length], col: '#e5c15c',
-    hp: hp, maxHp: hp, spd: 0.55, r: mid ? 40 : 46, dmg: mid ? 18 : 22, xp: 0, atkT: 0, orbT: 0, dashT: 0, boss: true, mid: !!mid, wob: 0, shotT: 0 };
+    hp: hp, maxHp: hp, spd: 0.55, r: mid ? 40 : 46, dmg: mid ? 18 : 22, xp: 0, atkT: 0, orbT: 0, dashT: 0, boss: true, mid: !!mid, wob: 0, shotT: 0,
+    leaveT: bossLeaveFrames(mid, false) };
   enemies.push(e);
   bossCount++;
   addFloat(player.x, player.y - 70, mid ? '中ボス出現！' : '⚠ ボス出現 ⚠', '#ff8080');
+  addFloat(player.x, player.y - 104, '⏰ ' + Math.round(e.leaveT / 60) + '秒以内に倒せ！', '#fde68a');
   sfxBoss();
   return e;
 }
@@ -509,10 +603,13 @@ var MECH_BOSSES = [
   { kind: 'doomsday', name: '終末の大魔導士', emoji: '☄️', col: '#facc15' },
   { kind: 'timestop', name: '時止めの魔術師', emoji: '⏳', col: '#93c5fd' },
   { kind: 'eater', name: '大食いゴブリン王', emoji: '👺', col: '#f97316' },
-  { kind: 'commander', name: '魔軍指揮官', emoji: '🦹', col: '#ef4444' }
+  { kind: 'commander', name: '魔軍指揮官', emoji: '🦹', col: '#ef4444' },
+  { kind: 'dragon', name: '古龍ドラグニール', emoji: '🐉', col: '#4ade80' },
+  { kind: 'spider', name: '糸縫いの女王', emoji: '🕷️', col: '#d8b4fe' },
+  { kind: 'raven', name: '魔剣士レイヴン', emoji: '🦅', col: '#94a3b8' }
 ];
 /* ランダム抽選の重み（終末の大魔導士は3回目のボス出現以降だけ、低確率で混ざる） */
-var MECH_WEIGHTS = { slimeking: 3, warpmage: 3, statue: 3, boar: 3, timestop: 3, eater: 3, commander: 3, doomsday: 1 };
+var MECH_WEIGHTS = { slimeking: 3, warpmage: 3, statue: 3, boar: 3, timestop: 3, eater: 3, commander: 3, doomsday: 1, dragon: 3, spider: 3, raven: 3 };
 function pickMechKind(){
   var pool = [], total = 0;
   for (var i = 0; i < MECH_BOSSES.length; i++){
@@ -537,12 +634,15 @@ function spawnMechBoss(kind){
   }
   var p = spawnPos();
   var t = timeF / 60;
-  var hp = 380 * (1 + bossCount * 0.9) * (1 + t / 240);
+  var hp = 380 * (1 + bossCount * 0.9) * (1 + t / 240) * bossHpLate(t);
   if (def.kind === 'eater') hp *= 1.25;
-  var bspd = def.kind === 'statue' ? 0.35 : (def.kind === 'boar' ? 0.85 : (def.kind === 'doomsday' ? 0.4 : (def.kind === 'eater' ? 0.45 : (def.kind === 'commander' ? 0.85 : (def.kind === 'timestop' ? 0.6 : 0.55)))));
-  var br = def.kind === 'eater' ? 52 : (def.kind === 'doomsday' ? 50 : 46);
+  if (def.kind === 'dragon') hp *= 1.3;
+  if (def.kind === 'raven') hp *= 0.8;
+  var SPD_BY_KIND = { statue: 0.35, boar: 0.85, doomsday: 0.4, eater: 0.45, commander: 0.85, timestop: 0.6, dragon: 0.5, spider: 0.55, raven: 0.95 };
+  var bspd = SPD_BY_KIND[def.kind] !== undefined ? SPD_BY_KIND[def.kind] : 0.55;
+  var br = def.kind === 'eater' ? 52 : (def.kind === 'doomsday' ? 50 : (def.kind === 'dragon' ? 54 : (def.kind === 'spider' ? 48 : (def.kind === 'raven' ? 42 : 46))));
   var e = { x: p.x, y: p.y, type: 'boss', emoji: def.emoji, col: def.col,
-    hp: hp, maxHp: hp, spd: bspd, r: br, dmg: def.kind === 'boar' ? 26 : (def.kind === 'commander' ? 18 : 22), xp: 0,
+    hp: hp, maxHp: hp, spd: bspd, r: br, dmg: def.kind === 'boar' ? 26 : (def.kind === 'commander' ? 18 : (def.kind === 'raven' ? 26 : 22)), xp: 0,
     atkT: 0, orbT: 0, dashT: 0, boss: true, mid: false, wob: 0, shotT: 0,
     fuseT: -1, warpT: def.kind === 'warpmage' ? 300 : 0, warpTeleT: 0, warpX: 0, warpY: 0, lungeT: 0,
     slowT: 0, slowPct: 0, tiredT: 0,
@@ -551,10 +651,15 @@ function spawnMechBoss(kind){
     doomCD: 900, doomT: 0,
     tsCD: 700, tsTeleT: 0, stopMarks: 0, flankX: 0, flankY: 0, markBaseX: 0, markBaseY: 0,
     inhaleCD: 420, inhaleT: 0, absorbN: 0, absorbHeal: 0,
-    rallyT: 480 };
+    rallyT: 480,
+    dragCD: 460, dragT: 0, ringT: 200,
+    webCD: 300, spawnCD: 420,
+    ravCD: 320, ravTeleT: 0,
+    leaveT: bossLeaveFrames(false, false) };
   enemies.push(e);
   bossCount++;
   addFloat(player.x, player.y - 70, '⚠ ' + def.name + ' 出現 ⚠', '#ff8080');
+  addFloat(player.x, player.y - 104, '⏰ 90秒以内に倒せ！', '#fde68a');
   sfxBoss();
   return e;
 }
@@ -617,9 +722,12 @@ function doomBlast(boss){
   var pdx = player.x - boss.x, pdy = player.y - boss.y, pd = Math.sqrt(pdx * pdx + pdy * pdy);
   if (pd <= 360 && pd > 80) hurtPlayerTrue(40);
 }
-/* 敵へのダメージ（疲れた猪突大王は被ダメージ+50%） */
+/* 敵へのダメージ（疲れた猪突大王は被ダメージ+50%、呪いの眼で全体に通りやすくなる） */
 function dmgEnemy(e, dmg){
   if (e.tiredT > 0) dmg *= 1.5;
+  if (upgLv.curseEye) dmg *= 1 + 0.06 * upgLv.curseEye;
+  /* 魔王の意地：HPが残り少ないほど、全ての攻撃が強くなる */
+  if (player && player.hp > 0 && player.hp < player.maxHp * 0.25) dmg *= 1.3;
   e.hp -= dmg;
 }
 function removeEnemyObj(e){
@@ -635,7 +743,8 @@ function doFusion(){
   removeEnemyObj(a);
   var e = { x: mx, y: my, type: 'bigboss', emoji: '👑', col: '#ffd34d',
     hp: hp, maxHp: maxHp, spd: 0.5, r: 74, dmg: 30, xp: 0, atkT: 0, orbT: 0, dashT: 0, boss: true, bigboss: true, wob: 0,
-    shotT: 120, spiralT: 420, spiralAng: Math.random() * 6.283 };
+    shotT: 120, spiralT: 420, spiralAng: Math.random() * 6.283,
+    leaveT: bossLeaveFrames(false, true) };
   enemies.push(e);
   fusePair = null;
   addFloat(mx, my - 90, '⚠ 大ボス誕生 ⚠', '#ff8080');
@@ -682,8 +791,10 @@ function onKillEffects(e){
     blastBusy = false;
   }
   var vf = upgLv.vampFang || 0;
-  if (vf > 0 && Math.random() < 0.1 * vf){
+  /* 吸血は1秒あたり最大25まで（倒し続けてもHPが張り付かないように） */
+  if (vf > 0 && vampWinHeal < 25 && Math.random() < 0.1 * vf){
     player.hp = Math.min(player.maxHp, player.hp + 2);
+    vampWinHeal += 2;
   }
 }
 function killEnemy(idx){
@@ -705,8 +816,8 @@ function killEnemy(idx){
   }
   if (e.mech === 'statue') clearStatueOrbs(e);
   addParts(e.x, e.y, e.col, e.boss ? 26 : 8);
-  if (e.bigboss) { dropShards(e.x, e.y, 24, 2); addFloat(e.x, e.y - 40, '大ボス撃破！', '#ffe27a'); dropHeart(e.x, e.y); }
-  else if (e.boss) { dropShards(e.x, e.y, 10, 2); addFloat(e.x, e.y - 40, 'ボス撃破！', '#ffe27a'); dropHeart(e.x, e.y); }
+  if (e.bigboss) { dropShards(e.x, e.y, 24, 2); addFloat(e.x, e.y - 40, '大ボス撃破！', '#ffe27a'); dropHeart(e.x, e.y); addLateFromSurvive(150); addFloat(e.x, e.y - 76, '💰 討伐報酬 +150ラテ', '#ffe27a'); }
+  else if (e.boss) { dropShards(e.x, e.y, 10, 2); addFloat(e.x, e.y - 40, 'ボス撃破！', '#ffe27a'); dropHeart(e.x, e.y); var bossLate = e.mid ? 25 : 50; addLateFromSurvive(bossLate); addFloat(e.x, e.y - 76, '💰 討伐報酬 +' + bossLate + 'ラテ', '#ffe27a'); }
   else if (e.type === 'thief' && e.carryVal > 0) { dropShards(e.x, e.y, e.xp + e.carryVal * 2, 1); addFloat(e.x, e.y - 30, 'かけらを取り返した！', '#67e8f9'); if (Math.random() < HEAL_DROP) dropHeart(e.x, e.y); }
   else { dropShards(e.x, e.y, e.xp, 1); if (Math.random() < HEAL_DROP) dropHeart(e.x, e.y); }
   onKillEffects(e);
@@ -736,6 +847,16 @@ function hurtPlayer(n){
   player.hp -= dmg;
   player.invulnT = 45;
   addParts(player.x, player.y, '#ff6060', 6);
+  /* 反射の鏡：受けたダメージの一部を近くの敵へ返す */
+  var mirLv = upgLv.mirror || 0;
+  if (mirLv > 0){
+    var mTarget = nearestEnemy(player.x, player.y, 220, null);
+    if (mTarget){
+      dmgEnemy(mTarget, dmg * 0.3 * mirLv);
+      addParts(mTarget.x, mTarget.y, '#e9d5ff', 5);
+      if (mTarget.hp <= 0) killEnemy(enemies.indexOf(mTarget));
+    }
+  }
   if (hitSfxT <= 0) { sfxHit(); hitSfxT = 18; }
   if (player.hp <= 0) { player.hp = 0; gameOver(); }
 }
@@ -783,11 +904,19 @@ function buildChoices(){
     avail.splice(j, 1);
   }
   if (choices.length < 3){
-    var reps = REPEATABLES.slice();
+    var reps = REPEATABLES.filter(function(u){ return (upgLv[u.id] || 0) < (u.max || 999); });
     while (choices.length < 3 && reps.length){
       var rj = Math.floor(Math.random() * reps.length);
       choices.push(reps[rj]);
       reps.splice(rj, 1);
+    }
+  }
+  if (choices.length < 3){
+    var cons = CONSUMABLES.slice();
+    while (choices.length < 3 && cons.length){
+      var cj = Math.floor(Math.random() * cons.length);
+      choices.push(cons[cj]);
+      cons.splice(cj, 1);
     }
   }
   return choices;
@@ -942,8 +1071,17 @@ function step(){
   var ml = Math.sqrt(mx * mx + my * my);
   if (ml > 1) { mx /= ml; my /= ml; ml = 1; }
   if (ml > 0.05) player.faceAng = Math.atan2(my, mx);
-  player.x += mx * player.speed;
-  player.y += my * player.speed;
+  /* 蜘蛛の巣の上では移動が遅くなる */
+  var spdMulP = 1;
+  for (var wbi = 0; wbi < webs.length; wbi++){
+    var wdx = player.x - webs[wbi].x, wdy = player.y - webs[wbi].y;
+    if (wdx * wdx + wdy * wdy < webs[wbi].r * webs[wbi].r){ spdMulP = 0.55; break; }
+  }
+  player.x += mx * player.speed * spdMulP;
+  player.y += my * player.speed * spdMulP;
+  if (vampWinT > 0) vampWinT--;
+  if (vampWinT <= 0){ vampWinT = 60; vampWinHeal = 0; }
+  for (var wti = webs.length - 1; wti >= 0; wti--){ webs[wti].life--; if (webs[wti].life <= 0) webs.splice(wti, 1); }
   if (player.regen > 0) player.hp = Math.min(player.maxHp, player.hp + player.regen / 60);
   camX = player.x - VW / 2; camY = player.y - VH / 2;
 
@@ -1014,9 +1152,80 @@ function step(){
     }
   }
 
+  /* 混沌の渦 */
+  if (weapons.vortex.on){
+    var vr = weapons.vortex.r, vd = weapons.vortex.dps / 60;
+    for (var vxi = enemies.length - 1; vxi >= 0; vxi--){
+      var ve2 = enemies[vxi];
+      if (!ve2) continue;
+      var vdx2 = ve2.x - player.x, vdy2 = ve2.y - player.y;
+      if (vdx2 * vdx2 + vdy2 * vdy2 < (vr + ve2.r) * (vr + ve2.r)){
+        dmgEnemy(ve2, vd);
+        if (ve2.hp <= 0) killEnemy(vxi);
+      }
+    }
+  }
+
+  /* 残影斬 */
+  var wsl = weapons.slash;
+  if (wsl.lv > 0){
+    wsl.timer--;
+    if (wsl.timer <= 0){
+      wsl.timer = wsl.rate;
+      rings.push({ x: player.x, y: player.y, r: 20, maxR: wsl.r, life: 10, col: '#fda4af' });
+      tone(700, 1400, 0.08, 'sawtooth', 0.03);
+      for (var sli = enemies.length - 1; sli >= 0; sli--){
+        var se = enemies[sli];
+        if (!se) continue;
+        var sdx = se.x - player.x, sdy = se.y - player.y;
+        if (sdx * sdx + sdy * sdy < (wsl.r + se.r) * (wsl.r + se.r)){
+          dmgEnemy(se, wsl.dmg);
+          if (se.hp <= 0) killEnemy(sli);
+        }
+      }
+    }
+  }
+
+  /* 流星召喚：敵が一番集まっている場所へ */
+  var wmt = weapons.meteor;
+  if (wmt.lv > 0){
+    wmt.timer--;
+    if (wmt.timer <= 0){
+      wmt.timer = wmt.rate;
+      var mBest = null, mBestN = 0;
+      for (var msi = 0; msi < 8 && enemies.length; msi++){
+        var cand = enemies[Math.floor(Math.random() * enemies.length)];
+        if (!cand || cand.type === 'orb') continue;
+        var cnt = 0;
+        for (var mci = 0; mci < enemies.length; mci++){
+          var ce = enemies[mci];
+          var cdx = ce.x - cand.x, cdy = ce.y - cand.y;
+          if (cdx * cdx + cdy * cdy < 110 * 110) cnt++;
+        }
+        if (cnt > mBestN){ mBestN = cnt; mBest = cand; }
+      }
+      if (mBest){
+        rings.push({ x: mBest.x, y: mBest.y, r: 16, maxR: 110, life: 14, col: '#fde68a' });
+        addParts(mBest.x, mBest.y, '#fde68a', 22);
+        tone(160, 60, 0.3, 'sawtooth', 0.06);
+        var mtx = mBest.x, mty = mBest.y;
+        for (var mti = enemies.length - 1; mti >= 0; mti--){
+          var me = enemies[mti];
+          if (!me) continue;
+          var mdx = me.x - mtx, mdy = me.y - mty;
+          if (mdx * mdx + mdy * mdy < (110 + me.r) * (110 + me.r)){
+            dmgEnemy(me, wmt.dmg);
+            if (me.hp <= 0) killEnemy(mti);
+          }
+        }
+      }
+    }
+  }
+
   /* 敵の移動と接触 */
   for (var i = enemies.length - 1; i >= 0; i--){
     var e = enemies[i];
+    if (!e) continue; /* ループ中の全滅攻撃などで配列が縮んだ場合の保険 */
     /* 大魔像のチャージ玉は、本体の周りを回るだけ */
     if (e.type === 'orb'){
       if (e.orbT > 0) e.orbT--;
@@ -1026,6 +1235,12 @@ function step(){
         e.y = e.orbOf.y + Math.sin(e.orbAng + e.orbPhase) * (e.orbOf.r + 30);
       }
       continue;
+    }
+    /* ボスの制限時間：過ぎると去ってしまう */
+    if (e.boss && e.leaveT > 0){
+      e.leaveT--;
+      if (e.leaveT === 1800) addFloat(e.x, e.y - e.r - 30, '⚠ あと30秒で去ってしまう！', '#ff8080');
+      if (e.leaveT <= 0){ bossLeaves(e); continue; }
     }
     /* 魔軍指揮官のオーラ：範囲内の通常敵は、毎フレームの距離判定で強化される（滞留しない） */
     if (!e.boss && e.type !== 'orb'){
@@ -1213,6 +1428,57 @@ function step(){
         addFloat(e.x, e.y - e.r - 16, '号令！', '#fca5a5');
       }
     }
+    if (e.mech === 'dragon'){
+      if (e.bmode === 'tele'){ stay = true; e.bT--; if (e.bT <= 0){ e.bmode = 'charge'; e.bT = 52; } }
+      else if (e.bmode === 'charge'){
+        e.x += e.chargeDx * 6.4; e.y += e.chargeDy * 6.4;
+        stay = true; e.bT--;
+        if (e.bT <= 0){ e.bmode = 'tired'; e.bT = 70; e.tiredT = 70; }
+      }
+      else if (e.bmode === 'tired'){ stay = true; e.bT--; e.tiredT = e.bT; if (e.bT <= 0){ e.bmode = 'roam'; e.dragCD = 460; e.tiredT = 0; } }
+      else {
+        if (e.dragCD > 0) e.dragCD--;
+        if (e.dragCD <= 0){ e.bmode = 'tele'; e.bT = 42; e.chargeDx = dx / d; e.chargeDy = dy / d; tone(140, 80, 0.25, 'sawtooth', 0.05); }
+      }
+      if (e.ringT > 0) e.ringT--;
+      if (e.ringT <= 0){ e.ringT = 260; for (var dri = 0; dri < 10; dri++) fireEShot(e, 2.9, 12, dri * 0.628 + e.wob); }
+    }
+    if (e.mech === 'spider'){
+      if (e.webCD > 0) e.webCD--;
+      if (e.webCD <= 0){
+        e.webCD = 330;
+        webs.push({ x: player.x, y: player.y, r: 95, life: 540 });
+        addFloat(player.x, player.y - 60, '🕸️ 巣を張られた！', '#d8b4fe');
+      }
+      if (e.spawnCD > 0) e.spawnCD--;
+      if (e.spawnCD <= 0){
+        e.spawnCD = 460;
+        for (var spi = 0; spi < 2; spi++){
+          if (enemies.length >= ENEMY_CAP) break;
+          var sm2 = createEnemy('mini');
+          sm2.x = e.x + (spi ? 42 : -42); sm2.y = e.y + 22;
+          enemies.push(sm2);
+        }
+      }
+    }
+    if (e.mech === 'raven'){
+      if (e.ravTeleT > 0){
+        stay = true; e.ravTeleT--;
+        if (e.ravTeleT <= 0){ e.bmode = 'slash'; e.bT = 24; }
+      }
+      else if (e.bmode === 'slash'){
+        e.x += e.chargeDx * 11; e.y += e.chargeDy * 11;
+        stay = true; e.bT--;
+        if (e.bT <= 0){
+          e.bmode = 'roam'; e.ravCD = 320;
+          for (var rvi = -1; rvi <= 1; rvi++) fireEShot(e, 3.6, 12, Math.atan2(dy, dx) + rvi * 0.32);
+        }
+      }
+      else {
+        if (e.ravCD > 0) e.ravCD--;
+        if (e.ravCD <= 0){ e.ravTeleT = 30; e.chargeDx = dx / d; e.chargeDy = dy / d; tone(500, 900, 0.12, 'sawtooth', 0.04); }
+      }
+    }
     if (e.slowT > 0){ e.slowT--; sp *= (1 - e.slowPct); }
     if (e.buffed) sp *= 1.25;
     /* かけら泥棒：落ちたかけらを拾って逃げる */
@@ -1242,9 +1508,11 @@ function step(){
       }
     }
     if (!stay){
-      if (e.type === 'caster' || (e.type === 'warp' && e.lungeT <= 0) || e.mech === 'commander'){
-        /* 距離を保ちながら近づく（まほうつかいは赤い魔力弾も撃つ） */
-        var lo = e.type === 'warp' ? 200 : 250, hi = e.type === 'warp' ? 320 : 350;
+      if (e.type === 'caster' || (e.type === 'warp' && e.lungeT <= 0) || e.mech === 'commander' || e.mech === 'spider'){
+        /* 距離を保ちながら近づく（まほうつかいは赤い魔力弾も撃つ）　まほうつかいは10分すぎから少し近くに寄る */
+        var lateC = (e.type === 'caster' && timeF > 36000);
+        var lo = e.type === 'warp' ? 200 : (e.mech === 'spider' ? 210 : (lateC ? 165 : 250));
+        var hi = e.type === 'warp' ? 320 : (e.mech === 'spider' ? 300 : (lateC ? 245 : 350));
         if (d < lo){ e.x -= dx / d * sp; e.y -= dy / d * sp; }
         else if (d > hi){ e.x += dx / d * sp; e.y += dy / d * sp; }
         else { e.x += -dy / d * sp * 0.5 + Math.sin(frame * 0.05 + e.wob) * 0.22; e.y += dx / d * sp * 0.5; }
@@ -1542,6 +1810,28 @@ function draw(){
     ctx.beginPath(); ctx.arc(px, py, weapons.aura.r, 0, 6.283); ctx.stroke();
     ctx.setLineDash([]);
   }
+  /* 混沌の渦 */
+  if (weapons && weapons.vortex.on){
+    var vpx = player.x - camX, vpy = player.y - camY;
+    ctx.fillStyle = 'rgba(147,51,234,0.10)';
+    ctx.beginPath(); ctx.arc(vpx, vpy, weapons.vortex.r, 0, 6.283); ctx.fill();
+    ctx.strokeStyle = 'rgba(192,132,252,0.8)';
+    ctx.setLineDash([4, 10]);
+    ctx.lineDashOffset = frame * 2.2;
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(vpx, vpy, weapons.vortex.r, 0, 6.283); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  /* 蜘蛛の巣 */
+  for (i = 0; i < webs.length; i++){
+    var wb2 = webs[i];
+    ctx.fillStyle = 'rgba(216,180,254,0.13)';
+    ctx.beginPath(); ctx.arc(wb2.x - camX, wb2.y - camY, wb2.r, 0, 6.283); ctx.fill();
+    ctx.strokeStyle = 'rgba(216,180,254,0.55)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(wb2.x - camX, wb2.y - camY, wb2.r, 0, 6.283); ctx.stroke();
+    ctx.beginPath(); ctx.arc(wb2.x - camX, wb2.y - camY, wb2.r * 0.55, 0, 6.283); ctx.stroke();
+  }
   /* 衝撃波リング */
   for (i = 0; i < rings.length; i++){
     var rg = rings[i];
@@ -1560,6 +1850,11 @@ function draw(){
     ctx.globalAlpha = 0.35;
     ctx.beginPath(); ctx.arc(sx, sy, e.r, 0, 6.283); ctx.fill();
     ctx.globalAlpha = 1;
+    if (e.elite){
+      ctx.strokeStyle = '#ffd34d';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.arc(sx, sy, e.r + 4 + Math.sin(frame * 0.15) * 1.5, 0, 6.283); ctx.stroke();
+    }
     ctx.font = (e.r * 1.7) + 'px serif';
     ctx.fillText(e.emoji, sx, sy + 2);
     if (e.hp < e.maxHp){
@@ -1599,6 +1894,11 @@ function draw(){
       ctx.font = 'bold 13px sans-serif';
       ctx.fillStyle = '#ffd9d4';
       ctx.fillText(e.bossName, sx, sy - e.r - 20);
+    }
+    if (e.boss && e.leaveT > 0){
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillStyle = e.leaveT <= 1800 ? '#ff8080' : '#fde68a';
+      ctx.fillText('⏰ ' + Math.ceil(e.leaveT / 60), sx, sy - e.r - 36);
     }
     if (e.mech === 'statue' && e.chargeT > 0){
       ctx.strokeStyle = 'rgba(255,64,64,' + (0.5 + 0.4 * Math.sin(frame * 0.35)) + ')';
@@ -2013,6 +2313,8 @@ if (typeof window !== 'undefined') window.__SV = {
   select: selectChar,
   pick: pickUpgrade,
   spawnBoss: spawnBoss,
+  spawnMech: spawnMechBoss,
+  webs: function(){ return webs; },
   hurt: hurtPlayer,
   gainXp: gainXp,
   setKey: function(code, on){ keys[code] = on; },
