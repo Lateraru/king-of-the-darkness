@@ -197,7 +197,7 @@ var CHARS = {
 function newWeapons(){
   return {
     bolt: { on: charKey === 'r', dmg: 12, count: 1, rate: 34, speed: 7.5, timer: 0 },
-    wave: { on: charKey === 'l', dmg: 10, r: 115, rate: 160, timer: 60 },
+    wave: { on: charKey === 'l', dmg: 10, r: 120, rate: 60, timer: 30 },
     orbs: { count: 0, dmg: 10, dist: 105, ang: 0 },
     aura: { on: false, r: 95, dps: 14 }
   };
@@ -227,7 +227,7 @@ var UPGRADES = [
   { id: 'wavePow', icon: '👀', name: 'まばたき衝撃波・強化', max: 5,
     can: function(){ return weapons.wave.on; },
     desc: function(){ return '衝撃波の威力と範囲が上がり、間隔も短くなります'; },
-    apply: function(){ weapons.wave.dmg += 8; weapons.wave.r += 14; weapons.wave.rate = Math.max(80, weapons.wave.rate - 10); } },
+    apply: function(){ weapons.wave.dmg += 8; weapons.wave.r += 14; weapons.wave.rate = Math.max(30, weapons.wave.rate - 6); } },
   { id: 'orbs', icon: '🔮', name: '守りのオーブ', max: 4,
     can: function(){ return true; },
     desc: function(){ return '周りを回るオーブが1つ増えます（今 ' + weapons.orbs.count + '個）'; },
