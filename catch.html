@@ -309,5 +309,95 @@ function shareSite(){
   }, true);
 })();
 </script>
+<script>
+/* ラテ報酬（全ゲーム共通）: プレイ報酬20（1日1回）+ 自己ベスト更新30（1日1回）= そのゲームは1日最大50ラテ */
+(function(){
+  var SLUG = 'catch', PLAY = 20, BEST = 30;
+  var SKEY = 'maouSharedSaveV1', RKEY = 'maouLateRewardV1';
+  function today(){ var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function loadShared(){
+    var o = null;
+    try { o = JSON.parse(localStorage.getItem(SKEY) || 'null'); } catch (e) {}
+    if (!o || o.version !== 1 || !o.wallet) o = { version:1, playerId:'p' + Math.random().toString(36).slice(2, 10), updatedAt:'', wallet:{ late:0 }, items:[], flags:{} };
+    if (typeof o.wallet.late !== 'number') o.wallet.late = 0;
+    return o;
+  }
+  function saveShared(o){ try { o.updatedAt = new Date().toISOString(); localStorage.setItem(SKEY, JSON.stringify(o)); } catch (e) {} }
+  function loadRw(){
+    var r = null;
+    try { r = JSON.parse(localStorage.getItem(RKEY) || 'null'); } catch (e) {}
+    if (!r || r.date !== today()) r = { date: today(), games:{} };
+    return r;
+  }
+  function saveRw(r){ try { localStorage.setItem(RKEY, JSON.stringify(r)); } catch (e) {} }
+  var BEST_RE = /^maou[A-Za-z0-9]*(Best|High)(V\d+)?$/;
+  var LOWER = { maouReflexBest:1, maouMazeBest:1, maouNumbersBest:1, maouNumbersBest50:1 };
+  function snap(){
+    var s = {};
+    try {
+      for (var i = 0; i < localStorage.length; i++){
+        var k = localStorage.key(i);
+        if (k && BEST_RE.test(k)){ var v = parseFloat(localStorage.getItem(k)); if (!isNaN(v)) s[k] = v; }
+      }
+    } catch (e) {}
+    return s;
+  }
+  var before = snap();
+  function bestImproved(){
+    var after = snap();
+    for (var k in after){
+      if (!(k in before)){ if (after[k] > 0) return true; }
+      else if (LOWER[k] ? after[k] < before[k] : after[k] > before[k]) return true;
+    }
+    return false;
+  }
+  function toast(text){
+    try {
+      var d = document.createElement('div');
+      d.textContent = text;
+      d.style.cssText = 'position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#3d2a5e;border:2px solid #e8b34b;color:#ffe9a8;padding:10px 18px;border-radius:999px;font-size:.95rem;z-index:9999;box-shadow:0 4px 14px rgba(0,0,0,.4);text-align:center;max-width:92vw';
+      document.body.appendChild(d);
+      setTimeout(function(){ if (d.remove) d.remove(); }, 3600);
+    } catch (e) {}
+  }
+  var granted = false;
+  window.MaouLateReward = function(){
+    if (granted) return;
+    granted = true;
+    try {
+      var rw = loadRw();
+      var g = rw.games[SLUG] || { play:false, best:false };
+      var gain = 0, msgs = [];
+      if (!g.play){ g.play = true; gain += PLAY; msgs.push('本日のプレイ報酬 +' + PLAY + 'ラテ'); }
+      if (!g.best && bestImproved()){ g.best = true; gain += BEST; msgs.push('自己ベスト更新 +' + BEST + 'ラテ'); }
+      rw.games[SLUG] = g;
+      saveRw(rw);
+      if (gain > 0){
+        var sh = loadShared();
+        sh.wallet.late += gain;
+        saveShared(sh);
+        toast('🎁 ' + msgs.join('　') + '（所持 ' + sh.wallet.late + 'ラテ）');
+      }
+    } catch (e) {}
+  };
+  if (typeof window.showOverNav === 'function'){
+    var orig = window.showOverNav;
+    window.showOverNav = function(){
+      var r;
+      try { r = orig.apply(this, arguments); } finally { window.MaouLateReward(); }
+      return r;
+    };
+  }
+  try {
+    var nav = document.getElementById('overNav');
+    if (nav && typeof MutationObserver !== 'undefined'){
+      var ob = new MutationObserver(function(){
+        if (nav.style && nav.style.display === 'block') window.MaouLateReward();
+      });
+      ob.observe(nav, { attributes:true, attributeFilter:['style'] });
+    }
+  } catch (e) {}
+})();
+</script>
 </body>
 </html>
