@@ -1295,6 +1295,14 @@
   reset();
   state = 'ready';
   requestAnimationFrame(step);
+
+  /* 100ラテコンテニュー復帰フック（共通基盤） */
+  try { window.__maouResume = function(){
+    hp = 50; elHp.textContent = '50';
+    state = 'run';
+    btnStart.textContent = 'やり直し';
+    updButtons();
+  }; } catch (e) {}
 })();
 </script>
 <script>
@@ -1452,5 +1460,364 @@ function shareSite(){
   } catch (e) {}
 })();
 </script>
+<script>
+/* 全ゲーム共通基盤: まるごとセーブコード（圧縮つき）＋ 100ラテコンテニュー ＋ カジノ台帳ガード
+   - コードに含めない端末専用キー: maouHitV1（アクセス集計）/ maouLateRewardV1（その日の報酬台帳）/
+     maouCasinoLedgerV1（カジノ台帳の端末控え）/ maouTchiSeedV1（魔王っち孵化シード）
+   - 形式: MAOU2Z.<base64url>.<fnv8> = deflate圧縮 / MAOU2R.<base64url>.<fnv8> = 無圧縮フォールバック
+   - 旧形式（fish/casino共通コード {version:1,shared}、魔王っちコード {version:1,tchi,late}）も読み込み可 */
+(function(){
+  var SLUG = 'blast';
+  var SKEY = 'maouSharedSaveV1', TKEY = 'maouTchiV1', LEDGER_KEY = 'maouCasinoLedgerV1';
+  var COST = 100;
+  var EXCLUDE = { maouHitV1:1, maouLateRewardV1:1, maouCasinoLedgerV1:1, maouTchiSeedV1:1 };
+
+  /* ---------- 小物 ---------- */
+  function fnv(str){ var h = 0x811c9dc5; for (var i = 0; i < str.length; i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); }
+  function getRaw(k){ try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function setRaw(k, v){ try { localStorage.setItem(k, v); } catch (e) {} }
+  function bytesToB64url(bytes){
+    var bin = '', CH = 0x8000;
+    for (var i = 0; i < bytes.length; i += CH) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CH));
+    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  function b64urlToBytes(s){
+    var b = String(s).replace(/-/g, '+').replace(/_/g, '/');
+    while (b.length % 4) b += '=';
+    var bin = atob(b);
+    var bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes;
+  }
+  function deflateBytes(bytes){
+    if (typeof CompressionStream === 'undefined' || typeof Blob === 'undefined' || typeof Response === 'undefined') return Promise.resolve(null);
+    try {
+      var stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate'));
+      return new Response(stream).arrayBuffer().then(function(buf){ return new Uint8Array(buf); }, function(){ return null; });
+    } catch (e) { return Promise.resolve(null); }
+  }
+  function inflateBytes(bytes){
+    if (typeof DecompressionStream === 'undefined' || typeof Blob === 'undefined' || typeof Response === 'undefined') return Promise.resolve(null);
+    try {
+      var stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate'));
+      return new Response(stream).arrayBuffer().then(function(buf){ return new Uint8Array(buf); }, function(){ return null; });
+    } catch (e) { return Promise.resolve(null); }
+  }
+
+  /* ---------- 共通セーブ ---------- */
+  function defaultShared(){
+    return { version:1, playerId:'p' + Math.random().toString(36).slice(2, 10), updatedAt:'', wallet:{ late:0 }, items:[], flags:{} };
+  }
+  function loadSharedObj(){
+    var o = null;
+    try { o = JSON.parse(getRaw(SKEY) || 'null'); } catch (e) {}
+    if (!o || o.version !== 1 || !o.wallet || typeof o.wallet.late !== 'number') o = defaultShared();
+    return o;
+  }
+  function saveSharedObj(o){ try { o.updatedAt = new Date().toISOString(); localStorage.setItem(SKEY, JSON.stringify(o)); } catch (e) {} }
+
+  /* ---------- カジノ台帳ガード ----------
+     規則: totalBet/totalWon は「輸入値・端末の現在値・端末控え」の最大値
+           dailyBet は日付が一番新しいものを採用し、同日なら金額の大きい方
+           reliefDate は一番新しい日付を採用（今日の救済を受け取り済みなら巻き戻らない） */
+  function czOf(c){
+    c = c || {};
+    var db = (c.dailyBet && typeof c.dailyBet.amount === 'number') ? { date: String(c.dailyBet.date || ''), amount: c.dailyBet.amount } : { date:'', amount:0 };
+    return { totalBet: +c.totalBet || 0, totalWon: +c.totalWon || 0, dailyBet: db, reliefDate: String(c.reliefDate || '') };
+  }
+  function mergeCasino(imported, current, mirror){
+    var srcs = [czOf(imported), czOf(current), czOf(mirror)];
+    var out = czOf(null);
+    out.totalBet = Math.max(srcs[0].totalBet, srcs[1].totalBet, srcs[2].totalBet);
+    out.totalWon = Math.max(srcs[0].totalWon, srcs[1].totalWon, srcs[2].totalWon);
+    var bd = srcs[0].dailyBet;
+    for (var i = 1; i < 3; i++){
+      var s = srcs[i].dailyBet;
+      if (s.date > bd.date || (s.date === bd.date && s.amount > bd.amount)) bd = s;
+    }
+    out.dailyBet = { date: bd.date, amount: bd.amount };
+    out.reliefDate = srcs[0].reliefDate;
+    for (var j = 1; j < 3; j++) if (srcs[j].reliefDate > out.reliefDate) out.reliefDate = srcs[j].reliefDate;
+    return out;
+  }
+  function writeMirror(casino){
+    var c = czOf(casino);
+    try { localStorage.setItem(LEDGER_KEY, JSON.stringify(c)); } catch (e) {}
+  }
+  function guardShared(sh){
+    if (!sh || typeof sh !== 'object') return sh;
+    var cur = null, mir = null;
+    try { var cs = JSON.parse(getRaw(SKEY) || 'null'); if (cs) cur = cs.casino; } catch (e) {}
+    try { mir = JSON.parse(getRaw(LEDGER_KEY) || 'null'); } catch (e) {}
+    if (sh.casino || cur || mir){
+      sh.casino = mergeCasino(sh.casino, cur, mir);
+      writeMirror(sh.casino);
+    }
+    return sh;
+  }
+
+  /* ---------- まるごとコード ---------- */
+  function collect(){
+    var data = {};
+    try {
+      for (var i = 0; i < localStorage.length; i++){
+        var k = localStorage.key(i);
+        if (k && k.indexOf('maou') === 0 && !EXCLUDE[k]){
+          var v = localStorage.getItem(k);
+          if (v !== null) data[k] = v;
+        }
+      }
+    } catch (e) {}
+    return data;
+  }
+  function encodeAll(){
+    var json = JSON.stringify({ v:2, kind:'maou-all', data: collect() });
+    var bytes = new TextEncoder().encode(json);
+    return deflateBytes(bytes).then(function(comp){
+      if (comp && comp.length < bytes.length) return 'MAOU2Z.' + bytesToB64url(comp) + '.' + fnv(json);
+      return 'MAOU2R.' + bytesToB64url(bytes) + '.' + fnv(json);
+    });
+  }
+  function decodeAny(code){
+    code = String(code || '').trim();
+    if (!code) return Promise.resolve(null);
+    if (code.indexOf('MAOU2') === 0){
+      var parts = code.split('.');
+      if (parts.length !== 3) return Promise.resolve(null);
+      var bytes;
+      try { bytes = b64urlToBytes(parts[1]); } catch (e) { return Promise.resolve(null); }
+      var step = (parts[0] === 'MAOU2Z') ? inflateBytes(bytes) : (parts[0] === 'MAOU2R' ? Promise.resolve(bytes) : Promise.resolve(null));
+      return step.then(function(raw){
+        if (!raw) return null;
+        try {
+          var json = new TextDecoder().decode(raw);
+          if (fnv(json) !== parts[2]) return null;
+          var obj = JSON.parse(json);
+          if (!obj || obj.v !== 2 || obj.kind !== 'maou-all' || !obj.data || typeof obj.data !== 'object') return null;
+          return { type:'all', data: obj.data };
+        } catch (e) { return null; }
+      }, function(){ return null; });
+    }
+    /* 旧形式: base64url(JSON) + '.' + fnv */
+    try {
+      var lp = code.split('.');
+      if (lp.length !== 2) return Promise.resolve(null);
+      var lb = lp[0].replace(/-/g, '+').replace(/_/g, '/');
+      while (lb.length % 4) lb += '=';
+      var ljson = decodeURIComponent(escape(atob(lb)));
+      if (fnv(ljson) !== lp[1]) return Promise.resolve(null);
+      var lo = JSON.parse(ljson);
+      if (!lo || lo.version !== 1) return Promise.resolve(null);
+      if (lo.shared && lo.shared.wallet) return Promise.resolve({ type:'shared', shared: lo.shared });
+      if (lo.tchi && typeof lo.late === 'number') return Promise.resolve({ type:'tchi', tchi: lo.tchi, late: lo.late });
+      return Promise.resolve(null);
+    } catch (e) { return Promise.resolve(null); }
+  }
+  function applyDecoded(dec){
+    if (!dec) return false;
+    try {
+      if (dec.type === 'all'){
+        for (var k in dec.data){
+          if (EXCLUDE[k]) continue;
+          if (k === SKEY){
+            var sh = null;
+            try { sh = JSON.parse(dec.data[k]); } catch (e) {}
+            if (sh && sh.version === 1 && sh.wallet){ guardShared(sh); setRaw(SKEY, JSON.stringify(sh)); }
+          } else setRaw(k, dec.data[k]);
+        }
+        return true;
+      }
+      if (dec.type === 'shared'){
+        var s2 = dec.shared;
+        if (!s2 || s2.version !== 1 || !s2.wallet) return false;
+        guardShared(s2);
+        setRaw(SKEY, JSON.stringify(s2));
+        return true;
+      }
+      if (dec.type === 'tchi'){
+        if (!dec.tchi || !dec.tchi.dex || !dec.tchi.certs) return false;
+        setRaw(TKEY, JSON.stringify({ save: dec.tchi, lastSeen: Date.now() }));
+        var sh3 = loadSharedObj();
+        if (typeof dec.late === 'number' && dec.late >= 0) sh3.wallet.late = dec.late;
+        guardShared(sh3);
+        saveSharedObj(sh3);
+        return true;
+      }
+    } catch (e) { return false; }
+    return false;
+  }
+
+  /* ---------- 100ラテコンテニュー ---------- */
+  var continueUsed = false;
+  function hideOverNav(){ try { var n = document.getElementById('overNav'); if (n) n.style.display = 'none'; } catch (e) {} }
+  function tryContinue(){
+    if (continueUsed) return false;
+    if (typeof window.__maouResume !== 'function') return false;
+    var sh = loadSharedObj();
+    if ((sh.wallet.late || 0) < COST) return false;
+    sh.wallet.late -= COST;
+    saveSharedObj(sh);
+    var r;
+    try { r = window.__maouResume(); } catch (e) { r = false; }
+    if (r === false){
+      var sh2 = loadSharedObj();
+      sh2.wallet.late += COST;
+      saveSharedObj(sh2);
+      return false;
+    }
+    continueUsed = true;
+    hideOverNav();
+    return true;
+  }
+
+  window.MaouCommon = {
+    encodeAll: encodeAll, decodeAny: decodeAny, applyDecoded: applyDecoded,
+    collect: collect, mergeCasino: mergeCasino, guardShared: guardShared,
+    tryContinue: tryContinue,
+    resetContinue: function(){ continueUsed = false; },
+    continueUsed: function(){ return continueUsed; },
+    COST: COST, EXCLUDE: EXCLUDE
+  };
+
+  /* ---------- UI ---------- */
+  function el(tag, cls, text){
+    var d = document.createElement(tag);
+    if (cls) d.className = cls;
+    if (text !== undefined) d.textContent = text;
+    return d;
+  }
+  function buildPanel(inOver){
+    var box = el('div', 'maou-common-panel');
+    if (inOver){
+      var cont = el('div', 'mc-cont');
+      var cbtn = el('button', 'mc-btn mc-continue', '100ラテでコンテニュー');
+      cbtn.type = 'button';
+      var bal = el('div', 'mc-bal');
+      cont.appendChild(cbtn); cont.appendChild(bal);
+      box.appendChild(cont);
+      box._cont = cont; box._cbtn = cbtn; box._bal = bal;
+      cbtn.addEventListener('click', function(){
+        if (tryContinue()){ refreshContinue(box); }
+        else refreshContinue(box);
+      });
+    }
+    box.appendChild(el('div', 'mc-title', 'セーブコード（全ゲーム共通）'));
+    box.appendChild(el('div', 'mc-text', '今の記録をコードにして控えておけます　別の端末で読み込むと記録を引き継げます'));
+    var row1 = el('div', 'mc-row');
+    var ebtn = el('button', 'mc-btn', 'コードを出す'); ebtn.type = 'button';
+    var cpbtn = el('button', 'mc-btn', 'コピーする'); cpbtn.type = 'button';
+    row1.appendChild(ebtn); row1.appendChild(cpbtn);
+    box.appendChild(row1);
+    var out = el('textarea', 'mc-out'); out.rows = 3; out.readOnly = true; out.setAttribute('placeholder', 'ここにコードが出ます');
+    box.appendChild(out);
+    box.appendChild(el('div', 'mc-text', 'コードを読み込む（今の記録は上書きされます）'));
+    var inp = el('textarea', 'mc-in'); inp.rows = 3; inp.setAttribute('placeholder', 'コードをここに貼る');
+    box.appendChild(inp);
+    var row2 = el('div', 'mc-row');
+    var pbtn = el('button', 'mc-btn', '貼り付け'); pbtn.type = 'button';
+    var ibtn = el('button', 'mc-btn', '読み込む'); ibtn.type = 'button';
+    row2.appendChild(pbtn); row2.appendChild(ibtn);
+    box.appendChild(row2);
+    var msg = el('div', 'mc-msg');
+    box.appendChild(msg);
+    if (!(typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.readText)) pbtn.style.display = 'none';
+    ebtn.addEventListener('click', function(){
+      msg.textContent = 'コードを作っています';
+      encodeAll().then(function(code){
+        out.value = code;
+        msg.textContent = 'コードを出しました　大事に控えておいてね';
+      }, function(){ msg.textContent = 'コードを作れませんでした'; });
+    });
+    cpbtn.addEventListener('click', function(){
+      if (!out.value){ msg.textContent = '先にコードを出してね'; return; }
+      function done(){ msg.textContent = 'コピーしました'; }
+      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(out.value).then(done, function(){ fallback(); });
+      } else fallback();
+      function fallback(){
+        try { out.focus(); out.select(); if (document.execCommand('copy')) done(); else msg.textContent = 'コピーできませんでした　長押しで選んでね'; }
+        catch (e) { msg.textContent = 'コピーできませんでした　長押しで選んでね'; }
+      }
+    });
+    pbtn.addEventListener('click', function(){
+      if (!(typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.readText)) return;
+      navigator.clipboard.readText().then(function(t){
+        if (t) { inp.value = t; msg.textContent = '貼り付けました'; }
+        else msg.textContent = 'クリップボードが空でした';
+      }, function(){ msg.textContent = '貼り付けできませんでした　欄に直接貼ってね'; });
+    });
+    ibtn.addEventListener('click', function(){
+      var code = inp.value;
+      if (!code || !code.trim()){ msg.textContent = 'コードを貼ってから押してね'; return; }
+      msg.textContent = 'コードを確認しています';
+      decodeAny(code).then(function(dec){
+        if (!dec){ msg.textContent = 'コードが違うか 壊れています'; return; }
+        var okGo = true;
+        try { okGo = window.confirm('今の記録は上書きされます　読み込みますか？'); } catch (e) {}
+        if (!okGo){ msg.textContent = '読み込みをやめました'; return; }
+        if (!applyDecoded(dec)){ msg.textContent = 'コードが違うか 壊れています'; return; }
+        msg.textContent = '読み込みました　画面を読み直します';
+        setTimeout(function(){ try { location.reload(); } catch (e) {} }, 900);
+      }, function(){ msg.textContent = 'コードが違うか 壊れています'; });
+    });
+    return box;
+  }
+  function refreshContinue(box){
+    if (!box || !box._cont) return;
+    var has = typeof window.__maouResume === 'function';
+    box._cont.style.display = has ? '' : 'none';
+    if (!has) return;
+    var bal = loadSharedObj().wallet.late || 0;
+    box._bal.textContent = '所持ラテ ' + bal;
+    if (continueUsed){ box._cbtn.disabled = true; box._cbtn.textContent = 'コンテニュー済みです'; }
+    else if (bal < COST){ box._cbtn.disabled = true; box._cbtn.textContent = '100ラテでコンテニュー（ラテが足りません）'; }
+    else { box._cbtn.disabled = false; box._cbtn.textContent = '100ラテでコンテニュー'; }
+  }
+  function initUI(){
+    try {
+      var style = document.createElement('style');
+      style.textContent = '.maou-common-panel{max-width:560px;margin:16px auto;padding:14px;border:1px solid #a06cd5;border-radius:12px;background:rgba(61,42,94,.35);text-align:center}' +
+        '.maou-common-panel .mc-title{font-weight:bold;color:#ffe9a8;margin-bottom:6px}' +
+        '.maou-common-panel .mc-text{font-size:.9rem;line-height:1.7;margin:6px 0}' +
+        '.maou-common-panel textarea{width:100%;box-sizing:border-box;margin:6px 0;border-radius:8px;padding:8px}' +
+        '.maou-common-panel .mc-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}' +
+        '.maou-common-panel .mc-btn{background:#3d2a5e;border:2px solid #e8b34b;color:#ffe9a8;border-radius:999px;padding:8px 18px;font-size:.95rem;cursor:pointer}' +
+        '.maou-common-panel .mc-btn:disabled{opacity:.45;cursor:default}' +
+        '.maou-common-panel .mc-msg{font-size:.9rem;color:#cfc4ee;min-height:1.2em;margin-top:6px}' +
+        '.maou-common-panel .mc-cont{margin-bottom:12px;padding-bottom:12px;border-bottom:1px dashed #a06cd5}' +
+        '.maou-common-panel .mc-continue{font-size:1.05rem;padding:10px 22px}' +
+        '.maou-common-panel .mc-bal{font-size:.9rem;color:#cfc4ee;margin-top:6px}';
+      (document.head || document.body).appendChild(style);
+      var main = buildPanel(false);
+      document.body.appendChild(main);
+      var nav = document.getElementById('overNav');
+      var overPanel = null;
+      if (nav){
+        overPanel = buildPanel(true);
+        nav.appendChild(overPanel);
+        refreshContinue(overPanel);
+        if (typeof MutationObserver !== 'undefined'){
+          var ob = new MutationObserver(function(){
+            if (nav.style && nav.style.display === 'block'){ continueUsed = false; refreshContinue(overPanel); }
+          });
+          ob.observe(nav, { attributes:true, attributeFilter:['style'] });
+        }
+      }
+      if (typeof window.showOverNav === 'function'){
+        var orig = window.showOverNav;
+        window.showOverNav = function(){
+          var r = orig.apply(this, arguments);
+          continueUsed = false;
+          refreshContinue(overPanel);
+          return r;
+        };
+      }
+    } catch (e) {}
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initUI);
+  else initUI();
+})();
+</script>
+
 </body>
 </html>
