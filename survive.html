@@ -233,7 +233,7 @@ var timeStopT = 0, marks = [], flashT = 0, shakeT = 0;
 var weapons = null, upgLv = {};
 var choices = [];
 var spawnT = 0, bossT = 90 * 60, hitSfxT = 0;
-var summon = null, summonCD = 0;
+var summon = null, summonCD = 0, aidT = 0;
 var healCD = 0;
 var themeIdx = 0, themePrev = -1, themeFadeT = 0, castleAnn = null;
 var camX = 0, camY = 0;
@@ -371,7 +371,23 @@ var UPGRADES = [
   { id: 'meteor', icon: '🌠', name: '流星召喚', max: 3,
     can: function(){ return true; },
     desc: function(){ return 'ときどき、敵が一番集まっている場所に流星が落ちます'; },
-    apply: function(){ var m = weapons.meteor; m.lv += 1; m.dmg = 60 + m.lv * 55; m.rate = Math.max(420, 660 - m.lv * 90); } }
+    apply: function(){ var m = weapons.meteor; m.lv += 1; m.dmg = 60 + m.lv * 55; m.rate = Math.max(420, 660 - m.lv * 90); } },
+  { id: 'sumPow', icon: '💥', name: '相方召喚・威力', max: 5,
+    can: function(){ return true; },
+    desc: function(){ return '相方召喚の爆発が強くなります　ボスへのダメージが最大HPの' + Math.round(summonBossPct() * 100) + '%から' + Math.round((summonBossPct() + 0.05) * 100) + '%へ'; },
+    apply: function(){} },
+  { id: 'sumCD', icon: '⏳', name: '相方召喚・はやわざ', max: 5,
+    can: function(){ return true; },
+    desc: function(){ return '相方召喚の待ち時間が短くなります（今 ' + Math.ceil(summonCDMax() / 60) + '秒から' + Math.ceil((summonCDMax() - 200) / 60) + '秒へ）'; },
+    apply: function(){} },
+  { id: 'sumArea', icon: '🌐', name: '相方召喚・範囲', max: 5,
+    can: function(){ return true; },
+    desc: function(){ return '相方召喚の爆発の範囲が広くなります（今 ' + summonRadius() + ' から ' + (summonRadius() + 120) + ' へ）'; },
+    apply: function(){} },
+  { id: 'sumAid', icon: '🤝', name: '相方の援護', max: 5,
+    can: function(){ return true; },
+    desc: function(){ return (charKey === 'r' ? 'らて子がときどき小さな衝撃波で援護します　当たった敵はゆっくりになります' : 'らてらるがときどき貫通ボルトで援護します') + '　取るほど頻繁に、強くなります'; },
+    apply: function(){} }
 ];
 var FREEZE_PCT = [0, 0.3, 0.45, 0.6];
 
@@ -450,7 +466,7 @@ function startGame(){
   timeStopT = 0; marks = []; flashT = 0; shakeT = 0;
   frame = 0; timeF = 0; kills = 0; bossCount = 0;
   spawnT = 30; bossT = 90 * 60; hitSfxT = 0;
-  summon = null; summonCD = 0; healCD = 0;
+  summon = null; summonCD = 0; healCD = 0; aidT = 0;
   themeIdx = 0; themePrev = -1; themeFadeT = 0; castleAnn = null;
   camX = player.x - VW / 2; camY = player.y - VH / 2;
   state = 'play';
@@ -690,6 +706,8 @@ function spawnMechBoss(kind){
     rallyT: 480,
     dragCD: 460, dragT: 0, ringT: 200,
     necCD: 500, necRingCD: 700, necRingT: 0,
+    beamCD: 600, beamT: 0, beamAng: 0, beamFireT: 0,
+    ifrTpCD: 700, ifrTpT: 0, raged: false,
     ifritCD: 520, ifritLavCD: 380, ifritRingCD: 640,
     valkCD: 420, valkShotT: 150,
     webCD: 300, spawnCD: 420,
@@ -701,6 +719,43 @@ function spawnMechBoss(kind){
   addFloat(player.x, player.y - 104, '⏰ 90秒以内に倒せ！', '#fde68a');
   sfxBoss();
   return e;
+}
+/* 巨大ビーム（次元魔導士・終末の大魔導士・死霊王ネクロス）：予告中はゆっくり追尾し、発射直前に固定される */
+function beamStep(e){
+  if (e.beamFireT > 0){
+    e.beamFireT--;
+    var ca = Math.cos(e.beamAng), sa = Math.sin(e.beamAng);
+    var rx = player.x - e.x, ry = player.y - e.y;
+    var proj = rx * ca + ry * sa;
+    var perp = Math.abs(rx * sa - ry * ca);
+    if (proj > 0 && proj < 1500 && perp < 45 + player.r) hurtPlayer(14);
+    return true;
+  }
+  if (e.beamT > 0){
+    e.beamT--;
+    if (e.beamT > 15){
+      var target = Math.atan2(player.y - e.y, player.x - e.x);
+      var diff = target - e.beamAng;
+      while (diff > Math.PI) diff -= 6.283;
+      while (diff < -Math.PI) diff += 6.283;
+      e.beamAng += Math.max(-0.014, Math.min(0.014, diff));
+    }
+    if (e.beamT <= 0){
+      e.beamFireT = 50;
+      shakeT = Math.max(shakeT, 6);
+      tone(170, 920, 0.3, 'sawtooth', 0.06);
+    }
+    return true;
+  }
+  if (e.beamCD > 0) e.beamCD--;
+  if (e.beamCD <= 0){
+    e.beamT = 75;
+    e.beamAng = Math.atan2(player.y - e.y, player.x - e.x);
+    e.beamCD = e.raged ? 560 : 820;
+    addFloat(e.x, e.y - e.r - 26, '巨大ビームが来る！', '#fda4af');
+    tone(90, 180, 0.4, 'sawtooth', 0.05);
+  }
+  return false;
 }
 /* ワープ共通処理：'stay'（予告中は静止）/ 'lunge'（ワープ直後の飛びかかり）/ null（通常）を返す */
 function warpLogic(e, isBoss){
@@ -791,9 +846,9 @@ function doFusion(){
   sfxBoss();
   return e;
 }
-function fireEShot(e, spd, dmg, ang){
+function fireEShot(e, spd, dmg, ang, home){
   if (eshots.length >= ESHOT_CAP) return;
-  eshots.push({ x: e.x, y: e.y, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, dmg: dmg, life: 320, r: 7 });
+  eshots.push({ x: e.x, y: e.y, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, dmg: dmg, life: 320, r: 7, home: home ? 1 : 0 });
 }
 function dropShards(x, y, n, val){
   for (var i = 0; i < n; i++){
@@ -1011,26 +1066,70 @@ function doWave(){
 }
 
 /* ===== 相方召喚 ===== */
+/* お助け特性（レベルアップで育つ）：待ち時間・爆発範囲・ボスへの割合ダメージ */
+function summonCDMax(){ return 2700 - 200 * (upgLv.sumCD || 0); }
+function summonRadius(){ return 800 + 120 * (upgLv.sumArea || 0); }
+function summonBossPct(){ return 0.2 + 0.05 * (upgLv.sumPow || 0); }
 function doSummon(){
   if (state !== 'play' || !player || summon || summonCD > 0) return;
   summon = { who: charKey === 'r' ? 'l' : 'r', t: 0, blasted: false };
-  summonCD = 2700;
+  summonCD = summonCDMax();
   tone(660, 990, 0.12, 'sine', 0.05);
 }
 function summonBlast(){
   /* 撃破時の追加効果（爆裂コア）で配列が縮むため、対象を複写してから処理する */
+  var rad = summonRadius();
   var targets = enemies.slice();
   for (var i = 0; i < targets.length; i++){
     var e = targets[i];
     if (enemies.indexOf(e) < 0) continue;
+    var bdx2 = e.x - player.x, bdy2 = e.y - player.y;
+    if (bdx2 * bdx2 + bdy2 * bdy2 > rad * rad) continue;
     if (e.boss){
-      e.hp = Math.max(1, e.hp - e.maxHp * 0.2);
+      e.hp = Math.max(1, e.hp - e.maxHp * summonBossPct());
       addParts(e.x, e.y, '#ffe27a', 14);
     } else killEnemy(enemies.indexOf(e));
   }
+  rings.push({ x: player.x, y: player.y, r: 30, maxR: Math.min(rad, 950), life: 16, col: '#ffe27a' });
   addFloat(player.x, player.y - 64, '全て破壊！', '#ffe27a');
   tone(160, 40, 0.35, 'sawtooth', 0.07);
   tone(1200, 2400, 0.2, 'sine', 0.04);
+}
+/* 相方の自動援護（お助け特性「相方の援護」）：相方はプレイヤーが選ばなかった側 */
+function partnerAid(){
+  var lv = upgLv.sumAid || 0;
+  if (lv <= 0 || state !== 'play' || !player) return;
+  var who = charKey === 'r' ? 'l' : 'r';
+  if (who === 'l'){
+    /* らて子：小さな衝撃波＋当たった敵がゆっくりになる */
+    var ar = 130 + 12 * lv, ad = 14 + 8 * lv;
+    rings.push({ x: player.x, y: player.y, r: 12, maxR: ar, life: 14, col: '#d8b4fe' });
+    var targets = enemies.slice();
+    for (var ai2 = 0; ai2 < targets.length; ai2++){
+      var ae2 = targets[ai2];
+      if (enemies.indexOf(ae2) < 0) continue;
+      var adx2 = ae2.x - player.x, ady2 = ae2.y - player.y;
+      if (adx2 * adx2 + ady2 * ady2 < (ar + ae2.r) * (ar + ae2.r)){
+        dmgEnemy(ae2, ad);
+        ae2.slowT = 90; ae2.slowPct = 0.4;
+        if (ae2.hp <= 0) killEnemy(enemies.indexOf(ae2));
+      }
+    }
+    addFloat(player.x, player.y - 52, '💜 らて子の援護！', '#d8b4fe');
+    tone(920, 1380, 0.09, 'sine', 0.03);
+  } else {
+    /* らてらる：貫通ボルトの斉射 */
+    var n = 3 + lv, bd2 = 14 + 7 * lv;
+    var t1 = nearestEnemy(player.x, player.y, 560);
+    var base = t1 ? Math.atan2(t1.y - player.y, t1.x - player.x) : player.faceAng;
+    for (var bi2 = 0; bi2 < n; bi2++){
+      if (bolts.length >= BOLT_CAP) break;
+      var off = (bi2 - (n - 1) / 2) * 0.15;
+      bolts.push({ x: player.x, y: player.y, vx: Math.cos(base + off) * 8, vy: Math.sin(base + off) * 8, dmg: bd2, life: 55, pierce: 2, hitList: [] });
+    }
+    addFloat(player.x, player.y - 52, '❤️ らてらるの援護！', '#fca5a5');
+    tone(520, 780, 0.09, 'square', 0.03);
+  }
 }
 
 /* ===== 回復魔法 ===== */
@@ -1079,6 +1178,15 @@ function step(){
     summon.t++;
     if (!summon.blasted && summon.t >= 30){ summon.blasted = true; summonBlast(); }
     if (summon.t > 62) summon = null;
+  }
+  /* 相方の自動援護：間隔は援護レベルで短くなる（620fから60fずつ、最短380f） */
+  if ((upgLv.sumAid || 0) > 0){
+    aidT--;
+    if (aidT <= 0){
+      aidT = 620 - 60 * ((upgLv.sumAid || 1) - 1);
+      partnerAid();
+      if (state !== 'play') return;
+    }
   }
   if (themeFadeT > 0){ themeFadeT--; if (themeFadeT <= 0) themePrev = -1; }
   if (castleAnn){ castleAnn.t--; if (castleAnn.t <= 0) castleAnn = null; }
@@ -1340,6 +1448,16 @@ function step(){
       if (wr === 'stay') stay = true;
       else if (wr === 'lunge') sp = e.spd * 2.4;
     }
+    /* 巨大ビーム（魔法系ボス3種） */
+    if (e.mech === 'warpmage' || e.mech === 'doomsday' || e.mech === 'necros'){
+      if (beamStep(e)){ stay = true; if (state !== 'play') return; }
+    }
+    /* 怒りモード突入（拡張5の3ボス）：HPが3割を切ると攻撃が速く、激しくなる */
+    if ((e.mech === 'necros' || e.mech === 'ifrit' || e.mech === 'valkyrie') && !e.raged && e.hp <= e.maxHp * 0.3){
+      e.raged = true;
+      addFloat(e.x, e.y - e.r - 34, '💢 怒り出した！', '#ff8080');
+      tone(80, 40, 0.5, 'sawtooth', 0.08);
+    }
     /* 個性派ボスのギミック */
     if (e.mech === 'slimeking'){
       var sfrac = e.hp / e.maxHp;
@@ -1541,7 +1659,7 @@ function step(){
           rings.push({ x: e.x, y: e.y, r: 40, maxR: 300, life: 16, col: '#a3e635' });
           var ndx = player.x - e.x, ndy = player.y - e.y;
           if (ndx * ndx + ndy * ndy < 300 * 300) hurtPlayerTrue(25);
-          e.necRingCD = 700;
+          e.necRingCD = e.raged ? 480 : 700;
           if (state !== 'play') return;
         }
       } else {
@@ -1550,7 +1668,7 @@ function step(){
       }
       if (e.necCD > 0) e.necCD--;
       if (e.necCD <= 0){
-        e.necCD = 500;
+        e.necCD = e.raged ? 300 : 500;
         for (var nci = 0; nci < 4; nci++){
           if (enemies.length >= ENEMY_CAP) break;
           var nm = createEnemy(nci % 2 ? 'fast' : 'imp');
@@ -1560,29 +1678,53 @@ function step(){
         addFloat(e.x, e.y - e.r - 16, '死霊召喚！', '#d9f99d');
       }
       if (e.shotT > 0) e.shotT--;
-      if (e.shotT <= 0 && d < 620){ for (var nsi = 0; nsi < 8; nsi++) fireEShot(e, 3.0, 13, nsi * 0.785 + e.wob); e.shotT = 260; }
+      if (e.shotT <= 0 && d < 620){ for (var nsi = 0; nsi < 8; nsi++) fireEShot(e, e.raged ? 3.75 : 3.0, 13, nsi * 0.785 + e.wob, true); e.shotT = e.raged ? 170 : 260; }
     }
     if (e.mech === 'ifrit'){
+      /* 瞬間移動＋爆発：プレイヤーの近くへ回り込み、溜めのあと爆発する */
+      if (e.ifrTpT > 0){
+        stay = true;
+        e.ifrTpT--;
+        if (e.ifrTpT <= 0){
+          rings.push({ x: e.x, y: e.y, r: 14, maxR: 110, life: 12, col: '#fb923c' });
+          addParts(e.x, e.y, '#fb923c', 20);
+          tone(110, 40, 0.35, 'sawtooth', 0.08);
+          var idx3 = player.x - e.x, idy3 = player.y - e.y;
+          if (idx3 * idx3 + idy3 * idy3 <= 110 * 110){ hurtPlayer(22); if (state !== 'play') return; }
+          e.ifrTpCD = e.raged ? 560 : 780;
+        }
+      } else {
+        if (e.ifrTpCD > 0) e.ifrTpCD--;
+        if (e.ifrTpCD <= 0 && e.bmode === 'roam'){
+          var ita = Math.random() * 6.283;
+          e.x = player.x + Math.cos(ita) * 120;
+          e.y = player.y + Math.sin(ita) * 120;
+          addParts(e.x, e.y, '#fb923c', 12);
+          e.ifrTpT = 40;
+          addFloat(e.x, e.y - e.r - 26, '背後に回り込んだ！', '#fdba74');
+          tone(280, 90, 0.25, 'sawtooth', 0.06);
+        }
+      }
       if (e.bmode === 'tele'){ stay = true; e.bT--; if (e.bT <= 0){ e.bmode = 'charge'; e.bT = 58; } }
       else if (e.bmode === 'charge'){
         e.x += e.chargeDx * 5.2; e.y += e.chargeDy * 5.2;
         stay = true; e.bT--;
         if (e.bT <= 0){ e.bmode = 'tired'; e.bT = 80; e.tiredT = 80; lavas.push({ x: e.x, y: e.y, r: 85, life: 480 }); }
       }
-      else if (e.bmode === 'tired'){ stay = true; e.bT--; e.tiredT = e.bT; if (e.bT <= 0){ e.bmode = 'roam'; e.ifritCD = 520; e.tiredT = 0; } }
+      else if (e.bmode === 'tired'){ stay = true; e.bT--; e.tiredT = e.bT; if (e.bT <= 0){ e.bmode = 'roam'; e.ifritCD = e.raged ? 380 : 520; e.tiredT = 0; } }
       else {
         if (e.ifritCD > 0) e.ifritCD--;
         if (e.ifritCD <= 0){ e.bmode = 'tele'; e.bT = 50; e.chargeDx = dx / d; e.chargeDy = dy / d; tone(90, 45, 0.3, 'sawtooth', 0.06); }
       }
       if (e.ifritLavCD > 0) e.ifritLavCD--;
-      if (e.ifritLavCD <= 0){ e.ifritLavCD = 380; lavas.push({ x: e.x, y: e.y, r: 80, life: 480 }); }
+      if (e.ifritLavCD <= 0){ e.ifritLavCD = e.raged ? 280 : 380; lavas.push({ x: e.x, y: e.y, r: 80, life: 480 }); }
       if (e.ifritRingCD > 0) e.ifritRingCD--;
-      if (e.ifritRingCD <= 0){ e.ifritRingCD = 640; for (var iri = 0; iri < 16; iri++) fireEShot(e, 3.1, 14, iri * 0.393 + e.wob); tone(150, 70, 0.25, 'sawtooth', 0.05); }
+      if (e.ifritRingCD <= 0){ e.ifritRingCD = e.raged ? 440 : 640; for (var iri = 0; iri < 16; iri++) fireEShot(e, e.raged ? 3.9 : 3.1, 14, iri * 0.393 + e.wob); tone(150, 70, 0.25, 'sawtooth', 0.05); }
     }
     if (e.mech === 'valkyrie'){
       if (e.valkCD > 0) e.valkCD--;
       if (e.valkCD <= 0){
-        e.valkCD = 420;
+        e.valkCD = e.raged ? 280 : 420;
         zapMarks.push({ x: player.x, y: player.y, t: 45 });
         zapMarks.push({ x: player.x + 90, y: player.y + 40, t: 52 });
         zapMarks.push({ x: player.x - 80, y: player.y - 60, t: 59 });
@@ -1594,8 +1736,8 @@ function step(){
       }
       if (e.valkShotT > 0) e.valkShotT--;
       if (e.valkShotT <= 0 && d < 580){
-        for (var vsi = -1; vsi <= 1; vsi++) fireEShot(e, 3.8, 13, Math.atan2(dy, dx) + vsi * 0.3);
-        e.valkShotT = 210;
+        for (var vsi = -1; vsi <= 1; vsi++) fireEShot(e, e.raged ? 4.75 : 3.8, 13, Math.atan2(dy, dx) + vsi * 0.3, true);
+        e.valkShotT = e.raged ? 140 : 210;
       }
     }
     if (e.slowT > 0){ e.slowT--; sp *= (1 - e.slowPct); }
@@ -1726,6 +1868,18 @@ function step(){
   /* 敵の弾 */
   for (var qi = eshots.length - 1; qi >= 0; qi--){
     var q = eshots[qi];
+    /* 微追尾の弾：序盤だけ、ゆるくプレイヤーの方へ曲がる */
+    if (q.home && q.life > 170){
+      var curA = Math.atan2(q.vy, q.vx);
+      var wantA = Math.atan2(player.y - q.y, player.x - q.x);
+      var dfA = wantA - curA;
+      while (dfA > Math.PI) dfA -= 6.283;
+      while (dfA < -Math.PI) dfA += 6.283;
+      var tnA = Math.max(-0.016, Math.min(0.016, dfA));
+      var csA = Math.cos(tnA), snA = Math.sin(tnA);
+      var nvx = q.vx * csA - q.vy * snA, nvy = q.vx * snA + q.vy * csA;
+      q.vx = nvx; q.vy = nvy;
+    }
     q.x += q.vx; q.y += q.vy; q.life--;
     var qdx = player.x - q.x, qdy = player.y - q.y;
     var qhit = qdx * qdx + qdy * qdy < (q.r + player.r) * (q.r + player.r);
@@ -2042,6 +2196,45 @@ function draw(){
       ctx.strokeStyle = 'rgba(163,230,53,0.7)';
       ctx.lineWidth = 3;
       ctx.beginPath(); ctx.arc(sx, sy, (90 - e.necRingT) / 90 * 300, 0, 6.283); ctx.stroke();
+    }
+    if (e.beamT > 0 || e.beamFireT > 0){
+      ctx.save();
+      ctx.translate(sx, sy);
+      ctx.rotate(e.beamAng);
+      if (e.beamFireT > 0){
+        ctx.fillStyle = 'rgba(255,70,70,0.45)';
+        ctx.fillRect(0, -45, 1500, 90);
+        ctx.fillStyle = 'rgba(255,170,110,0.75)';
+        ctx.fillRect(0, -26, 1500, 52);
+        ctx.fillStyle = 'rgba(255,255,255,0.92)';
+        ctx.fillRect(0, -10, 1500, 20);
+      } else {
+        var balpha = 0.25 + 0.75 * (1 - e.beamT / 75);
+        ctx.fillStyle = 'rgba(255,60,60,' + (balpha * 0.16) + ')';
+        ctx.fillRect(0, -45, 1500, 90);
+        ctx.strokeStyle = 'rgba(255,80,80,' + balpha + ')';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.moveTo(0, -45); ctx.lineTo(1500, -45); ctx.moveTo(0, 45); ctx.lineTo(1500, 45); ctx.stroke();
+      }
+      ctx.restore();
+    }
+    if (e.mech === 'ifrit' && e.ifrTpT > 0){
+      ctx.strokeStyle = 'rgba(255,80,80,0.35)';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(sx, sy, 110, 0, 6.283); ctx.stroke();
+      ctx.strokeStyle = 'rgba(251,146,60,0.95)';
+      ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.arc(sx, sy, Math.max(6, 110 * (1 - e.ifrTpT / 40)), 0, 6.283); ctx.stroke();
+      ctx.font = 'bold 26px sans-serif';
+      ctx.fillStyle = '#fdba74';
+      ctx.fillText('！', sx + e.r + 16, sy);
+    }
+    if (e.raged){
+      ctx.strokeStyle = 'rgba(255,40,40,' + (0.55 + 0.35 * Math.sin(frame * 0.3)) + ')';
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(sx, sy, e.r + 8, 0, 6.283); ctx.stroke();
+      ctx.font = '18px serif';
+      ctx.fillText('💢', sx + e.r + 10, sy - e.r - 4);
     }
     if (e.mech === 'statue' && e.chargeT > 0){
       ctx.strokeStyle = 'rgba(255,64,64,' + (0.5 + 0.4 * Math.sin(frame * 0.35)) + ')';
@@ -2466,6 +2659,9 @@ if (typeof window !== 'undefined') window.__SV = {
   gainXp: gainXp,
   setKey: function(code, on){ keys[code] = on; },
   summon: doSummon,
+  summonStats: function(){ return { cdMax: summonCDMax(), radius: summonRadius(), bossPct: summonBossPct(), aidLv: upgLv.sumAid || 0, aidT: aidT }; },
+  aid: partnerAid,
+  beams: function(){ return enemies.filter(function(e){ return e.beamT > 0 || e.beamFireT > 0; }); },
   summonState: function(){ return summon; },
   summonCD: function(){ return summonCD; },
   hearts: function(){ return hearts; },
