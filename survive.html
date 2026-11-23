@@ -86,7 +86,7 @@ HPが残り少なくなると「魔王の意地」で、攻撃が3割強くな�
 🦠 分裂スライム　7分すぎから出てきます　倒すと、小さいスライム2体に分裂します<br>
 🌀 ワープ使い　9分すぎから出てきます　紫の予告サークルが出た場所へワープして、飛びかかってきます<br>
 🦝 かけら泥棒　6分すぎから出てきます　落ちたかけらを拾って逃げます　倒すと、持っていたかけらの2倍が落ちます<br>
-時間がたつほど、敵は強く多くなります</p>
+時間がたつほど、敵は強く多くなります　20分をすぎると、敵はぐっと固くなります</p>
 <p><strong>強化の種類</strong><br>
 🔥 魔力弾・威力　✨ 魔力弾・連射数　💨 魔力弾・速射<br>
 👀 まばたき衝撃波　周りの敵をまとめて吹き飛ばします<br>
@@ -96,7 +96,8 @@ HPが残り少なくなると「魔王の意地」で、攻撃が3割強くな�
 🧲 かけら収穫　🛡️ 守護結界　結界は、取るほど輪が増えて見た目も固くなります<br>
 💥 爆裂コア　🧛 吸血の牙　🌟 星屑の加護　🛰️ 衛星ブースター<br>
 🌀 混沌の渦　⚔️ 残影斬　🧿 呪いの眼　💨 疾風の陣　🪞 反射の鏡　🌠 流星召喚<br>
-繰り返しの強化は、それぞれ最大30回までです　取りきると、ごちそうやラテ袋が出てきます<br>
+🪃 旋風ブーメラン　👥 影分身　🌪️ 引き寄せの渦　🔥 炎の尾<br>
+繰り返しの強化は、それぞれ最大60回までです　取りきると、ごちそうやラテ袋が出てきます<br>
 🔮 守りのオーブは8個以上で円のバリアのようになります　ただし敵の弾は防げません　弾はオーブをすり抜けてきます<br>
 相方の武器も、強化で覚えることができます</p>
 <p><strong>相方召喚</strong><br>
@@ -242,6 +243,7 @@ var joy = { active: false, id: -1, ox: 0, oy: 0, dx: 0, dy: 0 };
 var ENEMY_CAP = 280, BOLT_CAP = 300, ESHOT_CAP = 240, SHARD_CAP = 400, HEART_CAP = 40;
 var webs = [], vampWinT = 0, vampWinHeal = 0;
 var lavas = [], zapMarks = [];
+var booms = [], flames = [];
 var HEART_LIFE = 1200, HEAL_DROP = 0.06, HEAL_ITEM = 20;
 var HEAL_SPELL = 30, HEAL_CD_MAX = 1800;
 
@@ -259,7 +261,11 @@ function newWeapons(){
     chain: { lv: 0, dmg: 0, rate: 150, timer: 90 },
     vortex: { on: false, r: 100, dps: 0, lv: 0 },
     slash: { lv: 0, dmg: 0, rate: 270, timer: 120, r: 150 },
-    meteor: { lv: 0, dmg: 0, rate: 660, timer: 300 }
+    meteor: { lv: 0, dmg: 0, rate: 660, timer: 300 },
+    boom: { lv: 0, dmg: 0, rate: 200, timer: 100, count: 1 },
+    clone: { lv: 0, timer: 40 },
+    pull: { lv: 0, cd: 0 },
+    fire: { lv: 0, r: 34, dps: 0, life: 150, dropT: 0 }
   };
 }
 
@@ -272,124 +278,140 @@ var UPGRADES = [
     can: function(){ return !weapons.wave.on; },
     desc: function(){ return '周りの敵をまとめて吹き飛ばす衝撃波を覚えます'; },
     apply: function(){ weapons.wave.on = true; } },
-  { id: 'boltDmg', icon: '🔥', name: '魔力弾・威力', max: 8,
+  { id: 'boltDmg', icon: '🔥', name: '魔力弾・威力', max: 10,
     can: function(){ return weapons.bolt.on; },
     desc: function(){ return '魔力弾の威力が上がります（今 ' + weapons.bolt.dmg + ' → ' + (weapons.bolt.dmg + 6) + '）'; },
     apply: function(){ weapons.bolt.dmg += 6; } },
-  { id: 'boltCount', icon: '✨', name: '魔力弾・連射数', max: 6,
+  { id: 'boltCount', icon: '✨', name: '魔力弾・連射数', max: 8,
     can: function(){ return weapons.bolt.on; },
     desc: function(){ return '一度に撃つ魔力弾が1発増えます（今 ' + weapons.bolt.count + '発）'; },
     apply: function(){ weapons.bolt.count += 1; } },
-  { id: 'boltRate', icon: '💨', name: '魔力弾・速射', max: 8,
+  { id: 'boltRate', icon: '💨', name: '魔力弾・速射', max: 10,
     can: function(){ return weapons.bolt.on; },
     desc: function(){ return '魔力弾を撃つ間隔が短くなります'; },
     apply: function(){ weapons.bolt.rate = Math.max(14, weapons.bolt.rate - 6); } },
-  { id: 'wavePow', icon: '👀', name: 'まばたき衝撃波・強化', max: 8,
+  { id: 'wavePow', icon: '👀', name: 'まばたき衝撃波・強化', max: 10,
     can: function(){ return weapons.wave.on; },
     desc: function(){ return '衝撃波の威力と範囲が上がり、間隔も短くなります'; },
     apply: function(){ weapons.wave.dmg += 8; weapons.wave.r += 14; weapons.wave.rate = Math.max(30, weapons.wave.rate - 6); } },
-  { id: 'orbs', icon: '🔮', name: '守りのオーブ', max: 14,
+  { id: 'orbs', icon: '🔮', name: '守りのオーブ', max: 16,
     can: function(){ return true; },
     desc: function(){ return '周りを回るオーブが1つ増えます（今 ' + weapons.orbs.count + '個）'; },
     apply: function(){ weapons.orbs.count += 1; } },
-  { id: 'aura', icon: '🟣', name: '魔法陣オーラ', max: 8,
+  { id: 'aura', icon: '🟣', name: '魔法陣オーラ', max: 10,
     can: function(){ return true; },
     desc: function(){ return weapons.aura.on ? 'オーラの範囲と威力が上がります' : '足元の魔法陣が、近くの敵を焼き続けます'; },
     apply: function(){ if (!weapons.aura.on) { weapons.aura.on = true; } else { weapons.aura.r += 13; weapons.aura.dps += 9; } } },
-  { id: 'speed', icon: '👢', name: '俊足のブーツ', max: 7,
+  { id: 'speed', icon: '👢', name: '俊足のブーツ', max: 9,
     can: function(){ return true; },
     desc: function(){ return '移動が速くなります'; },
     apply: function(){ player.speed += 0.28; } },
-  { id: 'maxhp', icon: '❤️', name: '魔王の体力', max: 8,
+  { id: 'maxhp', icon: '❤️', name: '魔王の体力', max: 10,
     can: function(){ return true; },
     desc: function(){ return 'HPの上限が25増えて、25回復します'; },
     apply: function(){ player.maxHp += 25; player.hp = Math.min(player.maxHp, player.hp + 25); } },
-  { id: 'magnet', icon: '🧲', name: '引き寄せの指輪', max: 6,
+  { id: 'magnet', icon: '🧲', name: '引き寄せの指輪', max: 8,
     can: function(){ return true; },
     desc: function(){ return '魔力のかけらを引き寄せる範囲が広がります'; },
     apply: function(){ player.magnetR += 45; } },
-  { id: 'regen', icon: '💚', name: '癒しの魔力', max: 6,
+  { id: 'regen', icon: '💚', name: '癒しの魔力', max: 8,
     can: function(){ return true; },
     desc: function(){ return 'HPが少しずつ回復するようになります'; },
     apply: function(){ player.regen += 0.35; } },
-  { id: 'pierce', icon: '🔮', name: '貫通の魔力弾', max: 3,
+  { id: 'pierce', icon: '🔮', name: '貫通の魔力弾', max: 5,
     can: function(){ return weapons.bolt.on; },
     desc: function(){ return '魔力弾が敵を貫通するようになります（今 ' + weapons.bolt.pierce + '体貫通）'; },
     apply: function(){ weapons.bolt.pierce += 1; } },
-  { id: 'chain', icon: '⚡', name: '連鎖の稲妻', max: 5,
+  { id: 'chain', icon: '⚡', name: '連鎖の稲妻', max: 7,
     can: function(){ return true; },
     desc: function(){ return '2.5秒ごとに、近くの敵へ稲妻が次々と連鎖してダメージを与えます'; },
     apply: function(){ weapons.chain.lv += 1; weapons.chain.dmg = 10 + weapons.chain.lv * 5; } },
-  { id: 'freeze', icon: '❄️', name: '凍結の衝撃波', max: 3,
+  { id: 'freeze', icon: '❄️', name: '凍結の衝撃波', max: 5,
     can: function(){ return weapons.wave.on; },
     desc: function(){ return '衝撃波に当たった敵が、2秒間ゆっくりになります（取るほど強く凍ります）'; },
     apply: function(){} },
-  { id: 'harvest', icon: '🧲', name: 'かけら収穫', max: 4,
+  { id: 'harvest', icon: '🧲', name: 'かけら収穫', max: 6,
     can: function(){ return true; },
     desc: function(){ return '魔力のかけらから得られる経験値が15%増えます'; },
     apply: function(){ player.xpMul += 0.15; } },
-  { id: 'barrier', icon: '🛡️', name: '守護結界', max: 4,
+  { id: 'barrier', icon: '🛡️', name: '守護結界', max: 6,
     can: function(){ return true; },
     desc: function(){ return '受けるダメージが8%ずつ減ります　結界の見た目も固くなります'; },
     apply: function(){ player.dmgCut = 1 - Math.pow(0.92, upgLv.barrier || 1); } },
-  { id: 'blastCore', icon: '💥', name: '爆裂コア', max: 3,
+  { id: 'blastCore', icon: '💥', name: '爆裂コア', max: 5,
     can: function(){ return true; },
     desc: function(){ return '敵を倒したとき、たまに周りの敵を巻き込む爆発が起きます'; },
     apply: function(){} },
-  { id: 'vampFang', icon: '🧛', name: '吸血の牙', max: 3,
+  { id: 'vampFang', icon: '🧛', name: '吸血の牙', max: 5,
     can: function(){ return true; },
     desc: function(){ return '敵を倒したとき、たまにHPが2回復します'; },
     apply: function(){} },
-  { id: 'starGuard', icon: '🌟', name: '星屑の加護', max: 4,
+  { id: 'starGuard', icon: '🌟', name: '星屑の加護', max: 5,
     can: function(){ return true; },
     desc: function(){ return 'ダメージをたまに完全にかわします　回避不能の攻撃はかわせません'; },
     apply: function(){} },
-  { id: 'satBoost', icon: '🛰️', name: '衛星ブースター', max: 3,
+  { id: 'satBoost', icon: '🛰️', name: '衛星ブースター', max: 5,
     can: function(){ return true; },
     desc: function(){ return 'オーブの回る半径と速さが上がります　オーブがなくても先に取れます'; },
     apply: function(){} },
-  { id: 'vortex', icon: '🌀', name: '混沌の渦', max: 5,
+  { id: 'vortex', icon: '🌀', name: '混沌の渦', max: 7,
     can: function(){ return true; },
     desc: function(){ return weapons.vortex.on ? '渦の範囲と威力が上がります' : '自分の周りに、敵を削り続ける渦が生まれます　オーラとは別に重なります'; },
     apply: function(){ var v = weapons.vortex; v.on = true; v.lv += 1; v.r += 12; v.dps = 10 + v.lv * 9; } },
-  { id: 'slash', icon: '⚔️', name: '残影斬', max: 5,
+  { id: 'slash', icon: '⚔️', name: '残影斬', max: 7,
     can: function(){ return true; },
     desc: function(){ return '数秒ごとに、周りの敵を一気に斬ります　取るほど速く、強くなります'; },
     apply: function(){ var s = weapons.slash; s.lv += 1; s.dmg = 18 + s.lv * 14; s.rate = Math.max(150, 270 - s.lv * 24); } },
-  { id: 'curseEye', icon: '🧿', name: '呪いの眼', max: 5,
+  { id: 'curseEye', icon: '🧿', name: '呪いの眼', max: 6,
     can: function(){ return true; },
     desc: function(){ return '全ての攻撃が、敵に6%ずつ通りやすくなります'; },
     apply: function(){} },
-  { id: 'haste', icon: '💨', name: '疾風の陣', max: 5,
+  { id: 'haste', icon: '💨', name: '疾風の陣', max: 7,
     can: function(){ return true; },
     desc: function(){ return '移動が5%速くなり、魔力弾と衝撃波の間隔が短くなります'; },
     apply: function(){ player.speed *= 1.05; weapons.bolt.rate = Math.max(12, Math.round(weapons.bolt.rate * 0.94)); weapons.wave.rate = Math.max(24, Math.round(weapons.wave.rate * 0.94)); } },
-  { id: 'mirror', icon: '🪞', name: '反射の鏡', max: 3,
+  { id: 'mirror', icon: '🪞', name: '反射の鏡', max: 5,
     can: function(){ return true; },
     desc: function(){ return 'ダメージを受けたとき、一部を近くの敵へ反射します'; },
     apply: function(){} },
-  { id: 'meteor', icon: '🌠', name: '流星召喚', max: 3,
+  { id: 'meteor', icon: '🌠', name: '流星召喚', max: 5,
     can: function(){ return true; },
     desc: function(){ return 'ときどき、敵が一番集まっている場所に流星が落ちます'; },
     apply: function(){ var m = weapons.meteor; m.lv += 1; m.dmg = 60 + m.lv * 55; m.rate = Math.max(420, 660 - m.lv * 90); } },
-  { id: 'sumPow', icon: '💥', name: '相方召喚・威力', max: 5,
+  { id: 'sumPow', icon: '💥', name: '相方召喚・威力', max: 7,
     can: function(){ return true; },
     desc: function(){ return '相方召喚の爆発が強くなります　ボスへのダメージが最大HPの' + Math.round(summonBossPct() * 100) + '%から' + Math.round((summonBossPct() + 0.05) * 100) + '%へ'; },
     apply: function(){} },
-  { id: 'sumCD', icon: '⏳', name: '相方召喚・はやわざ', max: 5,
+  { id: 'sumCD', icon: '⏳', name: '相方召喚・はやわざ', max: 7,
     can: function(){ return true; },
     desc: function(){ return '相方召喚の待ち時間が短くなります（今 ' + Math.ceil(summonCDMax() / 60) + '秒から' + Math.ceil((summonCDMax() - 200) / 60) + '秒へ）'; },
     apply: function(){} },
-  { id: 'sumArea', icon: '🌐', name: '相方召喚・範囲', max: 5,
+  { id: 'sumArea', icon: '🌐', name: '相方召喚・範囲', max: 7,
     can: function(){ return true; },
     desc: function(){ return '相方召喚の爆発の範囲が広くなります（今 ' + summonRadius() + ' から ' + (summonRadius() + 120) + ' へ）'; },
     apply: function(){} },
-  { id: 'sumAid', icon: '🤝', name: '相方の援護', max: 5,
+  { id: 'sumAid', icon: '🤝', name: '相方の援護', max: 7,
     can: function(){ return true; },
     desc: function(){ return (charKey === 'r' ? 'らて子がときどき小さな衝撃波で援護します　当たった敵はゆっくりになります' : 'らてらるがときどき貫通ボルトで援護します') + '　取るほど頻繁に、強くなります'; },
-    apply: function(){} }
+    apply: function(){} },
+  { id: 'boomerang', icon: '🪃', name: '旋風ブーメラン', max: 5,
+    can: function(){ return true; },
+    desc: function(){ return '往復するブーメランを投げます　行きも帰りも、敵を貫いてダメージを与えます'; },
+    apply: function(){ var b = weapons.boom; b.lv += 1; b.dmg = 16 + b.lv * 11; b.rate = Math.max(120, 205 - b.lv * 17); b.count = b.lv >= 3 ? 2 : 1; } },
+  { id: 'clone', icon: '👥', name: '影分身', max: 3,
+    can: function(){ return true; },
+    desc: function(){ return '影の分身が反対側を回りながら、基本攻撃を真似て撃ちます　取るほど分身の攻撃が強くなります'; },
+    apply: function(){ weapons.clone.lv += 1; } },
+  { id: 'pull', icon: '🌪️', name: '引き寄せの渦', max: 5,
+    can: function(){ return true; },
+    desc: function(){ return 'ときどき大きな渦が起きて、周りの敵を自分の近くへ引き寄せます　ボスは引き寄せられません'; },
+    apply: function(){ weapons.pull.lv += 1; } },
+  { id: 'firetrail', icon: '🔥', name: '炎の尾', max: 5,
+    can: function(){ return true; },
+    desc: function(){ return '歩いた場所に炎が残り、踏んだ敵を焼き続けます'; },
+    apply: function(){ var f = weapons.fire; f.lv += 1; f.r = 32 + f.lv * 3; f.dps = 10 + f.lv * 10; f.life = 140 + f.lv * 25; } }
 ];
-var FREEZE_PCT = [0, 0.3, 0.45, 0.6];
+var FREEZE_PCT = [0, 0.3, 0.45, 0.6, 0.68, 0.75];
 
 /* オーブの実効半径と回転速度（衛星ブースターで伸びる）／8個以上で円のバリア表示 */
 function orbDist(){ return weapons.orbs.dist * (1 + 0.25 * (upgLv.satBoost || 0)); }
@@ -400,23 +422,25 @@ function upgDef(id){ for (var i = 0; i < UPGRADES.length; i++) if (UPGRADES[i].i
 
 /* 有限の強化を取りきった後も選べる、繰り返し強化 */
 var REPEATABLES = [
-  { id: 'repDmg', icon: '⚔️', name: '全武器の威力アップ', rep: true, max: 30,
+  { id: 'repDmg', icon: '⚔️', name: '全武器の威力アップ', rep: true, max: 60,
     can: function(){ return true; },
-    desc: function(){ return '全ての武器の威力が8%上がります　最大30回まで選べます'; },
+    desc: function(){ return '全ての武器の威力が8%上がります　最大60回まで選べます'; },
     apply: function(){
       weapons.bolt.dmg = Math.max(1, Math.round(weapons.bolt.dmg * 1.08));
       weapons.wave.dmg = Math.max(1, Math.round(weapons.wave.dmg * 1.08));
       weapons.orbs.dmg = Math.max(1, Math.round(weapons.orbs.dmg * 1.08));
       weapons.aura.dps = Math.max(1, Math.round(weapons.aura.dps * 1.08));
       if (weapons.chain.lv > 0) weapons.chain.dmg = Math.max(1, Math.round(weapons.chain.dmg * 1.08));
+      if (weapons.boom.lv > 0) weapons.boom.dmg = Math.max(1, Math.round(weapons.boom.dmg * 1.08));
+      if (weapons.fire.lv > 0) weapons.fire.dps = Math.max(1, Math.round(weapons.fire.dps * 1.08));
     } },
-  { id: 'repHp', icon: '❤️', name: '体力アップ', rep: true, max: 30,
+  { id: 'repHp', icon: '❤️', name: '体力アップ', rep: true, max: 60,
     can: function(){ return true; },
-    desc: function(){ return 'HPの上限が15増えて、15回復します　最大30回まで選べます'; },
+    desc: function(){ return 'HPの上限が15増えて、15回復します　最大60回まで選べます'; },
     apply: function(){ player.maxHp += 15; player.hp = Math.min(player.maxHp, player.hp + 15); } },
-  { id: 'repSpd', icon: '👢', name: '移動速度アップ', rep: true, max: 30,
+  { id: 'repSpd', icon: '👢', name: '移動速度アップ', rep: true, max: 60,
     can: function(){ return true; },
-    desc: function(){ return '移動が3%速くなります　最大30回まで選べます'; },
+    desc: function(){ return '移動が3%速くなります　最大60回まで選べます'; },
     apply: function(){ player.speed *= 1.03; } }
 ];
 /* 強化を取りきった後に残る、消費アイテムの選択肢（力は増えず、しのぐためのもの） */
@@ -461,6 +485,7 @@ function startGame(){
   player = { x: 0, y: 0, r: 20, hp: 100, maxHp: 100, speed: 2.6, level: 1, xp: 0, xpNext: 6, magnetR: 70, regen: 0, faceAng: 0, invulnT: 0, xpMul: 1, dmgCut: 0 };
   enemies = []; bolts = []; eshots = []; shards = []; floats = []; parts = []; rings = []; hearts = []; zaps = [];
   webs = []; vampWinT = 0; vampWinHeal = 0;
+  booms = []; flames = [];
   lavas = []; zapMarks = [];
   fusePair = null; bossEvents = 0;
   timeStopT = 0; marks = []; flashT = 0; shakeT = 0;
@@ -492,12 +517,13 @@ var ETYPES = {
   warp:   { emoji: '🌀', hp: 22, spd: 1.05, r: 15, dmg: 9,  xp: 3, col: '#c084fc' },
   thief:  { emoji: '🦝', hp: 12, spd: 1.7,  r: 12, dmg: 5,  xp: 1, col: '#d6a35c' }
 };
-/* 時間経過スケーリング（秒単位、際限なく上昇する） */
+/* 時間経過スケーリング（秒単位、際限なく上昇する）　拡張7：1200秒以降は傾きを大きくし、1800秒以降はさらに加速させる */
 function enemyHpMul(t){
   var m = 1 + Math.min(3, t / 75) * 0.85;
   if (t > 225) m += (t - 225) * 0.012;
   if (t > 600) m += (t - 600) * 0.016;
-  if (t > 1200) m += (t - 1200) * 0.03;
+  if (t > 1200) m += (t - 1200) * 0.14;
+  if (t > 1800) m += (t - 1800) * 0.20;
   return m;
 }
 function enemySpdMul(t){
@@ -519,11 +545,12 @@ function spawnBatch(t){
   if (t > 1200) b += Math.floor((t - 1200) / 300);
   return Math.min(b, 12);
 }
-/* 接触ダメージの時間ボーナス（600秒までは120秒ごとに+1、1200秒までは90秒ごとに+1、以降は60秒ごとに+1） */
+/* 接触ダメージの時間ボーナス（600秒までは120秒ごとに+1、1200秒までは90秒ごとに+1、1800秒までは45秒ごとに+1、以降は30秒ごとに+1） */
 function contactBonus(t){
   if (t <= 600) return Math.floor(t / 120);
   if (t <= 1200) return 5 + Math.floor((t - 600) / 90);
-  return 11 + Math.floor((t - 1200) / 60);
+  if (t <= 1800) return 11 + Math.floor((t - 1200) / 45);
+  return 24 + Math.floor((t - 1800) / 30);
 }
 function spawnPos(){
   var a = Math.random() * 6.283, d = 620 + Math.random() * 160;
@@ -539,7 +566,7 @@ function createEnemy(type){
     shotT: 60 + Math.floor(Math.random() * 120),
     fuseT: -1, warpT: 200 + Math.floor(Math.random() * 80), warpTeleT: 0, warpX: 0, warpY: 0, lungeT: 0,
     slowT: 0, slowPct: 0, tiredT: 0,
-    carry: 0, carryVal: 0, fleeing: false, buffed: false, baseR: b.r, absorbed: false };
+    pullT: 0, carry: 0, carryVal: 0, fleeing: false, buffed: false, baseR: b.r, absorbed: false };
   /* エリート（金色）：5分すぎからまれに出る　固いが、倒すと経験値4倍　25分すぎは少し増える */
   if (t >= 300 && Math.random() < (t >= 1500 ? 0.025 : 0.012)){
     ne.elite = true;
@@ -602,8 +629,13 @@ function fireBossEvent(){
   else if (bossEvents >= 3 && !fusePair && !hasBig && Math.random() < 0.5) spawnMidPair();
   else spawnBoss();
 }
-/* ボスの体力は10分すぎから時間とともに大きく伸びる */
-function bossHpLate(t){ return 1 + Math.max(0, t - 600) / 300; }
+/* ボスの体力は10分すぎから時間とともに大きく伸びる（拡張7：20分・30分すぎでさらに加速） */
+function bossHpLate(t){
+  var m = 1 + Math.max(0, t - 600) / 300;
+  if (t > 1200) m += (t - 1200) / 240;
+  if (t > 1800) m += (t - 1800) / 240;
+  return m;
+}
 /* ボスの制限時間（フレーム数）：過ぎると去ってしまう */
 function bossLeaveFrames(mid, big){ return big ? 120 * 60 : (mid ? 75 * 60 : 90 * 60); }
 function bossLeaves(e){
@@ -1056,13 +1088,79 @@ function doWave(){
     var dx = e.x - player.x, dy = e.y - player.y, d = Math.sqrt(dx * dx + dy * dy);
     if (d < w.r + e.r){
       dmgEnemy(e, w.dmg);
-      if (upgLv.freeze){ e.slowT = 120; e.slowPct = FREEZE_PCT[Math.min(3, upgLv.freeze)]; }
-      var kb = e.boss ? 4 : 26;
+      if (upgLv.freeze){ e.slowT = 120; e.slowPct = FREEZE_PCT[Math.min(5, upgLv.freeze)]; }
+      /* 重い敵ほど吹き飛びにくい（体格で軽減）　終盤に固い敵が押し切れるように */
+      var kb = e.boss ? 4 : Math.max(7, Math.round(26 * 16 / Math.max(16, e.r)));
       if (d > 1) { e.x += dx / d * kb; e.y += dy / d * kb; }
       if (e.hp <= 0) killEnemy(i);
     }
   }
   tone(880, 1400, 0.08, 'sine', 0.03);
+}
+
+/* ===== 拡張7の新武器 ===== */
+function fireBooms(){
+  var w = weapons.boom;
+  var target = nearestEnemy(player.x, player.y, 560);
+  var baseAng = target ? Math.atan2(target.y - player.y, target.x - player.x) : player.faceAng;
+  for (var i = 0; i < w.count; i++){
+    if (booms.length >= 12) break;
+    var off = (i - (w.count - 1) / 2) * 0.35;
+    booms.push({ x: player.x, y: player.y, vx: Math.cos(baseAng + off) * 8.5, vy: Math.sin(baseAng + off) * 8.5, dmg: w.dmg, t: 0, out: 42, ret: false, life: 200, hitList: [], spin: Math.random() * 6.283 });
+  }
+  tone(500, 900, 0.09, 'sine', 0.03);
+}
+/* 影分身の位置：オーブと反対側を回る */
+function clonePos(){
+  var a = weapons.orbs.ang + Math.PI;
+  var d = Math.max(72, orbDist());
+  return { x: player.x + Math.cos(a) * d, y: player.y + Math.sin(a) * d };
+}
+function cloneAttack(){
+  var lv = weapons.clone.lv, cp = clonePos();
+  var scale = 0.45 + 0.15 * lv;
+  if (charKey === 'r'){
+    var target = nearestEnemy(cp.x, cp.y, 560);
+    if (!target) return;
+    var ang = Math.atan2(target.y - cp.y, target.x - cp.x);
+    if (bolts.length < BOLT_CAP) bolts.push({ x: cp.x, y: cp.y, vx: Math.cos(ang) * weapons.bolt.speed, vy: Math.sin(ang) * weapons.bolt.speed, dmg: Math.max(1, Math.round(weapons.bolt.dmg * scale)), life: 55, pierce: weapons.bolt.pierce, hitList: [] });
+    tone(700, 500, 0.06, 'square', 0.02);
+  } else {
+    var wr = Math.round(weapons.wave.r * 0.75), wd = Math.max(1, Math.round(weapons.wave.dmg * scale));
+    rings.push({ x: cp.x, y: cp.y, r: 10, maxR: wr, life: 14, col: '#94a3b8' });
+    var targets = enemies.slice();
+    for (var ci = 0; ci < targets.length; ci++){
+      var ce = targets[ci];
+      if (enemies.indexOf(ce) < 0) continue;
+      var cdx = ce.x - cp.x, cdy = ce.y - cp.y, cd = Math.sqrt(cdx * cdx + cdy * cdy);
+      if (cd < wr + ce.r){
+        dmgEnemy(ce, wd);
+        if (cd > 1){ var kb = ce.boss ? 3 : 18; ce.x += cdx / cd * kb; ce.y += cdy / cd * kb; }
+        if (ce.hp <= 0) killEnemy(enemies.indexOf(ce));
+      }
+    }
+    tone(760, 1200, 0.08, 'sine', 0.025);
+  }
+}
+/* 引き寄せの渦：ボスと大魔像の玉は引き寄せない */
+function doPull(){
+  var lv = weapons.pull.lv;
+  var R = 270 + 30 * lv, dmg = 6 + 7 * lv;
+  rings.push({ x: player.x, y: player.y, r: R * 0.55, maxR: R, life: 14, col: '#7dd3fc' });
+  addFloat(player.x, player.y - 58, '🌪️ 引き寄せの渦！', '#7dd3fc');
+  tone(220, 660, 0.25, 'sine', 0.04);
+  var targets = enemies.slice();
+  for (var pi2 = 0; pi2 < targets.length; pi2++){
+    var pe = targets[pi2];
+    if (enemies.indexOf(pe) < 0) continue;
+    if (pe.type === 'orb' || pe.orbOf) continue;
+    var pdx3 = pe.x - player.x, pdy3 = pe.y - player.y;
+    if (pdx3 * pdx3 + pdy3 * pdy3 < (R + pe.r) * (R + pe.r)){
+      dmgEnemy(pe, dmg);
+      if (!pe.boss) pe.pullT = 26;
+      if (pe.hp <= 0) killEnemy(enemies.indexOf(pe));
+    }
+  }
 }
 
 /* ===== 相方召喚 ===== */
@@ -1229,6 +1327,16 @@ function step(){
   if (vampWinT > 0) vampWinT--;
   if (vampWinT <= 0){ vampWinT = 60; vampWinHeal = 0; }
   for (var wti = webs.length - 1; wti >= 0; wti--){ webs[wti].life--; if (webs[wti].life <= 0) webs.splice(wti, 1); }
+  /* 炎の尾：動いた場所に炎を残す */
+  var wfr = weapons.fire;
+  if (wfr.lv > 0 && ml > 0.05){
+    wfr.dropT--;
+    if (wfr.dropT <= 0){
+      wfr.dropT = 9;
+      flames.push({ x: player.x, y: player.y, r: wfr.r, dps: wfr.dps, life: wfr.life });
+      if (flames.length > 70) flames.shift();
+    }
+  }
   /* 落雷マーカー：予告のあと、範囲内にいると回避不能のダメージ */
   for (var zti = zapMarks.length - 1; zti >= 0; zti--){
     var zm = zapMarks[zti];
@@ -1328,6 +1436,23 @@ function step(){
     }
   }
 
+  /* 炎の尾：残った炎が、踏んだ敵を焼き続ける */
+  for (var fli = flames.length - 1; fli >= 0; fli--){
+    var fl2 = flames[fli];
+    fl2.life--;
+    if (fl2.life <= 0){ flames.splice(fli, 1); continue; }
+    var fld = fl2.dps / 60;
+    for (var fei = enemies.length - 1; fei >= 0; fei--){
+      var fe2 = enemies[fei];
+      if (!fe2) continue;
+      var fdx2 = fe2.x - fl2.x, fdy2 = fe2.y - fl2.y;
+      if (fdx2 * fdx2 + fdy2 * fdy2 < (fl2.r + fe2.r) * (fl2.r + fe2.r)){
+        dmgEnemy(fe2, fld);
+        if (fe2.hp <= 0) killEnemy(fei);
+      }
+    }
+  }
+
   /* 残影斬 */
   var wsl = weapons.slash;
   if (wsl.lv > 0){
@@ -1381,6 +1506,33 @@ function step(){
           }
         }
       }
+    }
+  }
+
+  /* 旋風ブーメラン */
+  var wbm = weapons.boom;
+  if (wbm.lv > 0){
+    wbm.timer--;
+    if (wbm.timer <= 0 && enemies.length) { fireBooms(); wbm.timer = wbm.rate; }
+  }
+  /* 影分身：基本攻撃を真似る */
+  var wcl = weapons.clone;
+  if (wcl.lv > 0){
+    wcl.timer--;
+    if (wcl.timer <= 0){
+      cloneAttack();
+      wcl.timer = charKey === 'r' ? weapons.bolt.rate : weapons.wave.rate;
+      if (state !== 'play') return;
+    }
+  }
+  /* 引き寄せの渦 */
+  var wpl = weapons.pull;
+  if (wpl.lv > 0){
+    if (wpl.cd > 0) wpl.cd--;
+    if (wpl.cd <= 0){
+      doPull();
+      wpl.cd = Math.max(300, 500 - 35 * wpl.lv);
+      if (state !== 'play') return;
     }
   }
 
@@ -1790,6 +1942,12 @@ function step(){
         e.y += dy / d * sp;
       }
     }
+    /* 引き寄せの渦：引き寄せ中は、プレイヤーの近くまで吸い込まれる */
+    if (e.pullT > 0){
+      e.pullT--;
+      var plx = player.x - e.x, ply = player.y - e.y, pld = Math.sqrt(plx * plx + ply * ply) || 1;
+      if (pld > 46){ e.x += plx / pld * 6.5; e.y += ply / pld * 6.5; }
+    }
     if (e.atkT > 0) e.atkT--;
     if (e.orbT > 0) e.orbT--;
     if (d < e.r + player.r && e.atkT <= 0){
@@ -1863,6 +2021,32 @@ function step(){
       }
     }
     if (hit || b.life <= 0) { bolts[bi] = bolts[bolts.length - 1]; bolts.pop(); }
+  }
+
+  /* ブーメラン（行きは直進、帰りは自分を追いかける　敵を貫通する） */
+  for (var bmi = booms.length - 1; bmi >= 0; bmi--){
+    var bm = booms[bmi];
+    bm.t++; bm.life--; bm.spin += 0.45;
+    if (!bm.ret && bm.t >= bm.out){ bm.ret = true; bm.hitList = []; }
+    if (bm.ret){
+      var bma = Math.atan2(player.y - bm.y, player.x - bm.x);
+      bm.vx = Math.cos(bma) * 9.5; bm.vy = Math.sin(bma) * 9.5;
+    }
+    bm.x += bm.vx; bm.y += bm.vy;
+    for (var bmj = enemies.length - 1; bmj >= 0; bmj--){
+      var bme = enemies[bmj];
+      if (!bme) continue;
+      if (bm.hitList.indexOf(bme) >= 0) continue;
+      var bmdx = bme.x - bm.x, bmdy = bme.y - bm.y;
+      if (bmdx * bmdx + bmdy * bmdy < (bme.r + 12) * (bme.r + 12)){
+        dmgEnemy(bme, bm.dmg);
+        addParts(bm.x, bm.y, '#7dd3fc', 2);
+        bm.hitList.push(bme);
+        if (bme.hp <= 0) killEnemy(bmj);
+      }
+    }
+    var bmpd = Math.sqrt((player.x - bm.x) * (player.x - bm.x) + (player.y - bm.y) * (player.y - bm.y));
+    if ((bm.ret && bmpd < 26) || bm.life <= 0){ booms[bmi] = booms[booms.length - 1]; booms.pop(); }
   }
 
   /* 敵の弾 */
@@ -2114,6 +2298,19 @@ function draw(){
     ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(lv2.x - camX, lv2.y - camY, lv2.r * (0.7 + 0.1 * Math.sin(frame * 0.1 + i)), 0, 6.283); ctx.stroke();
   }
+  /* 炎の尾 */
+  for (i = 0; i < flames.length; i++){
+    var flm = flames[i];
+    var flx = flm.x - camX, fly = flm.y - camY;
+    if (flx < -50 || fly < -50 || flx > VW + 50 || fly > VH + 50) continue;
+    var fla = Math.min(0.5, flm.life / 60 * 0.5);
+    ctx.fillStyle = 'rgba(249,115,22,' + (fla * 0.55) + ')';
+    ctx.beginPath(); ctx.arc(flx, fly, flm.r * (0.85 + 0.12 * Math.sin(frame * 0.3 + i * 1.7)), 0, 6.283); ctx.fill();
+    ctx.font = Math.round(flm.r * 0.9) + 'px serif';
+    ctx.globalAlpha = Math.min(1, fla + 0.25);
+    ctx.fillText('🔥', flx, fly + 2);
+    ctx.globalAlpha = 1;
+  }
   /* 落雷の予告 */
   for (i = 0; i < zapMarks.length; i++){
     var zmk = zapMarks[i];
@@ -2342,6 +2539,16 @@ function draw(){
     var b = bolts[i];
     ctx.beginPath(); ctx.arc(b.x - camX, b.y - camY, 6, 0, 6.283); ctx.fill();
   }
+  /* ブーメラン */
+  for (i = 0; i < booms.length; i++){
+    var bm3 = booms[i];
+    var bmx = bm3.x - camX, bmy = bm3.y - camY;
+    if (bmx < -30 || bmy < -30 || bmx > VW + 30 || bmy > VH + 30) continue;
+    ctx.save(); ctx.translate(bmx, bmy); ctx.rotate(bm3.spin);
+    ctx.font = '24px serif';
+    ctx.fillText('🪃', 0, 1);
+    ctx.restore();
+  }
   /* 敵の弾（赤い魔力弾） */
   for (i = 0; i < eshots.length; i++){
     var q2 = eshots[i];
@@ -2411,6 +2618,23 @@ function draw(){
       ctx.beginPath(); ctx.arc(ox, oy, 5, 0, 6.283); ctx.fill();
       ctx.fillStyle = '#c4b5fd';
     }
+  }
+  /* 影分身 */
+  if (weapons && weapons.clone.lv > 0){
+    var cp2 = clonePos();
+    var csx = cp2.x - camX, csy = cp2.y - camY;
+    ctx.save();
+    ctx.globalAlpha = 0.45;
+    ctx.fillStyle = 'rgba(10,8,24,0.55)';
+    ctx.beginPath(); ctx.arc(csx, csy, 21, 0, 6.283); ctx.fill();
+    var cimg = charKey === 'r' ? imgFR : imgFL;
+    ctx.beginPath(); ctx.arc(csx, csy, 19, 0, 6.283); ctx.clip();
+    if (cimg && cimg.complete && cimg.naturalWidth > 0) ctx.drawImage(cimg, csx - 19, csy - 19, 38, 38);
+    else { ctx.fillStyle = '#334155'; ctx.fillRect(csx - 19, csy - 19, 38, 38); }
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(148,163,184,0.8)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(csx, csy, 21, 0, 6.283); ctx.stroke();
   }
   /* プレイヤー */
   var ppx = player.x - camX, ppy = player.y - camY;
@@ -2690,13 +2914,16 @@ if (typeof window !== 'undefined') window.__SV = {
   },
   floats: function(){ return floats; },
   zaps: function(){ return zaps; },
+  booms: function(){ return booms; },
+  flames: function(){ return flames; },
+  repDefs: function(){ return REPEATABLES; },
   timeStop: function(){ return timeStopT; },
   marks: function(){ return marks; },
   hurtTrue: hurtPlayerTrue,
   orbRing: orbRingOn,
   orbDist: orbDist,
   orbAngStep: orbAngStep,
-  scaling: function(sec){ return { hpMul: enemyHpMul(sec), interval: spawnInterval(sec), batch: spawnBatch(sec), spdMul: enemySpdMul(sec), dmgBonus: contactBonus(sec) }; }
+  scaling: function(sec){ return { hpMul: enemyHpMul(sec), interval: spawnInterval(sec), batch: spawnBatch(sec), spdMul: enemySpdMul(sec), dmgBonus: contactBonus(sec), bossLate: bossHpLate(sec) }; }
 };
 </script>
 <script>
