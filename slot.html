@@ -335,14 +335,15 @@ function shareSite(){
 <script>
 /* 全ゲーム共通基盤: まるごとセーブコード（圧縮つき）＋ 100ラテコンテニュー ＋ カジノ台帳ガード
    - コードに含めない端末専用キー: maouHitV1（アクセス集計）/ maouLateRewardV1（その日の報酬台帳）/
-     maouCasinoLedgerV1（カジノ台帳の端末控え）/ maouTchiSeedV1（魔王っち孵化シード）
+     maouCasinoLedgerV1（カジノ台帳の端末控え）/ maouTchiSeedV1（魔王っち孵化シード）/
+     maouStepSeedV1（万歩計RPG進化シード）
    - 形式: MAOU2Z.<base64url>.<fnv8> = deflate圧縮 / MAOU2R.<base64url>.<fnv8> = 無圧縮フォールバック
    - 旧形式（fish/casino共通コード {version:1,shared}、魔王っちコード {version:1,tchi,late}）も読み込み可 */
 (function(){
   var SLUG = 'slot';
   var SKEY = 'maouSharedSaveV1', TKEY = 'maouTchiV1', LEDGER_KEY = 'maouCasinoLedgerV1';
   var COST = 100;
-  var EXCLUDE = { maouHitV1:1, maouLateRewardV1:1, maouCasinoLedgerV1:1, maouTchiSeedV1:1 };
+  var EXCLUDE = { maouHitV1:1, maouLateRewardV1:1, maouCasinoLedgerV1:1, maouTchiSeedV1:1, maouStepSeedV1:1 };
 
   /* ---------- 小物 ---------- */
   function fnv(str){ var h = 0x811c9dc5; for (var i = 0; i < str.length; i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); }
