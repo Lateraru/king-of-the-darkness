@@ -389,6 +389,16 @@ async function send() {
       }
       return;
     }
+    function fixText(t) {
+      t = t.replace(/そんじゃあ/g, "そしたらぁ");
+      t = t.replace(/といいだろう/g, "といいぞ");
+      t = t.replace(/いいだろう/g, "いいぞ");
+      t = t.replace(/／/g, "\n");
+      t = t.replace(/([^0-9])\/([^0-9])/g, "$1\n$2");
+      t = t.replace(/[ \t]*\n[ \t]*/g, "\n");
+      t = t.replace(/\n{3,}/g, "\n\n");
+      return t;
+    }
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
     const who = CHAR_NAMES[requestChar];
@@ -408,13 +418,13 @@ async function send() {
           if (!bubble) { phase = "gen"; bubble = addMsgLive(who); }
           full += ev.text;
           recvChars += ev.text.length;
-          bubble.textContent = full;
+          bubble.textContent = fixText(full);
           logEl.scrollTop = logEl.scrollHeight;
         } else if (ev.type === "done") {
           settled = true;
           if (!bubble) bubble = addMsgLive(who);
-          bubble.textContent = ev.reply;
-          full = ev.reply;
+          bubble.textContent = fixText(ev.reply);
+          full = fixText(ev.reply);
         } else if (ev.type === "error") {
           settled = true;
           if (bubble) { bubble.parentElement.remove(); bubble = null; }
