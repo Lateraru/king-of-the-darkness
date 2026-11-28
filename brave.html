@@ -13,6 +13,16 @@ html,body{margin:0;padding:0;background:#171021;color:var(--ink);font-family:"Hi
 h1{font-size:19px;color:#f3e9ff;text-align:center;margin:8px 0 2px;letter-spacing:.06em}
 .sub{color:#cbb8ec;text-align:center;font-size:12px;margin:0 0 10px}
 .stage{position:relative;background:#241733;border-radius:14px;padding:8px;box-shadow:0 6px 24px rgba(0,0,0,.45)}
+#titleOv{position:absolute;inset:8px;background:rgba(16,10,28,.9);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:18px 16px;text-align:center;z-index:5;overflow:auto}
+#titleOv .tTitle{font-size:30px;font-weight:800;color:#ffd94d;letter-spacing:.08em}
+#titleOv .tSub{font-size:13px;color:#cdbcf0;margin-top:-8px}
+#titleOv .tBox{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:10px 14px;font-size:13px;line-height:1.7;color:#f3e9ff;max-width:430px;text-align:left}
+#titleOv .tBox p{margin:0 0 8px}
+#titleOv .tBox p:last-child{margin-bottom:0}
+#titleOv .tHead{font-weight:800;color:#ffd94d}
+#titleOv .tParty{font-size:13px;color:#fff;font-weight:700}
+#btnStart{flex:0 0 auto;min-width:190px;font-size:16px;padding:12px 18px;background:#ffd94d;box-shadow:0 3px 0 #d8ae4e;color:#3a2a00}
+#titleOv .tNote{font-size:11px;color:#bdb2d9;line-height:1.6;margin:0}
 canvas{display:block;width:100%;height:auto;border-radius:10px;background:#3d6b35;touch-action:none}
 .hud{display:flex;gap:6px;margin:8px 0 0}
 .party{flex:1;background:var(--paper);border-radius:10px;padding:6px 8px;font-size:11px;line-height:1.5}
@@ -44,6 +54,21 @@ button.stance{flex:0 1 auto;min-width:86px;font-size:11px;padding:8px 6px}
 <p class="sub">フィールドで戦い、奥のボスに挑む試作版です</p>
 <div class="stage">
 <canvas id="cv" width="540" height="720"></canvas>
+<div id="titleOv">
+  <div class="tTitle">魔王ブレイブ</div>
+  <div class="tSub">試作版</div>
+  <div class="tBox">
+    <p>魔王らてらる<br>「よく来たな、ゲスト<br>北の森に鉄の巨人が出た<br>星狼とぎゅーたんを連れて、様子を見てきてほしい」</p>
+    <p>魔王らて子<br>「らて子はねぇ、みんななら勝てると思うよ」</p>
+  </div>
+  <div class="tBox">
+    <p class="tHead">遊び方</p>
+    <p>画面をタップ／ドラッグで移動<br>敵に近づくと自動で戦います<br>北の門からボス戦へ<br>ボスの腕は、言う順番に壊すのがコツ<br>仲間の作戦は下のボタンで切替<br>倒した敵のぶん、ラテが共通のお財布に入ります</p>
+  </div>
+  <div class="tParty">ゲスト（あなた）＋ 星狼（賢者）＋ ぎゅーたん（戦乙女）</div>
+  <button id="btnStart" type="button">冒険に出る</button>
+  <p class="tNote">試作版です<br>遊んだ感想をいただけると助かります</p>
+</div>
 </div>
 <div class="hud">
   <div class="party" id="p0"></div>
@@ -712,7 +737,7 @@ function bossCompanion(m, dt, off){
 
 /* ---------- プレイヤーの技ボタン ---------- */
 document.getElementById('btnSlash').addEventListener('click', function(){
-  if(!G || G.over || G.clear || G.player.down || G.slashCd > 0) return;
+  if(!G || !G.started || G.over || G.clear || G.player.down || G.slashCd > 0) return;
   G.slashCd = 8;
   var p = G.player, i;
   addPart(p.x, p.y, '#a8d8ff', 8);
@@ -725,12 +750,12 @@ document.getElementById('btnSlash').addEventListener('click', function(){
   }
 });
 document.getElementById('btnPotion').addEventListener('click', function(){
-  if(!G || G.over || G.player.down || G.potions <= 0) return;
+  if(!G || !G.started || G.over || G.player.down || G.potions <= 0) return;
   G.potions--; healMember(G.player, 55);
   this.textContent = 'やくそう ×' + G.potions;
 });
 document.getElementById('btnGauge').addEventListener('click', function(){
-  if(!G || G.over || G.clear || G.gauge < 100) return;
+  if(!G || !G.started || G.over || G.clear || G.gauge < 100) return;
   G.gauge = 0; G.shake = 0.4;
   if(G.mode === 'boss'){ bossHit(bossBodyTarget(), 320, G.player);
     setMsg('パーティの大技「魔王の裁き」　鉄の巨人に大ダメージ');
@@ -746,13 +771,20 @@ function cycleStance(btn, m){
   m.stance = (m.stance+1) % 3;
   btn.textContent = m.name + '：' + STANCE_NAMES[m.stance];
 }
-document.getElementById('btnStance1').addEventListener('click', function(){ if(G) cycleStance(this, G.sero); });
-document.getElementById('btnStance2').addEventListener('click', function(){ if(G) cycleStance(this, G.gyutan); });
+document.getElementById('btnStance1').addEventListener('click', function(){ if(G && G.started) cycleStance(this, G.sero); });
+document.getElementById('btnStance2').addEventListener('click', function(){ if(G && G.started) cycleStance(this, G.gyutan); });
 document.getElementById('btnRetry').addEventListener('click', function(){
   freshGame();
   document.getElementById('btnPotion').textContent = 'やくそう ×3';
   document.getElementById('btnStance1').textContent = '星狼：バランス';
   document.getElementById('btnStance2').textContent = 'ぎゅーたん：バランス';
+  document.getElementById('titleOv').style.display = 'flex';
+});
+document.getElementById('btnStart').addEventListener('click', function(){
+  if(!G) return;
+  G.started = true;
+  document.getElementById('titleOv').style.display = 'none';
+  setMsg('北の門を目指そう\n道中の敵を倒すとラテが手に入ります');
 });
 
 /* ---------- メインステップ ---------- */
@@ -1164,7 +1196,7 @@ function loop(ts){
   requestAnimationFrame(loop);
   if(!lastTs) lastTs = ts;
   var dt = Math.min(0.05, (ts - lastTs)/1000); lastTs = ts;
-  if(dt > 0){ step(dt); draw(); updateHud(); }
+  if(dt > 0){ if(G.started) step(dt); draw(); updateHud(); }
 }
 freshGame();
 requestAnimationFrame(loop);
